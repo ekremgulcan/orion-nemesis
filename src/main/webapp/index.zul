@@ -1,0 +1,51 @@
+<?page title="Orion"?>
+<zk xmlns:n="native">
+    <borderlayout apply="org.zkoss.bind.BindComposer"
+                  viewModel="@id('vm') @init('com.orion.nav.IndexViewModel')"
+                  height="100%" width="100%">
+
+        <north height="60px" style="background-color:#4a86a8">
+            <hbox align="center" style="height:100%;padding-left:16px">
+                <label value="Orion" style="color:white;font-size:22px;font-weight:bold"/>
+            </hbox>
+        </north>
+
+        <west size="260px" splittable="true" collapsible="true">
+            <vlayout vflex="1" hflex="1" style="height:100%">
+                <toolbarbutton label="Ana Sayfa" iconSclass="z-icon-home"
+                                onClick="@command('goHome')"
+                                style="width:100%;text-align:left;padding:8px"/>
+                <listbox model="@load(vm.menuItems)" vflex="1" hflex="1" style="border:none">
+                    <listhead visible="false">
+                        <listheader hflex="1"/>
+                    </listhead>
+                    <template name="model">
+                        <listitem onClick="@command('selectMenu', item=each)">
+                            <listcell label="@load(each.baslik)"/>
+                        </listitem>
+                    </template>
+                </listbox>
+            </vlayout>
+        </west>
+
+        <center>
+            <tabbox vflex="1" hflex="1">
+                <tabs children="@load(vm.openTabs)">
+                    <template name="children">
+                        <tab label="@load(each.baslik)" closable="@load(each.closable)"
+                             selected="@load(each eq vm.selectedTab)"
+                             onClose="@command('closeTab', tab=each)"
+                             onSelect="@command('selectTab', tab=each)"/>
+                    </template>
+                </tabs>
+                <tabpanels vflex="1" children="@load(vm.openTabs)">
+                    <template name="children">
+                        <tabpanel style="overflow:auto;height:100%">
+                            <include src="@load(each.zulPath)"/>
+                        </tabpanel>
+                    </template>
+                </tabpanels>
+            </tabbox>
+        </center>
+    </borderlayout>
+</zk>

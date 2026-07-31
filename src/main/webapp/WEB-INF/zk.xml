@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zk>
+    <!-- ViewModel'lerin Spring bean'lerine (@WireVariable ile) erisebilmesi icin -->
+    <variable-resolver>
+        <class>org.zkoss.zkplus.spring.DelegatingVariableResolver</class>
+    </variable-resolver>
+    <library-property>
+        <name>org.zkoss.zul.theme.preferred</name>
+        <value>iceblue</value>
+    </library-property>
+</zk>

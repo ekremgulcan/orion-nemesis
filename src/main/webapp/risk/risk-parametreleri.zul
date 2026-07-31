@@ -1,0 +1,73 @@
+<?page title="Risk Parametreleri"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.risk.vm.RiskParametreleriViewModel')"
+            style="padding:16px">
+
+        <label value="Risk Parametreleri"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <label value="Hisse ve Sabit Getiri (SGMK) risk kontrolleri tek ekranda, enstruman tipi filtresiyle yonetilir."
+               style="color:#888;font-size:12px;margin-top:4px"/>
+        <separator/>
+
+        <hbox spacing="10px" align="center" style="margin-top:10px">
+            <label value="Enstruman Tipi:"/>
+            <combobox value="@bind(vm.secilenTip)" width="150px" onChange="@command('tipDegisti')">
+                <comboitem label="HISSE"/>
+                <comboitem label="SGMK"/>
+            </combobox>
+            <label value="Ara:" style="margin-left:20px"/>
+            <textbox value="@bind(vm.aramaMetni)" width="220px" placeholder="Kullanici / Hesap No"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <separator style="margin-top:10px"/>
+        <label value="Risk Profilleri (Alis/Satis/Acik Satis + Grup Nakit Kontrolleri)" style="font-weight:bold"/>
+        <listbox model="@load(vm.riskProfilleri)" mold="paging" pageSize="15"
+                 emptyMessage="No Rows To Show" style="margin-top:6px">
+            <listhead>
+                <listheader label="Kullanici" width="120px"/>
+                <listheader label="Hesap No" width="100px"/>
+                <listheader label="Alis" width="60px"/>
+                <listheader label="Satis" width="60px"/>
+                <listheader label="Acik Satis" width="80px"/>
+                <listheader label="Grup A" width="70px"/>
+                <listheader label="Grup B" width="70px"/>
+                <listheader label="Grup C" width="70px"/>
+                <listheader label="Grup D" width="70px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.user.adSoyad)"/>
+                    <listcell label="@load(each.account.hesapNo)"/>
+                    <listcell label="@load(each.alisKontrol)"/>
+                    <listcell label="@load(each.satisKontrol)"/>
+                    <listcell label="@load(each.acikSatisKontrol)"/>
+                    <listcell label="@load(each.grupANakitKontrol)"/>
+                    <listcell label="@load(each.grupBNakitKontrol)"/>
+                    <listcell label="@load(each.grupCNakitKontrol)"/>
+                    <listcell label="@load(each.grupDNakitKontrol)"/>
+                </listitem>
+            </template>
+        </listbox>
+
+        <separator style="margin-top:14px"/>
+        <label value="Kullanici Limit Tanimi" style="font-weight:bold"/>
+        <listbox model="@load(vm.kullaniciLimitleri)" mold="paging" pageSize="10"
+                 emptyMessage="No Rows To Show" style="margin-top:6px">
+            <listhead>
+                <listheader label="Kullanici" width="150px"/>
+                <listheader label="Gunluk Toplam Limit" width="180px"/>
+                <listheader label="Anlik Islem Limiti" width="180px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.user.adSoyad)"/>
+                    <listcell label="@load(each.gunlukToplamLimit)"/>
+                    <listcell label="@load(each.anlikIslemLimiti)"/>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

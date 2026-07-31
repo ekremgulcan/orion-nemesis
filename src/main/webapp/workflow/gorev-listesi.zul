@@ -1,0 +1,73 @@
+<?page title="Gorev Listesi"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.workflow.vm.GorevListesiViewModel')"
+            style="padding:10px">
+
+        <tabbox>
+            <tabs>
+                <tab label="Uzerimdeki Gorevler" iconSclass="z-icon-inbox"/>
+                <tab label="Tamamlanmis Gorevlerim" iconSclass="z-icon-check"/>
+                <tab label="Surec Listesi" iconSclass="z-icon-list"/>
+            </tabs>
+            <tabpanels>
+                <tabpanel>
+                    <listbox model="@load(vm.uzerimdekiGorevler)" emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Surec Numarasi" width="140px"/>
+                            <listheader label="Surec Adi" width="200px"/>
+                            <listheader label="Gorev Ozeti"/>
+                            <listheader label="Sahip" width="150px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.process.surecNo)"/>
+                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.gorevOzeti)"/>
+                                <listcell label="@load(each.sahip.adSoyad)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.tamamlanmisGorevler)" emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Surec Numarasi" width="140px"/>
+                            <listheader label="Surec Adi" width="200px"/>
+                            <listheader label="Gorev Ozeti"/>
+                            <listheader label="Sahip" width="150px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.process.surecNo)"/>
+                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.gorevOzeti)"/>
+                                <listcell label="@load(each.sahip.adSoyad)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.tumGorevler)" emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Surec Numarasi" width="140px"/>
+                            <listheader label="Surec Adi" width="200px"/>
+                            <listheader label="Gorev Ozeti"/>
+                            <listheader label="Sahip" width="150px"/>
+                            <listheader label="Durum" width="120px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.process.surecNo)"/>
+                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.gorevOzeti)"/>
+                                <listcell label="@load(each.sahip.adSoyad)"/>
+                                <listcell label="@load(each.durum)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+    </window>
+</zk>

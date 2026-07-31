@@ -1,0 +1,40 @@
+<?page title="Hisse Kotasyon Izleme"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.core.vm.HisseKotasyonViewModel')"
+            style="padding:16px">
+
+        <label value="Hisse Kotasyon Izleme"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <label value="Canli fiyat akisi Faz 4+ kapsaminda eklenecektir. Asagida statik enstruman listesi gosterilmektedir."
+               style="color:#888;font-size:12px;margin-top:4px"/>
+        <separator/>
+
+        <hbox spacing="8px" align="center" style="margin-top:6px">
+            <label value="Ara:"/>
+            <textbox value="@bind(vm.aramaMetni)" width="260px"
+                     placeholder="Sembol / Ad / ISIN"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <listbox model="@load(vm.hisseler)" emptyMessage="No Rows To Show" style="margin-top:10px">
+            <listhead>
+                <listheader label="Sembol" width="100px"/>
+                <listheader label="Ad"/>
+                <listheader label="ISIN" width="150px"/>
+                <listheader label="Borsa" width="100px"/>
+                <listheader label="Aktif" width="80px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.sembol)"/>
+                    <listcell label="@load(each.ad)"/>
+                    <listcell label="@load(each.isin)"/>
+                    <listcell label="@load(each.borsa)"/>
+                    <listcell label="@load(each.aktif ? 'Evet' : 'Hayir')"/>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

@@ -1,0 +1,9 @@
+<?page title="Yapim Asamasinda"?>
+<zk>
+    <vbox style="padding:40px;width:100%" align="center">
+        <label value="Bu modul henuz yapim asamasindadir."
+               style="font-size:16px;color:#888"/>
+        <label value="Faz 4+ kapsaminda derinlestirilecek modullerden biridir. Detaylar icin plan.md dosyasina bakiniz."
+               style="font-size:13px;color:#aaa;margin-top:8px"/>
+    </vbox>
+</zk>

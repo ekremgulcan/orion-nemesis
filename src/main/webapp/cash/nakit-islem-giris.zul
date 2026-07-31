@@ -1,0 +1,132 @@
+<?page title="Nakit Yonetimi - Islem Giris"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.cash.vm.NakitIslemGirisViewModel')"
+            style="padding:16px">
+
+        <label value="Nakit Yonetimi - Islem Giris"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <groupbox closable="false" style="margin-top:10px">
+            <caption label="Yeni Islem Talebi"/>
+            <grid>
+                <columns>
+                    <column width="150px"/>
+                    <column/>
+                </columns>
+                <rows>
+                    <row>
+                        <label value="Hesap No:"/>
+                        <textbox value="@bind(vm.hesapNo)" width="200px"/>
+                    </row>
+                    <row>
+                        <label value="Talep Kanali:"/>
+                        <combobox value="@bind(vm.talepKanali)" width="200px">
+                            <comboitem label="SUBE"/>
+                            <comboitem label="INTERNET"/>
+                            <comboitem label="TRADEMASTER"/>
+                            <comboitem label="CAGRI_MERKEZI"/>
+                        </combobox>
+                    </row>
+                    <row>
+                        <label value="Emir Veren:"/>
+                        <textbox value="@bind(vm.emirVeren)" width="250px"/>
+                    </row>
+                    <row>
+                        <label value="Valor Tarihi:"/>
+                        <datebox value="@bind(vm.valorTarihi)" width="150px"/>
+                    </row>
+                    <row>
+                        <label value="Tutar:"/>
+                        <decimalbox value="@bind(vm.tutar)" cols="15"/>
+                    </row>
+                    <row>
+                        <label value="Para Birimi:"/>
+                        <combobox value="@bind(vm.paraBirimi)" width="120px">
+                            <comboitem label="TRY"/>
+                            <comboitem label="USD"/>
+                            <comboitem label="EUR"/>
+                        </combobox>
+                    </row>
+                    <row>
+                        <label value="Islem Yonu:"/>
+                        <combobox value="@bind(vm.islemYonu)" width="150px">
+                            <comboitem label="ODEME"/>
+                            <comboitem label="TAHSILAT"/>
+                        </combobox>
+                    </row>
+                    <row>
+                        <label value="Yontem:"/>
+                        <combobox value="@bind(vm.yontem)" width="180px">
+                            <comboitem label="IBAN"/>
+                            <comboitem label="HESAP"/>
+                            <comboitem label="YINELE_GVT"/>
+                        </combobox>
+                    </row>
+                    <row>
+                        <label value="IBAN:"/>
+                        <textbox value="@bind(vm.iban)" width="280px"/>
+                    </row>
+                    <row>
+                        <label value="Karsi Hesap No:"/>
+                        <textbox value="@bind(vm.karsiHesapNo)" width="180px"/>
+                    </row>
+                    <row>
+                        <label value="IYM Banka Hesabi:"/>
+                        <textbox value="@bind(vm.iymBankaHesabi)" width="180px"/>
+                    </row>
+                    <row>
+                        <label value="Aciklama:"/>
+                        <textbox value="@bind(vm.aciklama)" width="320px"/>
+                    </row>
+                </rows>
+            </grid>
+            <hbox spacing="10px" style="margin-top:10px">
+                <button label="Islem Talebi Olustur"
+                        style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('talepOlustur')"/>
+                <label value="@load(vm.mesaj)" style="color:#2f6fad;font-weight:bold"/>
+            </hbox>
+        </groupbox>
+
+        <separator style="margin-top:14px"/>
+        <label value="Islem Gecmisi" style="font-weight:bold"/>
+        <listbox model="@load(vm.talepler)" mold="paging" pageSize="15"
+                 emptyMessage="No Rows To Show" style="margin-top:6px">
+            <listhead>
+                <listheader label="Hesap No" width="90px"/>
+                <listheader label="Musteri"/>
+                <listheader label="Kanal" width="110px"/>
+                <listheader label="Yon" width="80px"/>
+                <listheader label="Tutar" width="110px"/>
+                <listheader label="Para Birimi" width="90px"/>
+                <listheader label="Valor Tarihi" width="110px"/>
+                <listheader label="Durum" width="100px"/>
+                <listheader label="Aksiyon" width="200px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.account.hesapNo)"/>
+                    <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                    <listcell label="@load(each.talepKanali)"/>
+                    <listcell label="@load(each.islemYonu)"/>
+                    <listcell label="@load(each.tutar)"/>
+                    <listcell label="@load(each.paraBirimi)"/>
+                    <listcell label="@load(each.valorTarihi)"/>
+                    <listcell label="@load(each.durum)"/>
+                    <listcell>
+                        <hbox spacing="6px">
+                            <button label="Onayla ve Tamamla" visible="@load(each.durum eq 'BEKLEMEDE')"
+                                    style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('onaylaVeTamamla', item=each)"/>
+                            <button label="Reddet" visible="@load(each.durum eq 'BEKLEMEDE')"
+                                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('reddet', item=each)"/>
+                        </hbox>
+                    </listcell>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

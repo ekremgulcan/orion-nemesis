@@ -1,0 +1,106 @@
+<?page title="Musteri Yonetim Sistemi"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.core.vm.MusteriListesiViewModel')"
+            style="padding:16px">
+
+        <label value="Musteri Yonetim Sistemi"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <groupbox closable="false" style="margin-top:10px">
+            <caption label="Musteri Ekle / Duzenle"/>
+            <grid>
+                <columns>
+                    <column width="140px"/>
+                    <column/>
+                    <column width="140px"/>
+                    <column/>
+                </columns>
+                <rows>
+                    <row>
+                        <label value="Musteri No:"/>
+                        <textbox value="@bind(vm.musteriNo)" width="150px"/>
+                        <label value="Musteri Tipi:"/>
+                        <combobox value="@bind(vm.musteriTipi)" width="150px">
+                            <comboitem label="BIREYSEL"/>
+                            <comboitem label="KURUMSAL"/>
+                        </combobox>
+                    </row>
+                    <row>
+                        <label value="Ad Soyad/Unvan:"/>
+                        <textbox value="@bind(vm.adSoyadUnvan)" width="260px"/>
+                        <label value="TCKN/VKN:"/>
+                        <textbox value="@bind(vm.tcknVkn)" width="150px"/>
+                    </row>
+                    <row>
+                        <label value="Risk Grubu:"/>
+                        <combobox value="@bind(vm.riskGrubu)" width="150px">
+                            <comboitem label="DUSUK"/>
+                            <comboitem label="ORTA"/>
+                            <comboitem label="YUKSEK"/>
+                        </combobox>
+                        <label value="Aktif:"/>
+                        <checkbox checked="@bind(vm.aktif)"/>
+                    </row>
+                    <row>
+                        <label value="Telefon:"/>
+                        <textbox value="@bind(vm.telefon)" width="150px"/>
+                        <label value="E-Posta:"/>
+                        <textbox value="@bind(vm.email)" width="220px"/>
+                    </row>
+                </rows>
+            </grid>
+            <hbox spacing="10px" style="margin-top:10px">
+                <button label="Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('kaydet')"/>
+                <button label="Yeni Musteri" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('yeniMusteri')"/>
+            </hbox>
+        </groupbox>
+
+        <separator style="margin-top:14px"/>
+        <hbox spacing="8px" align="center" style="margin-top:6px">
+            <label value="Ara:"/>
+            <textbox value="@bind(vm.aramaMetni)" width="260px"
+                     placeholder="Musteri No / Ad Soyad / TCKN-VKN"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <listbox model="@load(vm.musteriler)" mold="paging" pageSize="20"
+                 emptyMessage="No Rows To Show" style="margin-top:10px">
+            <listhead>
+                <listheader label="Musteri No" width="110px"/>
+                <listheader label="Ad Soyad / Unvan"/>
+                <listheader label="Musteri Tipi" width="100px"/>
+                <listheader label="TCKN/VKN" width="110px"/>
+                <listheader label="Risk Grubu" width="90px"/>
+                <listheader label="Telefon" width="120px"/>
+                <listheader label="E-Posta" width="170px"/>
+                <listheader label="Aktif" width="60px"/>
+                <listheader label="Aksiyon" width="140px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.musteriNo)"/>
+                    <listcell label="@load(each.adSoyadUnvan)"/>
+                    <listcell label="@load(each.musteriTipi)"/>
+                    <listcell label="@load(each.tcknVkn)"/>
+                    <listcell label="@load(each.riskGrubu)"/>
+                    <listcell label="@load(each.telefon)"/>
+                    <listcell label="@load(each.email)"/>
+                    <listcell label="@load(each.aktif ? 'Evet' : 'Hayir')"/>
+                    <listcell>
+                        <hbox spacing="6px">
+                            <button label="Duzenle" style="background:#e08020 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('duzenle', item=each)"/>
+                            <button label="Sil" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('sil', item=each)"/>
+                        </hbox>
+                    </listcell>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

@@ -1,0 +1,147 @@
+<?page title="Teminat Onay Ekrani"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.collateral.vm.TeminatOnayViewModel')"
+            style="padding:16px">
+
+        <label value="Teminat Onay Ekrani"
+               style="color:#e08020;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <tabbox style="margin-top:10px">
+            <tabs>
+                <tab label="Transfer Talepleri"/>
+                <tab label="Dosyali/Dosyasiz Islemler"/>
+                <tab label="Takas WebServis Hatali Talepler"/>
+                <tab label="Tamamlanmis/Iptal Edilmis Transferler"/>
+                <tab label="Problem Yonetimindeki Transferler"/>
+            </tabs>
+            <tabpanels>
+                <tabpanel>
+                    <listbox model="@load(vm.bekleyenTalepler)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri"/>
+                            <listheader label="Teminat Tipi" width="130px"/>
+                            <listheader label="Kaynak" width="90px"/>
+                            <listheader label="Hedef" width="90px"/>
+                            <listheader label="Miktar" width="100px"/>
+                            <listheader label="Durum" width="100px"/>
+                            <listheader label="Aksiyon" width="260px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.teminatTipi)"/>
+                                <listcell label="@load(each.kaynakDepo)"/>
+                                <listcell label="@load(each.hedefDepo)"/>
+                                <listcell label="@load(each.miktar)"/>
+                                <listcell label="@load(each.durum)"/>
+                                <listcell>
+                                    <hbox spacing="4px">
+                                        <button label="Onayla" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                                onClick="@command('onayla', item=each)"/>
+                                        <button label="Iptal" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                                onClick="@command('iptalEt', item=each)"/>
+                                        <button label="Revizyon" style="background:#e08020 !important;color:white !important;text-shadow:none !important"
+                                                onClick="@command('revizyonaGonder', item=each)"/>
+                                        <button label="Havuz" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                                onClick="@command('havuzaGonder', item=each)"/>
+                                    </hbox>
+                                </listcell>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.dosyaliIslemler)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri"/>
+                            <listheader label="Teminat Tipi" width="130px"/>
+                            <listheader label="Dosyali mi" width="90px"/>
+                            <listheader label="Miktar" width="100px"/>
+                            <listheader label="Durum" width="100px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.teminatTipi)"/>
+                                <listcell label="@load(each.dosyaliMi)"/>
+                                <listcell label="@load(each.miktar)"/>
+                                <listcell label="@load(each.durum)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.takasHatalilar)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri"/>
+                            <listheader label="Teminat Tipi" width="130px"/>
+                            <listheader label="Miktar" width="100px"/>
+                            <listheader label="Aciklama"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.teminatTipi)"/>
+                                <listcell label="@load(each.miktar)"/>
+                                <listcell label="@load(each.aciklama)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.tamamlananlar)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri"/>
+                            <listheader label="Miktar" width="100px"/>
+                            <listheader label="Durum" width="100px"/>
+                            <listheader label="Onay Tarihi" width="160px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.miktar)"/>
+                                <listcell label="@load(each.durum)"/>
+                                <listcell label="@load(each.onayTarihi)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.problemliler)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri"/>
+                            <listheader label="Miktar" width="100px"/>
+                            <listheader label="Durum" width="100px"/>
+                            <listheader label="Aciklama"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.miktar)"/>
+                                <listcell label="@load(each.durum)"/>
+                                <listcell label="@load(each.aciklama)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+    </window>
+</zk>

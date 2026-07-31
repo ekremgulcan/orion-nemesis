@@ -1,0 +1,90 @@
+<?page title="Yeni Kredi Optimizasyon ve Odeme Islemleri Ekrani"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.credit.vm.KrediOptimizasyonViewModel')"
+            style="padding:16px">
+
+        <label value="Yeni Kredi Optimizasyon ve Odeme Islemleri Ekrani"
+               style="color:#e08020;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <hbox spacing="10px" style="margin-top:10px">
+            <button label="Gunbasi Islemlerini Baslat ve Listeyi Getir"
+                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('gunbasiBaslat')"/>
+            <button label="Gunici Islemlerini Baslat ve Listeyi Getir"
+                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('guniciBaslat')"/>
+            <button label="Secimi Temizle"
+                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('secimiTemizle')"/>
+            <button label="Musteri Sec" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+        </hbox>
+
+        <hbox spacing="10px" align="center" style="margin-top:14px">
+            <label value="Ozkaynak Orani:"/>
+            <decimalbox value="@bind(vm.ozkaynakOrani)" cols="6"/>
+            <button label="@load(vm.surecBaslatEtiketi)"
+                    style="background:#3d8b3d !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('surecBaslat')"/>
+            <button label="Excel Olustur" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"/>
+        </hbox>
+
+        <separator style="margin-top:14px"/>
+
+        <tabbox style="margin-top:10px">
+            <tabs>
+                <tab label="@load(vm.uygunHaleGelenlerBaslik)"/>
+                <tab label="@load(vm.uygunHaleGelmeyenlerBaslik)"/>
+            </tabs>
+            <tabpanels>
+                <tabpanel>
+                    <listbox model="@load(vm.uygunHaleGelenler)" mold="paging" pageSize="20"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="120px"/>
+                            <listheader label="Hesap Adi"/>
+                            <listheader label="Ser. Bakiye" width="120px"/>
+                            <listheader label="Ozk. Orani" width="100px"/>
+                            <listheader label="Yeni Ozk. Orani" width="120px"/>
+                            <listheader label="Komposizyon"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.serbestBakiye)"/>
+                                <listcell label="@load(each.mevcutOzkaynakOrani)"/>
+                                <listcell label="@load(each.yeniOzkaynakOrani)"/>
+                                <listcell label="@load(each.komposizyon)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+                <tabpanel>
+                    <listbox model="@load(vm.uygunHaleGelmeyenler)" mold="paging" pageSize="20"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Hesap No" width="120px"/>
+                            <listheader label="Hesap Adi"/>
+                            <listheader label="Ser. Bakiye" width="120px"/>
+                            <listheader label="Ozk. Orani" width="100px"/>
+                            <listheader label="Yeni Ozk. Orani" width="120px"/>
+                            <listheader label="Komposizyon"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.serbestBakiye)"/>
+                                <listcell label="@load(each.mevcutOzkaynakOrani)"/>
+                                <listcell label="@load(each.yeniOzkaynakOrani)"/>
+                                <listcell label="@load(each.komposizyon)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+    </window>
+</zk>

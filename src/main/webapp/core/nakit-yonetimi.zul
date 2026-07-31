@@ -1,0 +1,41 @@
+<?page title="Nakit Yonetimi"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.core.vm.NakitYonetimiViewModel')"
+            style="padding:16px">
+
+        <label value="Nakit Yonetimi"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <label value="Para giris/cikis ve virman islemleri Faz 4+ kapsaminda eklenecektir. Asagida hesap bazli bakiye durumu gosterilmektedir."
+               style="color:#888;font-size:12px;margin-top:4px"/>
+        <separator/>
+
+        <hbox spacing="8px" align="center" style="margin-top:6px">
+            <label value="Ara:"/>
+            <textbox value="@bind(vm.aramaMetni)" width="260px"
+                     placeholder="Hesap No / Musteri"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <listbox model="@load(vm.bakiyeler)" mold="paging" pageSize="20"
+                 emptyMessage="No Rows To Show" style="margin-top:10px">
+            <listhead>
+                <listheader label="Hesap No" width="120px"/>
+                <listheader label="Musteri"/>
+                <listheader label="Bakiye" width="140px"/>
+                <listheader label="Blokeli Bakiye" width="140px"/>
+                <listheader label="Guncelleme Tarihi" width="160px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.account.hesapNo)"/>
+                    <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                    <listcell label="@load(each.bakiye)"/>
+                    <listcell label="@load(each.blokeliBakiye)"/>
+                    <listcell label="@load(each.guncellemeTarihi)"/>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

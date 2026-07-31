@@ -1,0 +1,89 @@
+<?page title="Hisse Grubu Tanimlama"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.risk.vm.HisseGrubuViewModel')"
+            style="padding:16px">
+
+        <label value="Hisse Grubu Tanimlama"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <groupbox closable="false" style="margin-top:10px">
+            <caption label="Grup Ekle / Duzenle"/>
+            <hbox spacing="20px">
+                <grid width="380px">
+                    <columns>
+                        <column width="120px"/>
+                        <column/>
+                    </columns>
+                    <rows>
+                        <row>
+                            <label value="Grup Kodu:"/>
+                            <textbox value="@bind(vm.grupKodu)" width="220px"/>
+                        </row>
+                        <row>
+                            <label value="Aciklama:"/>
+                            <textbox value="@bind(vm.aciklama)" width="260px"/>
+                        </row>
+                        <row>
+                            <label value="Aktif:"/>
+                            <checkbox checked="@bind(vm.aktif)"/>
+                        </row>
+                    </rows>
+                </grid>
+                <vbox>
+                    <label value="Uye Enstrumanlar:" style="font-weight:bold"/>
+                    <listbox model="@load(vm.tumEnstrumanlar)" checkmark="true" multiple="true"
+                             selectedItems="@bind(vm.secilenEnstrumanlar)"
+                             height="140px" width="260px">
+                        <template name="model">
+                            <listitem label="@load(each.sembol)"/>
+                        </template>
+                    </listbox>
+                </vbox>
+            </hbox>
+            <hbox spacing="10px" style="margin-top:10px">
+                <button label="Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('kaydet')"/>
+                <button label="Yeni Grup" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('yeniGrup')"/>
+            </hbox>
+        </groupbox>
+
+        <separator style="margin-top:14px"/>
+        <hbox spacing="8px" align="center" style="margin-top:6px">
+            <label value="Ara:"/>
+            <textbox value="@bind(vm.aramaMetni)" width="260px"
+                     placeholder="Grup Kodu / Aciklama"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <listbox model="@load(vm.gruplar)" mold="paging" pageSize="15"
+                 emptyMessage="No Rows To Show" style="margin-top:10px">
+            <listhead>
+                <listheader label="Grup Kodu" width="140px"/>
+                <listheader label="Aciklama" width="220px"/>
+                <listheader label="Uye Sayisi" width="90px"/>
+                <listheader label="Uyeler"/>
+                <listheader label="Aksiyon" width="140px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.grupKodu)"/>
+                    <listcell label="@load(each.aciklama)"/>
+                    <listcell label="@load(each.uyeler.size())"/>
+                    <listcell label="@load(each.uyelerMetni)"/>
+                    <listcell>
+                        <hbox spacing="6px">
+                            <button label="Duzenle" style="background:#e08020 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('duzenle', item=each)"/>
+                            <button label="Sil" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('sil', item=each)"/>
+                        </hbox>
+                    </listcell>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

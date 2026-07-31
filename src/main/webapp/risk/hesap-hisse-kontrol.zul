@@ -1,0 +1,93 @@
+<?page title="Kullanici/Hesap/Hisse Bazinda Kontrol"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.risk.vm.HesapHisseKontrolViewModel')"
+            style="padding:16px">
+
+        <label value="Kullanici / Hesap / Hisse Bazinda Kontrol"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <groupbox closable="false" style="margin-top:10px">
+            <caption label="Kontrol Ekle / Duzenle"/>
+            <grid>
+                <columns>
+                    <column width="140px"/>
+                    <column/>
+                    <column width="120px"/>
+                    <column/>
+                </columns>
+                <rows>
+                    <row>
+                        <label value="Kullanici Adi:"/>
+                        <textbox value="@bind(vm.kullaniciAdi)" width="180px"/>
+                        <label value="Hesap No:"/>
+                        <textbox value="@bind(vm.hesapNo)" width="150px"/>
+                    </row>
+                    <row>
+                        <label value="Enstruman:"/>
+                        <textbox value="@bind(vm.enstrumanSembol)" width="150px"/>
+                    </row>
+                    <row>
+                        <label value="Alis Izni:"/>
+                        <checkbox checked="@bind(vm.alisIzni)"/>
+                        <label value="Satis Izni:"/>
+                        <checkbox checked="@bind(vm.satisIzni)"/>
+                    </row>
+                    <row>
+                        <label value="Acik Satis Izni:"/>
+                        <checkbox checked="@bind(vm.acikSatisIzni)"/>
+                    </row>
+                </rows>
+            </grid>
+            <hbox spacing="10px" style="margin-top:10px">
+                <button label="Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('kaydet')"/>
+                <button label="Yeni Kontrol" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('yeniKontrol')"/>
+            </hbox>
+        </groupbox>
+
+        <separator style="margin-top:14px"/>
+        <hbox spacing="8px" align="center" style="margin-top:6px">
+            <label value="Ara:"/>
+            <textbox value="@bind(vm.aramaMetni)" width="260px"
+                     placeholder="Kullanici Adi / Hesap No / Enstruman"/>
+            <button label="Ara" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('ara')"/>
+        </hbox>
+
+        <listbox model="@load(vm.kontroller)" mold="paging" pageSize="15"
+                 emptyMessage="No Rows To Show" style="margin-top:10px">
+            <listhead>
+                <listheader label="Kullanici" width="130px"/>
+                <listheader label="Hesap No" width="90px"/>
+                <listheader label="Musteri"/>
+                <listheader label="Enstruman" width="90px"/>
+                <listheader label="Alis Izni" width="80px"/>
+                <listheader label="Satis Izni" width="80px"/>
+                <listheader label="Acik Satis Izni" width="100px"/>
+                <listheader label="Aksiyon" width="140px"/>
+            </listhead>
+            <template name="model">
+                <listitem>
+                    <listcell label="@load(each.user.adSoyad)"/>
+                    <listcell label="@load(each.account.hesapNo)"/>
+                    <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                    <listcell label="@load(each.instrument.sembol)"/>
+                    <listcell label="@load(each.alisIzni)"/>
+                    <listcell label="@load(each.satisIzni)"/>
+                    <listcell label="@load(each.acikSatisIzni)"/>
+                    <listcell>
+                        <hbox spacing="6px">
+                            <button label="Duzenle" style="background:#e08020 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('duzenle', item=each)"/>
+                            <button label="Sil" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('sil', item=each)"/>
+                        </hbox>
+                    </listcell>
+                </listitem>
+            </template>
+        </listbox>
+    </window>
+</zk>

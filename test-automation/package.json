@@ -1,0 +1,13 @@
+{
+  "name": "orion-test-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Manuel test-otomasyon suite'i - test-automation skill tarafindan uretilir/calistirilir. ZK (eski) ve React (nemesis-frontend, yeni) ekranlari icin puppeteer-core tabanli senaryolar.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node runner.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

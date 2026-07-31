@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orion v3 Nemesis - Agent Skill Geliştirme Süreci</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #131110;
+    --bg-alt: #17140f;
+    --surface: #1c1a16;
+    --surface-2: #221e18;
+    --border: #3a352d;
+    --border-soft: #2a261f;
+    --text: #ece7df;
+    --text-muted: #a49a8c;
+    --text-faint: #746b5e;
+    --accent: #c8793a;
+    --accent-soft: #c8793a22;
+    --accent-dim: #8a5228;
+    --font-head: 'Space Grotesk', 'Cascadia Code', 'Consolas', sans-serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+  body {
+    background-image:
+      repeating-linear-gradient(0deg, #ffffff05 0px, #ffffff05 1px, transparent 1px, transparent 44px),
+      repeating-linear-gradient(90deg, #ffffff05 0px, #ffffff05 1px, transparent 1px, transparent 44px);
+  }
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 7vh 10vw;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .slide.active { display: flex; opacity: 1; transform: translateY(0); }
+  .slide.center { justify-content: center; align-items: center; text-align: center; }
+
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: clamp(28px, 3.6vw, 46px);
+    line-height: 1.15;
+    margin: 0 0 10px 0;
+    color: var(--text);
+  }
+  .rule {
+    width: 64px; height: 3px; background: var(--accent);
+    margin: 18px 0 28px 0;
+  }
+  .subtitle {
+    font-size: 17px; color: var(--text-muted); max-width: 640px; line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  ul.bullets {
+    list-style: none; margin: 8px 0 0 0; padding: 0;
+    max-width: 800px;
+  }
+  ul.bullets li {
+    position: relative;
+    padding-left: 26px;
+    margin-bottom: 16px;
+    font-size: 16.5px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  ul.bullets li::before {
+    content: "";
+    position: absolute; left: 0; top: 8px;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+  ul.bullets li b, ul.bullets li code { color: var(--text); }
+  ul.bullets li .muted { color: var(--text-muted); }
+  code.tag {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    padding: 1px 7px;
+    color: var(--accent);
+  }
+
+  .agenda { display: flex; flex-direction: column; gap: 4px; max-width: 640px; }
+  .agenda-item {
+    display: flex; align-items: baseline; gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .agenda-item:first-child { border-top: 1px solid var(--border-soft); }
+  .agenda-num {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 15px;
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .agenda-label { font-family: var(--font-head); font-size: 20px; color: var(--text); }
+  .agenda-sub { font-size: 13.5px; color: var(--text-faint); margin-left: auto; font-family: var(--font-mono); }
+
+  .shot-wrap {
+    margin-top: 22px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 10px;
+    max-width: 78vw;
+    box-shadow: 0 20px 60px -20px #00000090;
+  }
+  .shot-wrap img {
+    display: block;
+    max-width: 100%;
+    max-height: 56vh;
+    width: auto;
+    border: 1px solid var(--border-soft);
+  }
+  .caption {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-top: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .content-row { display: flex; gap: 60px; align-items: flex-start; flex-wrap: wrap; }
+  .content-row .col-text { flex: 1 1 380px; min-width: 300px; }
+  .content-row .col-shot { flex: 1 1 420px; min-width: 320px; }
+  .content-row .shot-wrap { max-width: 100%; margin-top: 0; }
+  .content-row .shot-wrap img { max-height: 46vh; }
+
+  /* corner ticks - blueprint feel */
+  .corner { position: absolute; width: 22px; height: 22px; border-color: var(--border); opacity: 0.9; }
+  .corner.tl { top: 26px; left: 26px; border-top: 2px solid var(--accent-dim); border-left: 2px solid var(--accent-dim); }
+  .corner.br { bottom: 26px; right: 26px; border-bottom: 2px solid var(--accent-dim); border-right: 2px solid var(--accent-dim); }
+
+  .footer-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .footer-bar .brand { letter-spacing: 0.08em; }
+  .footer-bar .brand b { color: var(--accent); }
+  .footer-bar .counter { pointer-events: auto; }
+
+  .nav-btn {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    width: 42px; height: 42px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    z-index: 20;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.prev { left: 22px; }
+  .nav-btn.next { right: 22px; }
+
+  .title-slide h1 { font-size: clamp(34px, 5vw, 58px); }
+  .title-slide .subtitle { font-size: 18px; max-width: 620px; }
+  .title-slide .meta {
+    margin-top: 34px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+
+  .end-mark { font-family: var(--font-mono); color: var(--accent-dim); font-size: 13px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1 -->
+  <section class="slide center active title-slide">
+    <div class="corner tl"></div><div class="corner br"></div>
+    <div class="kicker">ORION v3 NEMESIS &nbsp;//&nbsp; AGENT SKILL GELİŞTİRME SÜRECİ</div>
+    <h1>Skill Tabanlı Geliştirme:<br/>Bir Vaka Çalışması</h1>
+    <div class="rule"></div>
+    <div class="subtitle">Mock ortam, veritabanı keşif aracı, ekran migrasyonu ve uçtan uca test otomasyonu için yazılan agent skill'lerinin kısa özeti.</div>
+    <div class="meta">// SUNUM &mdash; 1 SAYFALIK ÖZET &mdash; DETAYLAR CANLI DEMO İLE ANLATILACAK</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="kicker">01 // SKILL NEDİR</div>
+    <h1>Bir Agent Skill, Tekrar Kullanılabilir Uzmanlıktır</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li>Ajanın belirli bir görev türünde tekrar tekrar ihtiyaç duyacağı talimatları, referans dosyalarını ve çalışan script'leri bir araya getiren, <b>ihtiyaç anında yüklenen</b> bir bilgi paketidir.</li>
+      <li>Genel sohbet ya da tek seferlik işlerde değil; <b>tekrarlanan, alan bilgisi gerektiren</b> görevlerde devreye girer &mdash; bir ekran migrasyonu, bir test süreci, bir veritabanı keşfi gibi.</li>
+      <li>Amaç: ajanın her seferinde aynı bilgiyi sıfırdan yeniden keşfetmesini önlemek; <span class="muted">tutarlı ve tekrarlanabilir sonuç almak.</span></li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker">01 // İDEAL YAPISI</div>
+    <h1>Az ama Doğru Bilgi: Progressive Disclosure</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li><code class="tag">description</code> alanı en kritik alandır &mdash; ajan skill'i ne zaman çağıracağını <b>sadece bu açıklamadan</b> anlar; somut tetikleyici ifadeler içermelidir.</li>
+      <li><code class="tag">SKILL.md</code> kısa ve öz tutulur (ilk yüklenen katman); detaylı referanslar <code class="tag">references/</code>e, çalışan kod <code class="tag">scripts/</code>e ayrılır.</li>
+      <li>Derinlemesine bilgiye <b>sadece gerektiğinde</b> inilir &mdash; ajan referans dosyalarını ihtiyaç anında okur, hepsini önceden yüklemez.</li>
+      <li>Soyut kural değil, <b>kanıtlanmış çalışan örnekler</b> içerir &mdash; bu süreçte: referans test script'leri, DOM keşif notları.</li>
+    </ul>
+  </section>
+
+  <!-- 4 agenda -->
+  <section class="slide">
+    <div class="kicker">İÇİNDEKİLER</div>
+    <h1>Bu Süreçte Ne Yapıldı</h1>
+    <div class="rule"></div>
+    <div class="agenda">
+      <div class="agenda-item"><span class="agenda-num">02</span><span class="agenda-label">Mock Orion</span><span class="agenda-sub">izole test ortamı</span></div>
+      <div class="agenda-item"><span class="agenda-num">03</span><span class="agenda-label">db-explorer</span><span class="agenda-sub">subagent</span></div>
+      <div class="agenda-item"><span class="agenda-num">04</span><span class="agenda-label">Ekran Migrasyonu</span><span class="agenda-sub">ZK7 &rarr; React</span></div>
+      <div class="agenda-item"><span class="agenda-num">05</span><span class="agenda-label">Test Otomasyonu</span><span class="agenda-sub">uçtan uca E2E + rapor</span></div>
+    </div>
+  </section>
+
+  <!-- 5 mock orion -->
+  <section class="slide">
+    <div class="kicker">02 // MOCK ORION</div>
+    <h1>Gerçek Platformu Taklit Eden İzole Ortam</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li>Backend: <code class="tag">Spring Boot 2.7.18</code> (javax.persistence / javax.servlet), Java 17</li>
+      <li>Legacy arayüz: <code class="tag">ZK7</code> (.zul + ViewModel)</li>
+      <li>Veritabanı: <code class="tag">MSSQL</code>, Docker container, Flyway migration ile seed veri</li>
+      <li>Yeni arayüz: <code class="tag">React + Vite</code> (nemesis-frontend), aynı REST API'yi kullanır</li>
+      <li class="muted">Amaç: gerçek Orion v3 Nemesis platformunu bire bir yansıtan, üzerinde güvenle çalışılabilecek bağımsız bir ortam kurmak.</li>
+    </ul>
+  </section>
+
+  <!-- 6 zk screenshot -->
+  <section class="slide">
+    <div class="kicker">02 // ÖRNEK EKRAN (ZK7)</div>
+    <h1>Teminat İşlemleri &mdash; Legacy ZK7 Ekranı</h1>
+    <div class="rule"></div>
+    <div class="shot-wrap">
+      <img src="{{IMG_ZK}}" alt="ZK7 Teminat İşlemleri ekranı" />
+    </div>
+    <div class="caption">localhost:8080/collateral/teminat-transfer.zul</div>
+  </section>
+
+  <!-- 7 db-explorer -->
+  <section class="slide">
+    <div class="kicker">03 // DB-EXPLORER</div>
+    <h1>Herhangi Bir SQL Veritabanını Anlaşılır Kılan Subagent</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li><b>Read-only</b>: sadece keşif yapar, hiçbir veriyi değiştirmez.</li>
+      <li>Bağlantı bilgilerini kendi bulur; şemayı, ilişkileri, satır sayılarını çıkarır.</li>
+      <li>Kod tabanıyla (entity / repository / ekran) eşleştirip <span class="muted">"hangi tablo hangi ekrana karşılık geliyor"</span> sorusuna yanıt verir.</li>
+      <li>Çıktı: veritabanını hiç görmemiş biri için bile anlaşılır, sade bir özet.</li>
+    </ul>
+  </section>
+
+  <!-- 8 migration skill -->
+  <section class="slide">
+    <div class="kicker">04 // EKRAN MİGRASYONU</div>
+    <h1>ZK7'den React'e: Ekran Başına Güvenli Dönüşüm</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li>Mevcut ViewModel / Service'ten iş mantığı çıkarılır.</li>
+      <li>Yeni bir REST + DTO katmanı eklenir &mdash; eski ZK ekranlarına ve veritabanı şemasına <b>dokunulmaz</b>.</li>
+      <li>Orion dark-theme, 3 kolonlu tasarım sistemiyle React sayfası oluşturulur.</li>
+      <li class="muted">Sonuç: planlanan tüm ekranlar tek tek React'e taşındı &mdash; iki versiyon da yan yana çalışır durumda.</li>
+    </ul>
+  </section>
+
+  <!-- 9 react screenshot -->
+  <section class="slide">
+    <div class="kicker">04 // AYNI EKRAN, YENİ YÜZ</div>
+    <h1>Teminat İşlemleri &mdash; React Karşılığı</h1>
+    <div class="rule"></div>
+    <div class="shot-wrap">
+      <img src="{{IMG_REACT}}" alt="React Teminat İşlemleri sayfası" />
+    </div>
+    <div class="caption">localhost:5173/collateral/islemleri</div>
+  </section>
+
+  <!-- 10 test automation -->
+  <section class="slide">
+    <div class="kicker">05 // TEST OTOMASYONU</div>
+    <h1>Uçtan Uca Doğrulama: Tarayıcı + Veritabanı</h1>
+    <div class="rule"></div>
+    <ul class="bullets">
+      <li>Puppeteer ile hem ZK7 hem React ekranları sürülür &mdash; id'lere değil, <b>görünür metne / DOM sırasına</b> güvenilir.</li>
+      <li>Sonuç, MSSQL'de doğrudan <code class="tag">sqlcmd</code> sorgusuyla doğrulanır.</li>
+      <li>Çapraz ekran kontrolü: bir ekranda oluşturulan kayıt, ilgili onay/görünüm ekranında da doğrulanır.</li>
+      <li class="muted">Script'ler <b>kalıcı</b>: aynı senaryo tekrar istendiğinde yeniden yazılmaz, doğrudan çalıştırılır &mdash; zamanla büyüyen bir regresyon suite'i.</li>
+    </ul>
+  </section>
+
+  <!-- 11 pass report screenshot -->
+  <section class="slide">
+    <div class="kicker">05 // ÖRNEK ÇIKTI</div>
+    <div class="content-row">
+      <div class="col-text">
+        <h1>Her Çalıştırmadan Kalıcı Bir HTML Rapor</h1>
+        <div class="rule"></div>
+        <ul class="bullets">
+          <li>Kritik adımların ekran görüntüsü</li>
+          <li>Çalıştırılan SQL sorgusu + dönen satırlar</li>
+          <li>PASS/FAIL özeti ve toplam süre</li>
+          <li class="muted">Orion'un kendi tema diliyle üretilir</li>
+        </ul>
+      </div>
+      <div class="col-shot">
+        <div class="shot-wrap"><img src="{{IMG_PASS}}" alt="Örnek PASS raporu" /></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 fail report screenshot -->
+  <section class="slide">
+    <div class="kicker">05 // HATA DURUMUNDA</div>
+    <div class="content-row">
+      <div class="col-text">
+        <h1>Sadece FAIL Değil: Nerede, Neden, Nasıl Düzelir</h1>
+        <div class="rule"></div>
+        <ul class="bullets">
+          <li>Console / network hataları otomatik yakalanır (yakalanmamış JS hataları, 4xx/5xx yanıtlar)</li>
+          <li>Başarısız her adımda <b>"Neden başarısız oldu? / Potansiyel çözüm"</b> kutusu gösterilir</li>
+          <li class="muted">Bu bir başlangıç noktasıdır &mdash; nihai teşhis değil, ajan hala kendi değerlendirmesini yapar</li>
+        </ul>
+      </div>
+      <div class="col-shot">
+        <div class="shot-wrap"><img src="{{IMG_FAIL}}" alt="Örnek FAIL raporu" /></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 closing -->
+  <section class="slide center">
+    <div class="corner tl"></div><div class="corner br"></div>
+    <div class="kicker">TEŞEKKÜRLER</div>
+    <h1>Sorular?</h1>
+    <div class="end-mark">// demo canlı olarak devam edecek</div>
+  </section>
+
+  <div class="footer-bar">
+    <span class="brand">ORION v3 NEMESIS &nbsp;/&nbsp; <b>AGENT SKILLS</b></span>
+    <span class="counter"><span id="cur">1</span> / <span id="total">13</span></span>
+  </div>
+  <button class="nav-btn prev" onclick="go(-1)">&#8592;</button>
+  <button class="nav-btn next" onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll(".slide");
+  let idx = 0;
+  document.getElementById("total").textContent = slides.length;
+  function render() {
+    slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+    document.getElementById("cur").textContent = idx + 1;
+  }
+  function go(delta) {
+    idx = Math.min(Math.max(idx + delta, 0), slides.length - 1);
+    render();
+  }
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") go(1);
+    if (e.key === "ArrowLeft" || e.key === "PageUp") go(-1);
+  });
+  render();
+</script>
+</body>
+</html>

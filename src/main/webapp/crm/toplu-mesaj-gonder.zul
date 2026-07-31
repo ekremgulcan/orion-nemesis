@@ -1,0 +1,76 @@
+<?page title="Toplu Mesaj Gonder"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.crm.vm.TopluMesajViewModel')"
+            style="padding:16px">
+
+        <grid style="width:900px">
+            <columns>
+                <column width="120px"/>
+                <column/>
+            </columns>
+            <rows>
+                <row>
+                    <label value="Kampanya"/>
+                    <combobox model="@load(vm.kampanyalar)" selectedItem="@bind(vm.seciliKampanya)">
+                        <template name="model">
+                            <comboitem label="@load(each.kampanyaAdi)"/>
+                        </template>
+                    </combobox>
+                </row>
+                <row>
+                    <label value="Alicilar"/>
+                    <vbox>
+                        <radiogroup selectedItem="@bind(vm.aliciGrubu)">
+                            <hbox spacing="14px">
+                                <radio label="Hepsi" value="HEPSI"/>
+                                <radio label="Onaylayanlar" value="ONAYLAYANLAR"/>
+                                <radio label="Onaylamayanlar" value="ONAYLAMAYANLAR"/>
+                                <radio label="Aksiyon Almayanlar" value="AKSIYON_ALMAYANLAR"/>
+                            </hbox>
+                            <hbox align="start" style="margin-top:6px">
+                                <radio label="Belirli Hesaplar:" value="BELIRLI_HESAPLAR"/>
+                                <textbox multiline="true" rows="3" width="400px"
+                                         value="@bind(vm.belirliHesaplar)"
+                                         disabled="@load(vm.aliciGrubu ne 'BELIRLI_HESAPLAR')"
+                                         placeholder="Hesap numaralarini virgul veya yeni satirla giriniz"/>
+                            </hbox>
+                        </radiogroup>
+                    </vbox>
+                </row>
+                <row>
+                    <label value="Yontem"/>
+                    <radiogroup selectedItem="@bind(vm.yontem)">
+                        <hbox spacing="14px">
+                            <radio label="E-Mail" value="EMAIL"/>
+                            <radio label="SMS" value="SMS"/>
+                        </hbox>
+                    </radiogroup>
+                </row>
+                <row>
+                    <label value="Mesaj Icerigi"/>
+                    <vbox>
+                        <radiogroup selectedItem="@bind(vm.mesajIcerigiTipi)">
+                            <radio label="E-Mail/SMS Sablonuyla Ayni" value="SABLON"/>
+                            <hbox align="start" style="margin-top:6px">
+                                <radio label="Yeni:" value="YENI"/>
+                                <textbox multiline="true" rows="3" width="400px"
+                                         value="@bind(vm.yeniMesajIcerigi)"
+                                         disabled="@load(vm.mesajIcerigiTipi eq 'SABLON')"/>
+                            </hbox>
+                        </radiogroup>
+                    </vbox>
+                </row>
+            </rows>
+        </grid>
+
+        <separator style="margin-top:14px"/>
+
+        <hbox style="margin-top:10px">
+            <button label="Gonder" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('gonder')"/>
+        </hbox>
+
+        <label value="@load(vm.sonucMesaji)" style="color:#2f8f4f;margin-top:10px;font-weight:bold"/>
+    </window>
+</zk>

@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-border-strong: var(--border-strong);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-accent-muted: var(--accent-muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-foreground-muted: var(--foreground-muted);
+    --color-foreground-faint: var(--foreground-faint);
+    --color-background: var(--background);
+    --color-surface: var(--surface);
+    --color-surface-elevated: var(--surface-elevated);
+    --color-success: var(--success);
+    --color-success-muted: var(--success-muted);
+    --color-danger: var(--danger);
+    --color-danger-muted: var(--danger-muted);
+    --color-warning: var(--warning);
+    --color-warning-muted: var(--warning-muted);
+    --color-info: var(--info);
+    --color-info-muted: var(--info-muted);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Orion v3 Nemesis - nemesis-frontend design tokens.
+ * Dark theme is the default/primary theme (financial back-office terminal
+ * tone - see orion-screen-migration skill's design-system.md reference).
+ * The .dark class is applied to <html> by default in App.tsx.
+ */
+:root {
+    --background: #f4f6fa;
+    --foreground: #10192b;
+    --foreground-muted: #52607a;
+    --foreground-faint: #8b96a8;
+    --surface: #ffffff;
+    --surface-elevated: #ffffff;
+    --card: #ffffff;
+    --card-foreground: #10192b;
+    --popover: #ffffff;
+    --popover-foreground: #10192b;
+    --primary: #b3801f;
+    --primary-foreground: #ffffff;
+    --secondary: #eef1f6;
+    --secondary-foreground: #10192b;
+    --muted: #eef1f6;
+    --muted-foreground: #52607a;
+    --accent: #b3801f;
+    --accent-foreground: #ffffff;
+    --accent-muted: #f6ecd6;
+    --destructive: #c33c3c;
+    --border: #dfe4ec;
+    --border-strong: #c3cbd9;
+    --input: #dfe4ec;
+    --ring: #b3801f;
+    --success: #1f8a45;
+    --success-muted: #e6f4ea;
+    --danger: #c33c3c;
+    --danger-muted: #fbeaea;
+    --warning: #b3801f;
+    --warning-muted: #f6ecd6;
+    --info: #2f6fad;
+    --info-muted: #e8f1fb;
+    --chart-1: #b3801f;
+    --chart-2: #2f6fad;
+    --chart-3: #1f8a45;
+    --chart-4: #c33c3c;
+    --chart-5: #6b7a94;
+    --radius: 0.5rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #10192b;
+    --sidebar-primary: #b3801f;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f6ecd6;
+    --sidebar-accent-foreground: #10192b;
+    --sidebar-border: #dfe4ec;
+    --sidebar-ring: #b3801f;
+}
+
+.dark {
+    --background: #0b1220;
+    --foreground: #e7ecf5;
+    --foreground-muted: #9aa7bd;
+    --foreground-faint: #6b7a94;
+    --surface: #111a2e;
+    --surface-elevated: #16233d;
+    --card: #111a2e;
+    --card-foreground: #e7ecf5;
+    --popover: #16233d;
+    --popover-foreground: #e7ecf5;
+    --primary: #d9a441;
+    --primary-foreground: #1a1305;
+    --secondary: #16233d;
+    --secondary-foreground: #e7ecf5;
+    --muted: #16233d;
+    --muted-foreground: #9aa7bd;
+    --accent: #d9a441;
+    --accent-foreground: #1a1305;
+    --accent-muted: #3a3016;
+    --destructive: #d94f4f;
+    --border: #26324a;
+    --border-strong: #34435f;
+    --input: #26324a;
+    --ring: #d9a441;
+    --success: #3ba55d;
+    --success-muted: #16291c;
+    --danger: #d94f4f;
+    --danger-muted: #2e1717;
+    --warning: #d9a441;
+    --warning-muted: #3a3016;
+    --info: #4a90d9;
+    --info-muted: #16233a;
+    --chart-1: #d9a441;
+    --chart-2: #4a90d9;
+    --chart-3: #3ba55d;
+    --chart-4: #d94f4f;
+    --chart-5: #9aa7bd;
+    --sidebar: #0b1220;
+    --sidebar-foreground: #e7ecf5;
+    --sidebar-primary: #d9a441;
+    --sidebar-primary-foreground: #1a1305;
+    --sidebar-accent: #3a3016;
+    --sidebar-accent-foreground: #e7ecf5;
+    --sidebar-border: #26324a;
+    --sidebar-ring: #d9a441;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* Tabular numbers for anything showing money/account numbers/percentages */
+.tnum {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}

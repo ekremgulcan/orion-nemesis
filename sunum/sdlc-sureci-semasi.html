@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title> SDLC Süreç Şeması</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #131110;
+    --bg-alt: #17140f;
+    --surface: #1c1a16;
+    --surface-2: #221e18;
+    --border: #3a352d;
+    --border-soft: #2a261f;
+    --text: #ece7df;
+    --text-muted: #a49a8c;
+    --text-faint: #746b5e;
+
+    --accent: #c8793a;
+    --accent-dim: #8a5228;
+
+    --faz1: #c8793a;      --faz1-dim: #8a5228;   --faz1-rgb: 200,121,58;
+    --faz2: #d4a72c;      --faz2-dim: #8f7420;   --faz2-rgb: 212,167,44;
+    --faz3: #6f9bb0;      --faz3-dim: #4d6b78;   --faz3-rgb: 111,155,176;
+    --faz4: #b6533f;      --faz4-dim: #7a3a2c;   --faz4-rgb: 182,83,63;
+    --faz5: #7a9b5c;      --faz5-dim: #556e40;   --faz5-rgb: 122,155,92;
+    --gold: #e0b34a;      --gold-dim: #a17f2e;   --gold-rgb: 224,179,74;
+
+    --font-head: 'Space Grotesk', 'Cascadia Code', 'Consolas', sans-serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+  body {
+    background-image:
+      repeating-linear-gradient(0deg, #ffffff05 0px, #ffffff05 1px, transparent 1px, transparent 44px),
+      repeating-linear-gradient(90deg, #ffffff05 0px, #ffffff05 1px, transparent 1px, transparent 44px);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .page { position: relative; max-width: 900px; margin: 0 auto; padding: 64px 32px 80px; }
+
+  .corner { position: fixed; width: 22px; height: 22px; opacity: 0.9; z-index: 2; }
+  .corner.tl { top: 26px; left: 26px; border-top: 2px solid var(--accent-dim); border-left: 2px solid var(--accent-dim); }
+  .corner.br { bottom: 26px; right: 26px; border-bottom: 2px solid var(--accent-dim); border-right: 2px solid var(--accent-dim); }
+
+  .kicker {
+    font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.14em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--font-head); font-weight: 600;
+    font-size: clamp(28px, 4.4vw, 42px); line-height: 1.15; margin: 0 0 10px 0; color: var(--text);
+  }
+  .rule { width: 64px; height: 3px; background: var(--accent); margin: 18px 0 24px 0; }
+  .subtitle { font-size: 16px; color: var(--text-muted); max-width: 640px; line-height: 1.65; }
+
+  /* ---- legend ---- */
+  .legend {
+    margin-top: 40px; padding: 20px 24px; background: var(--surface);
+    border: 1px solid var(--border-soft);
+  }
+  .legend-title { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 14px; text-transform: uppercase; }
+  .legend-items { display: flex; flex-wrap: wrap; gap: 20px 28px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-muted); }
+  .swatch { width: 18px; height: 18px; flex-shrink: 0; display: inline-block; }
+  .swatch.rect { background: var(--faz1); border-radius: 4px; }
+  .swatch.hex { background: var(--gold); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+  .swatch.dia { background: var(--faz3); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+  .swatch.dashed { background: transparent; border: 2px dashed var(--faz2); border-radius: 4px; }
+  .swatch.rework { background: transparent; border: 2px dashed var(--faz4); border-radius: 4px; }
+
+  /* ---- flow ---- */
+  .flow { margin-top: 44px; }
+
+  .phase {
+    position: relative; margin-bottom: 40px; padding: 26px 26px 6px;
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(var(--phase-rgb), 0.07), rgba(var(--phase-rgb), 0) 55%);
+  }
+  .phase-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 22px; }
+  .phase-num { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; color: var(--phase); padding: 3px 9px; border: 1px solid var(--phase-dim); }
+  .phase-name { font-family: var(--font-head); font-weight: 600; font-size: 20px; color: var(--text); }
+
+  .step {
+    display: flex; gap: 20px;
+    opacity: 0; transform: translateY(10px);
+    animation: fadeInUp 0.5s ease forwards;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+  .rail { display: flex; flex-direction: column; align-items: center; width: 44px; flex-shrink: 0; }
+  .dot {
+    width: 38px; height: 38px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--bg-alt);
+    background: var(--phase);
+    box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--border-soft);
+  }
+  .dot.rect { border-radius: 8px; }
+  .dot.hex { background: var(--gold); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+  .dot.dia { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+  .dot.optional { background: transparent; border: 2px dashed var(--phase); color: var(--phase); }
+  .line { width: 2px; flex: 1; min-height: 22px; background: var(--phase-dim); margin: 2px 0; }
+  .step:last-child .line { display: none; }
+
+  .card { flex: 1; padding: 16px 20px; margin-bottom: 22px; background: var(--surface); border: 1px solid var(--border-soft); border-left: 3px solid var(--phase); min-width: 0; }
+  .card.approval { border-left-color: var(--gold); }
+  .card.optional { border-left-style: dashed; border: 1px dashed var(--border); border-left: 3px dashed var(--phase); }
+  .card.decision { border-left-color: var(--faz3); background: var(--surface-2); }
+
+  .card-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--font-head); font-weight: 600; font-size: 15.5px; color: var(--text); margin-bottom: 6px; }
+  .card p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-muted); }
+  .card .caption { margin-top: 8px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+
+  .tag {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 8px; border: 1px solid; line-height: 1.6;
+  }
+  .tag.gold { color: var(--gold); border-color: var(--gold-dim); background: rgba(var(--gold-rgb), 0.08); }
+  .tag.optional { color: var(--faz2); border-color: var(--faz2-dim); background: rgba(var(--faz2-rgb), 0.08); }
+  .tag.decision { color: var(--faz3); border-color: var(--faz3-dim); background: rgba(var(--faz3-rgb), 0.08); }
+
+  .outcomes { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .outcome { flex: 1 1 220px; padding: 10px 14px; border: 1px dashed var(--border); font-size: 13px; line-height: 1.5; }
+  .outcome .label { display: block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .outcome.yes { border-color: var(--faz5-dim); background: rgba(var(--faz5-rgb), 0.06); }
+  .outcome.yes .label { color: var(--faz5); }
+  .outcome.no { border-color: var(--faz4-dim); background: rgba(var(--faz4-rgb), 0.07); }
+  .outcome.no .label { color: var(--faz4); }
+  .outcome .rework-icon { margin-right: 4px; }
+
+  .milestone {
+    display: flex; align-items: center; gap: 20px;
+    margin-top: 8px; padding: 24px 28px;
+    border: 1px solid var(--gold-dim);
+    background: linear-gradient(180deg, rgba(var(--gold-rgb), 0.1), rgba(var(--gold-rgb), 0.02));
+    box-shadow: 0 0 0 1px rgba(var(--gold-rgb), 0.15);
+    opacity: 0; transform: translateY(10px);
+    animation: fadeInUp 0.5s ease forwards; animation-delay: 1200ms;
+  }
+  .milestone-badge {
+    width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--bg-alt); background: var(--gold); border-radius: 50%;
+  }
+  .milestone-title { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; margin-bottom: 6px; }
+  .milestone-text { font-family: var(--font-head); font-weight: 600; font-size: 18px; color: var(--text); }
+  .milestone-sub { font-size: 13.5px; color: var(--text-muted); margin-top: 4px; }
+
+  .footer-bar {
+    margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border-soft);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text-faint);
+  }
+  .footer-bar .brand b { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .page { padding: 48px 16px 60px; }
+    .step { gap: 12px; }
+    .rail { width: 34px; }
+    .dot { width: 32px; height: 32px; font-size: 11.5px; }
+    .card { padding: 14px 16px; }
+    .milestone { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+  @media print {
+    .step, .milestone { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .corner { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="corner tl"></div><div class="corner br"></div>
+<div class="page">
+
+  <header class="hero">
+    <div class="kicker"> SÜREÇ ŞEMASI</div>
+    <h1>Yazılım Geliştirme Yaşam Döngüsü</h1>
+    <div class="rule"></div>
+    <p class="subtitle">Gelen isterin kapsam dokümanına dönüşmesinden canlı ortam kontrollerine kadar izlenen uçtan uca SDLC süreci; onay noktaları, karar aşamaları ve revizyon döngüleriyle birlikte.</p>
+  </header>
+
+  <section class="legend">
+    <div class="legend-title">Gösterim</div>
+    <div class="legend-items">
+      <div class="legend-item"><span class="swatch rect"></span>Süreç Adımı</div>
+      <div class="legend-item"><span class="swatch hex"></span>Onay Noktası</div>
+      <div class="legend-item"><span class="swatch dia"></span>Karar Noktası</div>
+      <div class="legend-item"><span class="swatch dashed"></span>Koşullu / Opsiyonel Adım</div>
+      <div class="legend-item"><span class="swatch rework"></span>Revizyon Döngüsü</div>
+    </div>
+  </section>
+
+  <main class="flow">
+
+    <!-- FAZ 1 -->
+    <section class="phase" style="--phase: var(--faz1); --phase-dim: var(--faz1-dim); --phase-rgb: var(--faz1-rgb);">
+      <div class="phase-head"><span class="phase-num">FAZ 01</span><span class="phase-name">Talep &amp; Kapsam Analizi</span></div>
+
+      <div class="step" style="--i:1">
+        <div class="rail"><div class="dot rect">1</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Kapsam Dokümanı Hazırlığı</div>
+          <p>Gelen isterler doğrultusunda kapsam dokümanı hazırlanır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:2">
+        <div class="rail"><div class="dot hex">2</div><div class="line"></div></div>
+        <div class="card approval">
+          <div class="card-title">Kapsam Dokümanı Onayı <span class="tag gold">Onay</span></div>
+          <p>Kapsam dokümanına onay alınır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:3">
+        <div class="rail"><div class="dot rect">3</div></div>
+        <div class="card">
+          <div class="card-title">Detay Analiz Çalışmaları</div>
+          <p>Detay analiz çalışmaları yapılır.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAZ 2 -->
+    <section class="phase" style="--phase: var(--faz2); --phase-dim: var(--faz2-dim); --phase-rgb: var(--faz2-rgb);">
+      <div class="phase-head"><span class="phase-num">FAZ 02</span><span class="phase-name">Teknik Analiz &amp; Mimari</span></div>
+
+      <div class="step" style="--i:4">
+        <div class="rail"><div class="dot rect">4</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Teknik Analiz &amp; Mimari Çalışmalar</div>
+          <p>Teknik analiz ve mimari çalışmalar yapılır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:5">
+        <div class="rail"><div class="dot hex">5</div><div class="line"></div></div>
+        <div class="card approval">
+          <div class="card-title">Analiz Onayı <span class="tag gold">Onay</span></div>
+          <p>Analiz onayı alınır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:6">
+        <div class="rail"><div class="dot optional">6</div></div>
+        <div class="card optional">
+          <div class="card-title">Mimari Tasarım Onayı &amp; Sunum <span class="tag optional">Koşullu</span></div>
+          <p>Gerekli durumlarda mimari tasarım onayı alınır ve sunum yapılır.</p>
+          <div class="caption">Yalnızca gerekli görülen projelerde uygulanır.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAZ 3 -->
+    <section class="phase" style="--phase: var(--faz3); --phase-dim: var(--faz3-dim); --phase-rgb: var(--faz3-rgb);">
+      <div class="phase-head"><span class="phase-num">FAZ 03</span><span class="phase-name">Geliştirme &amp; Kalite</span></div>
+
+      <div class="step" style="--i:7">
+        <div class="rail"><div class="dot rect">7</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Geliştirme Başlangıcı</div>
+          <p>Geliştirmelere başlanır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:8">
+        <div class="rail"><div class="dot rect">8</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Geliştirici Testi / Unit Test</div>
+          <p>Geliştirici testi / unit test yapılır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:9">
+        <div class="rail"><div class="dot rect">9</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Code Review &amp; Statik Kod Analizi</div>
+          <p>Code review yapılır, kod analizi araçlarıyla inceleme yapılabilir.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:10">
+        <div class="rail"><div class="dot rect">10</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Test Dokümanı Hazırlığı</div>
+          <p>Test dokümanı oluşturulur.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:11">
+        <div class="rail"><div class="dot rect">11</div></div>
+        <div class="card">
+          <div class="card-title">Analist Testi</div>
+          <p>Analist testi yapılır.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAZ 4 -->
+    <section class="phase" style="--phase: var(--faz4); --phase-dim: var(--faz4-dim); --phase-rgb: var(--faz4-rgb);">
+      <div class="phase-head"><span class="phase-num">FAZ 04</span><span class="phase-name">Kullanıcı Kabul &amp; Sürüm</span></div>
+
+      <div class="step" style="--i:12">
+        <div class="rail"><div class="dot rect">12</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Kullanıcı Kabul Testi (UAT)</div>
+          <p>Yapılan çalışmalar kullanıcı kabul testine verilir.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:13">
+        <div class="rail"><div class="dot dia">?</div><div class="line"></div></div>
+        <div class="card decision">
+          <div class="card-title">Karar: Test Ortamında Sorun Var mı? <span class="tag decision">Karar</span></div>
+          <div class="outcomes">
+            <div class="outcome no"><span class="label">Hayır — Sorun Yok</span>Geliştirmeler sürüm ortamına alınır, sürece devam edilir.</div>
+            <div class="outcome yes"><span class="label rework-icon">&#8634; Evet — Sorun Var</span>Faz 03'teki ilgili geliştirme adımına dönülür, düzeltme yapılır.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" style="--i:14">
+        <div class="rail"><div class="dot rect">14</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Sürüm Ortamına Alma</div>
+          <p>Test ortamında bir sorun olmaması durumunda geliştirmeler sürüm ortamına alınır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:15">
+        <div class="rail"><div class="dot rect">15</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Sürüm Ortamı Testi</div>
+          <p>Sürüm ortamında tekrar test yapılır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:16">
+        <div class="rail"><div class="dot dia">?</div></div>
+        <div class="card decision">
+          <div class="card-title">Karar: Hata Var mı? <span class="tag decision">Karar</span></div>
+          <div class="outcomes">
+            <div class="outcome no"><span class="label">Hayır — Hata Yok</span>Canlı ortama geçiş yapılır.</div>
+            <div class="outcome yes"><span class="label rework-icon">&#8634; Evet — Hata Var</span>Sürüm öncesi ilgili adıma dönülür, düzeltme yapılır.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAZ 5 -->
+    <section class="phase" style="--phase: var(--faz5); --phase-dim: var(--faz5-dim); --phase-rgb: var(--faz5-rgb);">
+      <div class="phase-head"><span class="phase-num">FAZ 05</span><span class="phase-name">Canlı Ortam</span></div>
+
+      <div class="step" style="--i:17">
+        <div class="rail"><div class="dot rect">17</div><div class="line"></div></div>
+        <div class="card">
+          <div class="card-title">Canlı Ortama Geçiş</div>
+          <p>Hata olmaması durumunda canlı ortama geçişi yapılır.</p>
+        </div>
+      </div>
+
+      <div class="step" style="--i:18">
+        <div class="rail"><div class="dot rect">18</div></div>
+        <div class="card">
+          <div class="card-title">Canlı Ortam Kontrolleri</div>
+          <p>Canlı ortam kontrolleri yapılır.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="milestone">
+      <div class="milestone-badge">&#10003;</div>
+      <div>
+        <div class="milestone-title">Milestone</div>
+        <div class="milestone-text">Süreç Tamamlandı</div>
+        <div class="milestone-sub">Talep, kapsam dokümanı hazırlığından canlı ortam kontrollerine kadar tüm SDLC adımları başarıyla tamamlanmıştır.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer-bar">
+    <span class="brand"><b>SDLC SÜREÇ ŞEMASI</b></span>
+    <span>v1.0</span>
+  </footer>
+
+</div>
+</body>
+</html>
