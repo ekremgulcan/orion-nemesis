@@ -1,0 +1,121 @@
+<?page title="Bildirim Izleme"?>
+<zk xmlns:n="native">
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.notification.vm.BildirimIzlemeViewModel')"
+            style="padding:16px">
+
+        <label value="Bildirim Izleme Ekrani"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+        <separator/>
+
+        <tabbox style="margin-top:10px">
+            <tabs>
+                <tab label="Bugunku Bildirimler"/>
+                <tab label="@load(vm.gecmisBildirimlerBaslik)"/>
+            </tabs>
+            <tabpanels>
+                <!-- Bugunku Bildirimler: filtresiz, salt-okunur -->
+                <tabpanel>
+                    <listbox model="@load(vm.bugunkuBildirimler)" mold="paging" pageSize="20"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Tarih" width="85px" style="white-space:normal"/>
+                            <listheader label="Saat" width="95px" style="white-space:normal"/>
+                            <listheader label="Yatirimci No" width="70px" style="white-space:normal"/>
+                            <listheader label="Kullanici Adi" width="95px" style="white-space:normal"/>
+                            <listheader label="Bildirim Tipi" width="150px" style="white-space:normal"/>
+                            <listheader label="Mesaj" width="300px" hflex="1" style="white-space:normal"/>
+                            <listheader label="Durum" width="70px" style="white-space:normal"/>
+                            <listheader label="Deneme Adedi" width="80px" style="white-space:normal"/>
+                            <listheader label="Hata Mesaji" width="130px" style="white-space:normal"/>
+                            <listheader label="Bildirim Id" width="75px" style="white-space:normal"/>
+                            <listheader label="Sablon Id" width="55px" style="white-space:normal"/>
+                            <listheader label="Bildirim Log ID (UUID)" width="190px" style="white-space:normal"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(vm.getTarih(each))"/>
+                                <listcell label="@load(vm.getSaat(each))"/>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.user.kullaniciAdi)"/>
+                                <listcell label="@load(each.notifHeader)"/>
+                                <listcell label="@load(each.notifMessage)"/>
+                                <listcell label="@load(each.status)"
+                                          style="@load(each.status eq 'SUCCESS' ? 'color:#3d8b3d;font-weight:bold' : 'color:#c85c5c;font-weight:bold')"/>
+                                <listcell label="@load(each.retryCount)"/>
+                                <listcell label="@load(each.errorDescription)"/>
+                                <listcell label="@load(each.id)"/>
+                                <listcell label="@load(each.templateId)"/>
+                                <listcell label="@load(each.uuid)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <!-- Gecmis Bildirimler: tarih araligi + serbest metin filtreleri -->
+                <tabpanel>
+                    <n:div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+                        <hbox spacing="8px" align="center" style="flex-wrap:wrap">
+                            <datebox value="@bind(vm.baslangicTarihi)" width="130px"/>
+                            <datebox value="@bind(vm.bitisTarihi)" width="130px"/>
+                            <textbox value="@bind(vm.yatirimciNo)" placeholder="Yatirimci No" width="120px"/>
+                            <textbox value="@bind(vm.kullaniciAdi)" placeholder="Kullanici Adi" width="120px"/>
+                            <combobox value="@bind(vm.durum)" placeholder="Durum" width="110px">
+                                <comboitem label="SUCCESS"/>
+                                <comboitem label="FAIL"/>
+                            </combobox>
+                            <textbox value="@bind(vm.bildirimTipi)" placeholder="Bildirim Tipi" width="170px"/>
+                            <label value="Sayfa Basina Satir:"/>
+                            <combobox value="@bind(vm.sayfaBasinaSatir)" width="70px">
+                                <comboitem label="20" value="20"/>
+                                <comboitem label="50" value="50"/>
+                                <comboitem label="100" value="100"/>
+                            </combobox>
+                            <button label="Listele" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('listele')"/>
+                            <button label="Temizle" style="background:#8a8f98 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('temizle')"/>
+                        </hbox>
+                        <button label="Rapor Olustur" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('raporOlustur')"/>
+                    </n:div>
+
+                    <listbox model="@load(vm.gecmisBildirimler)" mold="paging" pageSize="@load(vm.sayfaBasinaSatir)"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Tarih" width="85px" style="white-space:normal"/>
+                            <listheader label="Saat" width="95px" style="white-space:normal"/>
+                            <listheader label="Yatirimci No" width="70px" style="white-space:normal"/>
+                            <listheader label="Kullanici Adi" width="95px" style="white-space:normal"/>
+                            <listheader label="Bildirim Tipi" width="150px" style="white-space:normal"/>
+                            <listheader label="Mesaj" width="300px" hflex="1" style="white-space:normal"/>
+                            <listheader label="Durum" width="70px" style="white-space:normal"/>
+                            <listheader label="Deneme Adedi" width="80px" style="white-space:normal"/>
+                            <listheader label="Hata Mesaji" width="130px" style="white-space:normal"/>
+                            <listheader label="Bildirim Id" width="75px" style="white-space:normal"/>
+                            <listheader label="Sablon Id" width="55px" style="white-space:normal"/>
+                            <listheader label="Bildirim Log ID (UUID)" width="190px" style="white-space:normal"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(vm.getTarih(each))"/>
+                                <listcell label="@load(vm.getSaat(each))"/>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.user.kullaniciAdi)"/>
+                                <listcell label="@load(each.notifHeader)"/>
+                                <listcell label="@load(each.notifMessage)"/>
+                                <listcell label="@load(each.status)"
+                                          style="@load(each.status eq 'SUCCESS' ? 'color:#3d8b3d;font-weight:bold' : 'color:#c85c5c;font-weight:bold')"/>
+                                <listcell label="@load(each.retryCount)"/>
+                                <listcell label="@load(each.errorDescription)"/>
+                                <listcell label="@load(each.id)"/>
+                                <listcell label="@load(each.templateId)"/>
+                                <listcell label="@load(each.uuid)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+    </window>
+</zk>

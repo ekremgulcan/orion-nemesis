@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils"
  */
 function statusToneClasses(durum: string): string {
   const upper = durum.toUpperCase()
-  if (upper === "TAMAMLANDI" || upper === "ONAYLANDI") {
+  if (upper === "TAMAMLANDI" || upper === "ONAYLANDI" || upper === "SUCCESS") {
     return "bg-success-muted text-success border-success/30"
   }
-  if (upper === "IPTAL" || upper === "REDDEDILDI" || upper === "HATA" || upper === "TAKAS_HATALI" || upper === "PROBLEM") {
+  if (upper === "IPTAL" || upper === "REDDEDILDI" || upper === "HATA" || upper === "TAKAS_HATALI" || upper === "PROBLEM" || upper === "FAIL") {
     return "bg-danger-muted text-danger border-danger/30"
   }
   if (upper === "BEKLEMEDE" || upper === "REVIZYONDA" || upper === "HAVUZDA") {

@@ -43,6 +43,9 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V27__seed_scale_crm.sql | Veri hacmi buyutme: +2 kampanya, +90 hedef hesap, +30 mesaj |
 | V28__seed_scale_workflow.sql | Veri hacmi buyutme: +15 surec, +15 gorev |
 | V29__seed_scale_meta_position.sql | Veri hacmi buyutme: +50 pozisyon anlik goruntusu |
+| V31__notification_event_schema.sql | Bildirim Izleme modulu: notification_events |
+| V32__seed_notification_event.sql | Mock veri: 22 bildirim log kaydi (bugun + son 10 gun, SUCCESS/FAIL karisik) |
+| V33__reseed_notification_event_ids.sql | notification_events.event_id identity'sini 120700'den baslayacak sekilde yeniden tohumlar (Bildirim Id ekranda 6 haneli gorunmeli) |
 
 ## Varlik Iliski Ozeti (ER)
 
@@ -394,6 +397,36 @@ CREATE TABLE position_snapshots (
     miktar            DECIMAL(18,4) NOT NULL,
     referans_fiyat    DECIMAL(18,4) NOT NULL,
     kayit_tarihi      DATETIME2     NOT NULL DEFAULT SYSUTCDATETIME()
+);
+```
+
+### Bildirim Izleme (V31)
+
+Ekran: "Bildirim Izleme" (Musteri Iletisim Panosu altinda)
+
+**notification_events** - Sablon bazli, hesap/kullanici bazinda gonderilen
+emir bildirimlerinin (emir gerceklesme, emir durum degisikligi vb.)
+gonderim log kaydi. Harici bir bildirim servisinin ("CUSTOMER NOTIF")
+`GET /events` uc noktasindaki sozlesmeye (`eventId`/`templateId`/
+`target`/`notifHeader`/`notifMessage`/`status`/`retryCount`/
+`errorDescription`/`logDate`/`created`/`uuid`) esdeger; `account_id`
+(Yatirimci No) ekranin kendi ihtiyaci icin eklenen zenginlestirilmis bir
+alandir - harici sozlesmede sadece `target` (kullanici adi) bulunur.
+
+```sql
+CREATE TABLE notification_events (
+    event_id          BIGINT IDENTITY(1,1) PRIMARY KEY,
+    account_id        BIGINT        NOT NULL REFERENCES accounts(account_id),
+    user_id           BIGINT        NOT NULL REFERENCES users(user_id),
+    template_id       BIGINT        NOT NULL,
+    notif_header      NVARCHAR(200) NOT NULL,
+    notif_message     NVARCHAR(MAX) NOT NULL,
+    status            VARCHAR(20)   NOT NULL DEFAULT 'SUCCESS', -- SUCCESS / FAIL
+    retry_count       INT           NOT NULL DEFAULT 1,
+    error_description NVARCHAR(MAX) NULL,
+    log_date          DATE          NOT NULL,
+    created           DATETIME2     NOT NULL DEFAULT SYSUTCDATETIME(),
+    uuid              VARCHAR(36)   NOT NULL UNIQUE
 );
 ```
 

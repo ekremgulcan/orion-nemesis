@@ -62,6 +62,29 @@ Bu yüzden HER selector şu üç stratejiden birini kullanmalı:
   `.z-window-highlighted` class'ıyla render olur; içindeki
   butonlar yine `clickButtonByText` ile bulunur (bkz.
   `zk.js#waitForMessagebox`, `#clickMessageboxButton`).
+- **Combobox popup'i input'a tiklayarak ACILMAZ**: `input.z-combobox-input`'a
+  tiklamak sadece metin girisi icin focus verir. Popup'i acan element,
+  kardes eleman olan `.z-combobox-button` (asagi ok ikonu) - bkz.
+  `zk.js#selectComboboxByIndex` (Bildirim Izleme ekraninda kesfedildi).
+- **Acik combobox popup'inin ogeleri `offsetParent === null` doner**
+  (gercekten gorunur olsalar bile) - popup `position:fixed` ile render
+  edildigi icin bu bir DOM spec quirk'i, ZK'ye ozgu bir hata degil.
+  Gorunurluk kontrolu icin `offsetParent` yerine
+  `getBoundingClientRect().width/height > 0` kullan (bkz.
+  `zk.js#selectComboboxByIndex`).
+- **Bir `<tabbox>` icindeki HER `<tabpanel>`'in kendi `<listbox>`'i
+  varsa, TUMU aninda DOM'da render olur** (sadece `display` ile
+  gizlenir) - React'in tab-basina conditional render'inin aksine. Bu
+  yuzden duz `getGridRows()`/`findGridRow()` gizli sekme(ler)deki
+  satirlari da sayar/arar (orn. iki sekmesi de "bugun" varsayilan
+  filtresiyle ayni veriyi gosteren Bildirim Izleme'de 6 yerine 12 satir
+  donmustu). Boyle ekranlarda `getVisibleGridRows()`/
+  `findVisibleGridRow()` kullan (sadece gorunur satirlari sayar/arar).
+- **Temizle/reset butonundan sonra forma hemen yazma** - reset butonu
+  genelde ilgili alanlarda bir `@NotifyChange` tetikler ve ZK bu
+  alanlarin DOM node'larini yeniden olusturabilir; hemen ardindan eski
+  bir referansa yazmamak icin kisa bir bekleme (~500-600ms) birak,
+  sonra formu tekrar sorgula/doldur.
 
 ## React (nemesis-frontend) ozel notlari
 
@@ -90,6 +113,17 @@ Bu yüzden HER selector şu üç stratejiden birini kullanmalı:
   formatlanmış gösterilir) - toast/tablo metnini ararken ham sayıyı
   değil, biçimlendirilmiş halini de göz önünde bulundur ya da sadece
   anahtar kelimeye (örn. "olusturuldu") bak.
+- **`type="date"` shadcn `<Input>`'lar da `[data-slot="input"]` taşır**
+  - bir ekranda hem tarih hem düz metin input'u aynı anda varsa (orn.
+    Bildirim Izleme'nin "Baslangic"/"Bitis" + "Yatirimci No" alanlari),
+    `fillInputsInOrder`'a verilen index sirasi TUM `[data-slot="input"]`
+    elemanlarini kapsar - tarih alanlari genelde DOM'da metin
+    alanlarindan ONCE gelir (toolbar/filtre satirinin basinda). Mevcut
+    `fillInputsInOrder`'in index davranisini DEGISTIRME (nakit-islem-
+    giris-yeni-talep.cjs gibi script'ler mevcut davranisa gore index
+    sayiyor) - bunun yerine yeni script'te `getAttribute("type") !==
+    "date"` ile filtrelenmis kucuk bir yerel yardimci fonksiyon yaz
+    (bkz. `bildirim-izleme-filtreleme.cjs`).
 
 ## Genel test verisi notlari
 
