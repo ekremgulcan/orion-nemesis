@@ -7,13 +7,19 @@ import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Ana sayfa (index.zul) icin ViewModel. Sol menuyu besler; sidebar sürekli
  * görünür kalir, tiklanan her modul (zaten acik degilse) yeni bir sekme
  * olarak acilir (VSCode tarzi cok sekmeli navigasyon). Sekme sayisi
  * sinirsizdir, her sekme kapatilabilir (Ana Sayfa haric).
+ *
+ * Alt menusu olan (MenuItem.children dolu) ogeler icin genisletme/daraltma
+ * durumu `expandedMenus` (baslik bazinda) ile tutulur ve `getMenuRows()`
+ * bu agaci her cagrida duz bir satir listesine cozer - bkz. MenuRow.
  */
 public class IndexViewModel {
 
@@ -23,6 +29,7 @@ public class IndexViewModel {
     private final MenuRegistry menuRegistry = SpringContextHolder.getBean(MenuRegistry.class);
 
     private List<MenuItem> menuItems;
+    private final Set<String> expandedMenus = new HashSet<>();
     private List<OpenTab> openTabs;
     private OpenTab selectedTab;
 
@@ -38,6 +45,20 @@ public class IndexViewModel {
         return menuItems;
     }
 
+    public List<MenuRow> getMenuRows() {
+        List<MenuRow> rows = new ArrayList<>();
+        for (MenuItem item : menuItems) {
+            boolean expanded = expandedMenus.contains(item.getBaslik());
+            rows.add(new MenuRow(item, false, expanded));
+            if (item.isHasChildren() && expanded) {
+                for (MenuItem child : item.getChildren()) {
+                    rows.add(new MenuRow(child, true, false));
+                }
+            }
+        }
+        return rows;
+    }
+
     public List<OpenTab> getOpenTabs() {
         return openTabs;
     }
@@ -49,10 +70,19 @@ public class IndexViewModel {
     /**
      * Sidebar'dan bir modul tiklandiginda cagrilir. Modul zaten acik bir
      * sekme olarak varsa o sekmeye gecilir, yoksa yeni sekme eklenir.
+     * Alt menusu olan bir ust-oge tiklandiginda, satirin tamami tek bir
+     * tiklama hedefi oldugundan (bkz. index.zul yorumu), ayni tiklama
+     * navigasyonla birlikte alt menuyu de acar/kapatir (toggle).
      */
     @Command
-    @NotifyChange({"openTabs", "selectedTab"})
+    @NotifyChange({"openTabs", "selectedTab", "menuRows"})
     public void selectMenu(@BindingParam("item") MenuItem item) {
+        if (item.isHasChildren()) {
+            String key = item.getBaslik();
+            if (!expandedMenus.remove(key)) {
+                expandedMenus.add(key);
+            }
+        }
         String zulPath = item.isImplemented() ? item.getZulPath() : "/placeholder.zul";
         String baslik = item.getBaslik();
 

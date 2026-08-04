@@ -15,13 +15,37 @@
                 <toolbarbutton label="Ana Sayfa" iconSclass="z-icon-home"
                                 onClick="@command('goHome')"
                                 style="width:100%;text-align:left;padding:8px"/>
-                <listbox model="@load(vm.menuItems)" vflex="1" hflex="1" style="border:none">
+                <listbox model="@load(vm.menuRows)" vflex="1" hflex="1" style="border:none">
                     <listhead visible="false">
                         <listheader hflex="1"/>
                     </listhead>
                     <template name="model">
-                        <listitem onClick="@command('selectMenu', item=each)">
-                            <listcell label="@load(each.baslik)"/>
+                    <!--
+                        Tek tiklama hedefi: satirin tamami (listitem) hem
+                        navigasyonu hem (varsa) alt menu genislet/daralt
+                        toggle'ini birlikte yapar (selectMenu). Ok isareti
+                        sadece GORSEL bir gostergedir, ayri bir onClick'i
+                        YOK - ZK'nin @command binding'i gercek DOM
+                        stopPropagation'i desteklemedigi icin, ok'a ayri
+                        bir tiklama davranisi eklemek (listitem'in kendi
+                        onClick'i ile birlikte) cift-tetiklenmeye (toggle'in
+                        iki kez calisip birbirini iptal etmesine) yol acardi.
+                    -->
+                        <listitem style="@load(each.child ? 'padding-left:32px' : '')"
+                                  onClick="@command('selectMenu', item=each.item)">
+                            <listcell>
+                                <n:div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 4px;box-sizing:border-box">
+                                    <hbox spacing="5px" align="center">
+                                        <label value="@load(each.child ? '&#8250;' : '')"
+                                               style="color:#8a97a3;font-size:0.85em"/>
+                                        <label value="@load(each.item.baslik)"
+                                               style="@load(each.child ? 'color:#7a8a99;font-size:0.93em' : '')"/>
+                                    </hbox>
+                                    <label value="@load(each.item.hasChildren and not each.child ? (each.expanded ? '&#9662;' : '&#9656;') : '')"
+                                           width="20px"
+                                           style="text-align:center;font-size:1.35em"/>
+                                </n:div>
+                            </listcell>
                         </listitem>
                     </template>
                 </listbox>

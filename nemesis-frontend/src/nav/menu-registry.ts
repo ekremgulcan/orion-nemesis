@@ -11,6 +11,7 @@ export interface MenuItem {
   label: string
   path: string
   implemented: boolean
+  children?: MenuItem[]
 }
 
 /**
@@ -40,6 +41,7 @@ interface RawMenuItem {
   label: string
   path?: string
   implemented: boolean
+  children?: RawMenuItem[]
 }
 
 const rawMenuItems: RawMenuItem[] = [
@@ -82,8 +84,13 @@ const rawMenuItems: RawMenuItem[] = [
   { label: "OTC", implemented: false },
 ]
 
-export const menuItems: MenuItem[] = rawMenuItems.map((item) => ({
-  label: item.label,
-  path: item.path ?? slugify(item.label),
-  implemented: item.implemented,
-}))
+function mapItem(item: RawMenuItem): MenuItem {
+  return {
+    label: item.label,
+    path: item.path ?? slugify(item.label),
+    implemented: item.implemented,
+    children: item.children?.map(mapItem),
+  }
+}
+
+export const menuItems: MenuItem[] = rawMenuItems.map(mapItem)
