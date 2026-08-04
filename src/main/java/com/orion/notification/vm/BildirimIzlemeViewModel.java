@@ -19,7 +19,10 @@ import java.util.List;
  * "Bildirim Izleme" (notification/bildirim-izleme.zul) icin ViewModel.
  * Iki tab: "Bugunku Bildirimler" (sadece bugunun kayitlarini, filtresiz
  * gosterir) ve "Gecmis Bildirimler" (tarih araligi + serbest metin
- * filtreleriyle gecmis tum kayitlari gosterir). Her iki liste de ZK'nin
+ * filtreleriyle gecmis tum kayitlari gosterir; varsayilan olarak
+ * baslangic tarihi bos, bitis tarihi dunku gundur - "gecmis" bugunu
+ * degil bugune kadarki gunleri kapsadigi icin, bugunun kayitlari zaten
+ * diger tab'da gosterilir). Her iki liste de ZK'nin
  * kendi `mold="paging"` listbox'i ile istemci tarafinda sayfalanir -
  * projedeki her ekranla ayni desen (bkz. NotificationEventService.list).
  */
@@ -31,8 +34,8 @@ public class BildirimIzlemeViewModel {
     private List<NotificationEvent> bugunkuBildirimler;
     private List<NotificationEvent> gecmisBildirimler;
 
-    private Date baslangicTarihi = new Date();
-    private Date bitisTarihi = new Date();
+    private Date baslangicTarihi;
+    private Date bitisTarihi = yesterday();
     private String yatirimciNo;
     private String kullaniciAdi;
     private String durum;
@@ -130,8 +133,8 @@ public class BildirimIzlemeViewModel {
     @NotifyChange({"baslangicTarihi", "bitisTarihi", "yatirimciNo", "kullaniciAdi", "durum", "bildirimTipi",
             "gecmisBildirimler", "gecmisBildirimlerBaslik"})
     public void temizle() {
-        baslangicTarihi = new Date();
-        bitisTarihi = new Date();
+        baslangicTarihi = null;
+        bitisTarihi = yesterday();
         yatirimciNo = null;
         kullaniciAdi = null;
         durum = null;
@@ -156,6 +159,11 @@ public class BildirimIzlemeViewModel {
 
     private LocalDate toLocalDate(Date date) {
         return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    /** "Gecmis Bildirimler" varsayilan bitis tarihi: dunku gun (bugun degil - bkz. sinif yorumu). */
+    private static Date yesterday() {
+        return Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 
     /** ZUL grid'de Tarih/Saat kolonlarini ayri gostermek icin yardimci metotlar. */

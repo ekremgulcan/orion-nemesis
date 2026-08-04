@@ -1,13 +1,20 @@
 /**
  * Senaryo: Bildirim Izleme (React: /crm/bildirim-izleme) sayfasinda
- * (1) "Bugunku Bildirimler" ve "Gecmis Bildirimler" sekmelerinin
- * varsayilan (bugun tarih araligi) satir sayisinin veritabanindaki
- * gercek bugunku kayit sayisiyla eslesip eslesmedigi, (2) "Durum"
- * per-column filtresinin dogru satirlari donup dondurmedigi, (3)
- * "Yatirimci No" per-column filtresinin dogru satiri donup dondurmedigi,
- * (4) "Rapor Olustur" butonunun basari toast'i gosterip gostermedigi
- * dogrulanir. Salt-okunur bir izleme ekrani oldugu icin herhangi bir
- * veri olusturulmaz/silinmez - teardown gerektirmez.
+ * (1) "Bugunku Bildirimler" sekmesinin bugunku kayit sayisiyla,
+ * "Gecmis Bildirimler" sekmesinin varsayilan araliginin (bos baslangic,
+ * bitis=dun) veritabanindaki gercek kayit sayisiyla eslesip eslesmedigi,
+ * (2) sunucu-tarafi sayfalamanin (page/size) "Sonraki"/"Onceki" ile dogru
+ * calisip calismadigi (SQLServer2012Dialect gecisinden sonra dogrulanan
+ * OFFSET/FETCH duzeltmesi), (3) "Durum" per-column filtresinin dogru
+ * satirlari donup dondurmedigi, (4) "Yatirimci No" per-column filtresinin
+ * dogru satiri donup dondurmedigi, (5) "Rapor Olustur" butonunun basari
+ * toast'i gosterip gostermedigi dogrulanir. Ground truth olarak "gecmis"
+ * (log_date <= dun) verisi kullanilir - "bugun" mock verisi seed anina
+ * gore sabit oldugundan gun degistikce 0'a duser ve bu senaryo bundan
+ * bagimsiz kalmalidir; "Bugunku Bildirimler" adimi da buna gore 0
+ * satiri gecerli bir sonuc olarak kabul eder, sabit >0 varsaymaz.
+ * Salt-okunur bir izleme ekrani oldugu icin herhangi bir veri
+ * olusturulmaz/silinmez - teardown gerektirmez.
  *
  * Kullanim: node screens/react/bildirim-izleme-filtreleme.cjs
  */
@@ -52,14 +59,28 @@ async function run() {
       "SELECT event_id, account_id FROM notification_events WHERE log_date = CAST(SYSUTCDATETIME() AS DATE) ORDER BY event_id;"
     );
     report.sql("Bugunku kayitlar veritabanindan alindi", "SELECT ... WHERE log_date = CAST(SYSUTCDATETIME() AS DATE)", todayRows);
-    const todayFailRows = await runQuery(
-      "SELECT event_id, account_id FROM notification_events WHERE log_date = CAST(SYSUTCDATETIME() AS DATE) AND status = 'FAIL' ORDER BY event_id;"
+    // Ground truth for the Gecmis Bildirimler tab: ayni siralama backend'in
+    // "order by e.created desc" kuralini birebir yansitir, boylece sayfa 2'nin
+    // beklenen event_id'leri de (indeks 20+) buradan cikarilabilir.
+    const uptoYesterdayRows = await runQuery(
+      "SELECT event_id FROM notification_events WHERE log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE)) ORDER BY created DESC;"
     );
-    report.sql("Bugunku FAIL kayitlar veritabanindan alindi", "SELECT ... WHERE log_date = today AND status = 'FAIL'", todayFailRows);
+    report.sql(
+      "Gecmis Bildirimler varsayilan araligina (bos baslangic, bitis=dun) giren kayitlar alindi",
+      "SELECT ... WHERE log_date <= yesterday ORDER BY created DESC",
+      uptoYesterdayRows
+    );
+    const uptoYesterdayFailRows = await runQuery(
+      "SELECT event_id, account_id FROM notification_events WHERE log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE)) AND status = 'FAIL' ORDER BY event_id;"
+    );
+    report.sql(
+      "Gecmis Bildirimler araligindaki FAIL kayitlar alindi",
+      "SELECT ... WHERE log_date <= yesterday AND status = 'FAIL'",
+      uptoYesterdayFailRows
+    );
 
     if (todayRows.length === 0) {
-      report.fail("On kosul: bugun tarihli mock veri yok", "notification_events tablosunda bugune ait kayit bulunamadi");
-      throw new Error("Bugun tarihli veri yok, senaryo devam edemez");
+      report.info("On kosul notu: bugun tarihli mock veri yok", "Bugunku Bildirimler sekmesinin bos gelmesi bekleniyor (0 satir gecerli bir sonuc)");
     }
 
     browser = await launchBrowser();
@@ -81,7 +102,7 @@ async function run() {
       );
     }
 
-    // --- Adim 2: Gecmis Bildirimler sekmesine gec (varsayilan = bugun araligi) ---
+    // --- Adim 2: Gecmis Bildirimler sekmesine gec (varsayilan = bos baslangic, bitis=dun) ---
     const switched = await page.evaluate(() => {
       const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent.includes("Gecmis Bildirimler"));
       if (!btn) return false;
@@ -96,33 +117,68 @@ async function run() {
     }
 
     rows = await getTableRows(page);
-    if (rows.length === todayRows.length) {
-      report.pass("Gecmis Bildirimler varsayilan (bugun) satir sayisi DB ile eslesiyor", `${rows.length} satir`);
+    if (rows.length === Math.min(uptoYesterdayRows.length, 20)) {
+      report.pass("Gecmis Bildirimler varsayilan (bos baslangic/dune kadar) satir sayisi DB ile eslesiyor", `${rows.length} satir`);
     } else {
       report.fail(
         "Gecmis Bildirimler varsayilan satir sayisi DB ile eslesmiyor",
-        `beklenen ${todayRows.length}, gelen ${rows.length}`,
+        `beklenen ${Math.min(uptoYesterdayRows.length, 20)} (sayfa basi 20), gelen ${rows.length}`,
         { diagnostics: diagnostics.getLogs() }
       );
     }
 
-    // --- Adim 3: Durum = FAIL per-column filtresi ---
+    // --- Adim 3: Sayfalama ("Sonraki"/"Onceki") - SQLServer2012Dialect duzeltmesinin regresyonu ---
+    if (uptoYesterdayRows.length > 20) {
+      const expectedPage2Ids = uptoYesterdayRows.slice(20).map((r) => String(r.event_id));
+      await clickButtonByText(page, "Sonraki");
+      await new Promise((r) => setTimeout(r, 800));
+      rows = await getTableRows(page);
+      const page2Screenshot = await page.screenshot();
+      // Bildirim Id kolonu: Tarih, Saat, Yatirimci No, Kullanici Adi, Bildirim Tipi, Mesaj, Durum, Deneme, Bildirim Id, Sablon Id -> indeks 8
+      const gottenIds = rows.map((cells) => cells[8]);
+      if (rows.length === expectedPage2Ids.length && gottenIds.every((id, i) => id === expectedPage2Ids[i])) {
+        report.pass("Sonraki sayfa (sayfa 2) dogru kayitlari donduruyor", `${rows.length} satir, id'ler: ${gottenIds.join(", ")}`, { screenshot: page2Screenshot });
+      } else {
+        report.fail(
+          "Sonraki sayfa (sayfa 2) beklenen kayitlari donmuyor",
+          `beklenen id'ler [${expectedPage2Ids.join(", ")}], gelen [${gottenIds.join(", ")}]`,
+          { screenshot: page2Screenshot, diagnostics: diagnostics.getLogs() }
+        );
+      }
+
+      await clickButtonByText(page, "Onceki");
+      await new Promise((r) => setTimeout(r, 800));
+      rows = await getTableRows(page);
+      if (rows.length === Math.min(uptoYesterdayRows.length, 20)) {
+        report.pass("Onceki ile sayfa 1'e donuldu", `${rows.length} satir`);
+      } else {
+        report.fail(
+          "Onceki ile sayfa 1'e donulemedi",
+          `beklenen ${Math.min(uptoYesterdayRows.length, 20)}, gelen ${rows.length}`,
+          { diagnostics: diagnostics.getLogs() }
+        );
+      }
+    } else {
+      report.info("Sayfalama adimi atlandi", `Gecmis Bildirimler toplam ${uptoYesterdayRows.length} kayit iceriyor, tek sayfaya sigiyor (sayfa basi 20)`);
+    }
+
+    // --- Adim 4: Durum = FAIL per-column filtresi ---
     // 0 = Sayfa Basina Satir (toolbar), 1 = Durum (per-column filtre satiri)
     await selectDropdownByIndex(page, 1, "FAIL");
     await clickButtonByText(page, "Listele");
     await new Promise((r) => setTimeout(r, 800));
     rows = await getTableRows(page);
     const failFilterScreenshot = await page.screenshot();
-    if (rows.length === todayFailRows.length) {
+    if (rows.length === uptoYesterdayFailRows.length) {
       report.pass("Durum=FAIL filtresi dogru satir sayisini donuyor", `${rows.length} satir`, { screenshot: failFilterScreenshot });
     } else {
       report.fail(
         "Durum=FAIL filtresi yanlis satir sayisi donduruyor",
-        `beklenen ${todayFailRows.length}, gelen ${rows.length}`,
+        `beklenen ${uptoYesterdayFailRows.length}, gelen ${rows.length}`,
         { screenshot: failFilterScreenshot, diagnostics: diagnostics.getLogs() }
       );
     }
-    for (const failRow of todayFailRows) {
+    for (const failRow of uptoYesterdayFailRows) {
       const accountRow = await runQuery(`SELECT hesap_no FROM accounts WHERE account_id = ${failRow.account_id};`);
       const hesapNo = accountRow[0]?.hesap_no;
       const found = hesapNo ? await findTableRow(page, [hesapNo]) : null;

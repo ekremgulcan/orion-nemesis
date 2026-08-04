@@ -17,7 +17,7 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.SQLServerDialect
+        dialect: org.hibernate.dialect.SQLServer2012Dialect
         format_sql: true
     show-sql: false
   flyway:

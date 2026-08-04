@@ -45,9 +45,14 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+function yesterdayIso(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 function emptyGecmisFilters(): GecmisFilterForm {
-  const today = todayIso()
-  return { dateFrom: today, dateTo: today, hesapNo: "", kullaniciAdi: "", status: "", notifHeader: "" }
+  return { dateFrom: "", dateTo: yesterdayIso(), hesapNo: "", kullaniciAdi: "", status: "", notifHeader: "" }
 }
 
 /**
@@ -72,6 +77,10 @@ function toApiFilters(form: GecmisFilterForm) {
  * BildirimIzlemeViewModel). Two tabs backed by the same paginated
  * GET /notification/events endpoint - "Bugunku Bildirimler" fixes the
  * date range to today with no other filters, "Gecmis Bildirimler"
+ * defaults to no start date / end date = yesterday (shows everything
+ * through yesterday - "gecmis" = the past, so today's events belong on
+ * the other tab, and this also avoids looking empty right after a seed
+ * whose most recent rows are dated in the past rather than today) and
  * exposes the full filter set (date range in the toolbar, per-column
  * filters for the fields the backend actually supports: Yatirimci No,
  * Kullanici Adi, Bildirim Tipi, Durum - message/id/uuid columns have no

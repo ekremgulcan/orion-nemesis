@@ -1,8 +1,9 @@
 /**
  * Senaryo: Bildirim Izleme (ZK: notification/bildirim-izleme.zul)
- * ekraninda (1) "Bugunku Bildirimler" ve "Gecmis Bildirimler"
- * sekmelerinin varsayilan (bugun tarih araligi) satir sayisinin
- * veritabanindaki gercek bugunku kayit sayisiyla eslesip eslesmedigi,
+ * ekraninda (1) "Bugunku Bildirimler" sekmesinin bugunku kayit
+ * sayisiyla, "Gecmis Bildirimler" sekmesinin varsayilan araliginin
+ * (bos baslangic, bitis=dun) veritabanindaki gercek kayit sayisiyla
+ * eslesip eslesmedigi,
  * (2) "Durum" filtresinin dogru satirlari donup dondurmedigi, (3)
  * "Yatirimci No" filtresinin dogru satiri donup dondurmedigi, (4)
  * "Rapor Olustur" butonunun basari bildirimi gosterip gostermedigi
@@ -65,6 +66,14 @@ async function run() {
       "SELECT event_id, account_id FROM notification_events WHERE log_date = CAST(SYSUTCDATETIME() AS DATE) AND status = 'FAIL' ORDER BY event_id;"
     );
     report.sql("Bugunku FAIL kayitlar veritabanindan alindi", "SELECT ... WHERE log_date = today AND status = 'FAIL'", todayFailRows);
+    const uptoYesterdayRows = await runQuery(
+      "SELECT event_id FROM notification_events WHERE log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE));"
+    );
+    report.sql(
+      "Gecmis Bildirimler varsayilan araligina (bos baslangic, bitis=dun) giren kayitlar alindi",
+      "SELECT ... WHERE log_date <= yesterday",
+      uptoYesterdayRows
+    );
 
     if (todayRows.length === 0) {
       report.fail(
@@ -93,7 +102,7 @@ async function run() {
       );
     }
 
-    // --- Adim 2: Gecmis Bildirimler sekmesine gec (varsayilan = bugun araligi) ---
+    // --- Adim 2: Gecmis Bildirimler sekmesine gec (varsayilan = bos baslangic, bitis=dun) ---
     const switched = await switchToGecmisTab(page);
     await new Promise((r) => setTimeout(r, 600));
     if (switched) {
@@ -103,12 +112,13 @@ async function run() {
     }
 
     rows = await getVisibleGridRows(page);
-    if (rows.length === todayRows.length) {
-      report.pass("Gecmis Bildirimler varsayilan (bugun) satir sayisi DB ile eslesiyor", `${rows.length} satir`);
+    const expectedGecmisDefaultCount = Math.min(uptoYesterdayRows.length, 20); // pageSize=20 varsayilani
+    if (rows.length === expectedGecmisDefaultCount) {
+      report.pass("Gecmis Bildirimler varsayilan (bos baslangic/dune kadar) satir sayisi DB ile eslesiyor", `${rows.length} satir`);
     } else {
       report.fail(
         "Gecmis Bildirimler varsayilan satir sayisi DB ile eslesmiyor",
-        `beklenen ${todayRows.length}, gelen ${rows.length}`,
+        `beklenen ${expectedGecmisDefaultCount} (sayfa basi 20), gelen ${rows.length}`,
         { diagnostics: diagnostics.getLogs() }
       );
     }
