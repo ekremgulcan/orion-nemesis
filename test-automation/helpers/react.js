@@ -85,12 +85,21 @@ async function clickTableRowContaining(page, expectedFragments) {
   return false;
 }
 
-/** Returns every <tbody> row's cell text as an array of arrays, e.g. [["10001", "Ahmet Yilmaz", ...], ...]. */
+/**
+ * Returns every <tbody> row's cell text as an array of arrays, e.g.
+ * [["10001", "Ahmet Yilmaz", ...], ...]. Skips single-<td> placeholder
+ * rows (e.g. `<TableCell colSpan={N}>Kayit bulunamadi</TableCell>` /
+ * "Yukleniyor...") - every real data table in this app has more than
+ * one column, so a lone-cell row is always an empty/loading state, not
+ * data. Without this, an empty result set would be miscounted as 1 row
+ * instead of 0 (found via Bildirim Izleme's "Bugunku Bildirimler" tab
+ * showing 0 DB rows but this helper reporting 1).
+ */
 async function getTableRows(page) {
   return page.evaluate(() => {
-    return Array.from(document.querySelectorAll("tbody tr")).map((row) =>
-      Array.from(row.querySelectorAll("td")).map((td) => td.textContent.trim())
-    );
+    return Array.from(document.querySelectorAll("tbody tr"))
+      .map((row) => Array.from(row.querySelectorAll("td")).map((td) => td.textContent.trim()))
+      .filter((cells) => cells.length > 1);
   });
 }
 
@@ -140,6 +149,63 @@ async function getCheckboxStates(page, { root = '[role="dialog"]' } = {}) {
 }
 
 /**
+ * Fills the Nth `[data-slot="input"]` that is NOT a `type="date"`
+ * field, in DOM order. Needed on screens whose toolbar has date
+ * inputs (e.g. Baslangic/Bitis) ahead of per-column text filters that
+ * use the same shadcn Input component/data-slot - see dom-notes.md.
+ * Root defaults to the whole page (unlike `fillInputsInOrder`, whose
+ * default `[role="dialog"]` scope doesn't apply to same-page toolbars).
+ */
+async function fillNthNonDateInput(page, index, value, { root = null } = {}) {
+  const handle = await page.evaluateHandle(
+    (sel, idx) => {
+      const scope = sel ? document.querySelector(sel) : document;
+      const inputs = Array.from(scope.querySelectorAll('[data-slot="input"]')).filter(
+        (i) => i.getAttribute("type") !== "date"
+      );
+      return inputs[idx] || null;
+    },
+    root,
+    index
+  );
+  const el = handle.asElement();
+  if (!el) throw new Error(`fillNthNonDateInput: no non-date input found at index ${index}`);
+  await el.click({ clickCount: 3 });
+  await el.type(String(value));
+}
+
+/**
+ * Sets the Nth native `<input type="date">` on the page (0-indexed DOM
+ * order) by typing an "MMDDYYYY" string into it - native date inputs
+ * accept per-segment keyboard entry and auto-advance
+ * month->day->year, and ElementHandle.type() sends real key events so
+ * React's onChange actually fires (unlike setting `.value` directly,
+ * which React's controlled input would just overwrite back). Pass a
+ * JS Date or "YYYY-MM-DD" string as `isoDate`.
+ *
+ * IMPORTANT: clicks near the input's LEFT edge (not its center/default
+ * ElementHandle.click()) to land focus on the month segment. A plain
+ * center click can land on the day/year segment instead (the shadcn
+ * Input's calendar icon shifts where the visible "mm / dd / yyyy"
+ * text actually sits within the box), and typing into the wrong
+ * segment first silently produces a garbled value (e.g. typing
+ * "08012026" landed in the year segment and produced "12026-08-04"
+ * instead of "2026-08-01" - found the hard way, see dom-notes.md).
+ */
+async function fillDateInputByIndex(page, index, isoDate) {
+  const inputs = await page.$$('input[type="date"]');
+  if (index >= inputs.length) {
+    throw new Error(`fillDateInputByIndex: only ${inputs.length} date inputs found, index ${index} out of range`);
+  }
+  const iso = isoDate instanceof Date ? isoDate.toISOString().slice(0, 10) : isoDate;
+  const [y, m, d] = iso.split("-");
+  const box = await inputs[index].boundingBox();
+  if (!box) throw new Error(`fillDateInputByIndex: date input at index ${index} is not visible`);
+  await page.mouse.click(box.x + 10, box.y + box.height / 2);
+  await inputs[index].type(`${m}${d}${y}`);
+}
+
+/**
  * Waits for a sonner toast (success/error) to appear and returns its
  * text, or null if none appears within timeoutMs. Sonner renders each
  * toast with a stable [data-sonner-toast] attribute regardless of
@@ -168,4 +234,6 @@ module.exports = {
   waitForToast,
   setCheckboxByIndex,
   getCheckboxStates,
+  fillDateInputByIndex,
+  fillNthNonDateInput,
 };

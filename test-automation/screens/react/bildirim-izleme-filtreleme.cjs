@@ -20,35 +20,20 @@
  */
 const path = require("node:path");
 const { launchBrowser, newPage } = require("../../helpers/browser");
-const { clickButtonByText, getTableRows, findTableRow, selectDropdownByIndex, waitForToast } = require("../../helpers/react");
+const {
+  clickButtonByText,
+  getTableRows,
+  findTableRow,
+  selectDropdownByIndex,
+  waitForToast,
+  fillNthNonDateInput,
+} = require("../../helpers/react");
 const { runQuery } = require("../../helpers/db");
 const { ScenarioReport } = require("../../helpers/report");
 const { attachPageDiagnostics } = require("../../helpers/diagnostics");
 
 const BASE_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const REPORT_PATH = path.join(__dirname, "..", "..", "reports", `bildirim-izleme-filtreleme-${Date.now()}.html`);
-
-/**
- * Fills the Nth [data-slot="input"] that is NOT a type="date" field.
- * Needed because this screen's toolbar has two date inputs (Baslangic/
- * Bitis) ahead of the per-column text filters in DOM order, and both
- * use the same shadcn Input component/data-slot - see dom-notes.md.
- * Deliberately NOT added to the shared fillInputsInOrder helper since
- * an existing script (nakit-islem-giris-yeni-talep.cjs) already counts
- * indices against its current (unfiltered) behavior.
- */
-async function fillNthNonDateInput(page, index, value) {
-  const handle = await page.evaluateHandle((idx) => {
-    const inputs = Array.from(document.querySelectorAll('[data-slot="input"]')).filter(
-      (i) => i.getAttribute("type") !== "date"
-    );
-    return inputs[idx] || null;
-  }, index);
-  const el = handle.asElement();
-  if (!el) throw new Error(`fillNthNonDateInput: no non-date input found at index ${index}`);
-  await el.click({ clickCount: 3 });
-  await el.type(value);
-}
 
 async function run() {
   const report = new ScenarioReport("Bildirim Izleme (React) - Filtreleme ve Rapor Olustur");
