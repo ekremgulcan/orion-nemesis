@@ -63,7 +63,8 @@ async function run() {
     // "order by e.created desc" kuralini birebir yansitir, boylece sayfa 2'nin
     // beklenen event_id'leri de (indeks 20+) buradan cikarilabilir.
     const uptoYesterdayRows = await runQuery(
-      "SELECT event_id FROM notification_events WHERE log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE)) ORDER BY created DESC;"
+      "SELECT e.event_id, a.hesap_no FROM notification_events e JOIN accounts a ON a.account_id = e.account_id " +
+        "WHERE e.log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE)) ORDER BY e.created DESC;"
     );
     report.sql(
       "Gecmis Bildirimler varsayilan araligina (bos baslangic, bitis=dun) giren kayitlar alindi",
@@ -129,19 +130,24 @@ async function run() {
 
     // --- Adim 3: Sayfalama ("Sonraki"/"Onceki") - SQLServer2012Dialect duzeltmesinin regresyonu ---
     if (uptoYesterdayRows.length > 20) {
-      const expectedPage2Ids = uptoYesterdayRows.slice(20).map((r) => String(r.event_id));
+      // Bildirim Id/Sablon Id/Deneme kolonlari tablodan kaldirildi (asiri genislik
+      // yuzunden sag paneli oruyordu - bkz. BildirimIzlemePage.tsx yorumu); artik
+      // sadece detay panelinde gorunuyorlar. Sayfa 2 kimligini dogrulamak icin
+      // "Yatirimci No" (hesap_no, indeks 2) + "created desc" siralamasindaki konum
+      // birlikte kullanilir - ayni hesabin birden fazla bildirimi olsa da sira
+      // backend'in "order by e.created desc" kuraliyla birebir eslesir.
+      const expectedPage2HesapNo = uptoYesterdayRows.slice(20).map((r) => String(r.hesap_no));
       await clickButtonByText(page, "Sonraki");
       await new Promise((r) => setTimeout(r, 800));
       rows = await getTableRows(page);
       const page2Screenshot = await page.screenshot();
-      // Bildirim Id kolonu: Tarih, Saat, Yatirimci No, Kullanici Adi, Bildirim Tipi, Mesaj, Durum, Deneme, Bildirim Id, Sablon Id -> indeks 8
-      const gottenIds = rows.map((cells) => cells[8]);
-      if (rows.length === expectedPage2Ids.length && gottenIds.every((id, i) => id === expectedPage2Ids[i])) {
-        report.pass("Sonraki sayfa (sayfa 2) dogru kayitlari donduruyor", `${rows.length} satir, id'ler: ${gottenIds.join(", ")}`, { screenshot: page2Screenshot });
+      const gottenHesapNo = rows.map((cells) => cells[2]);
+      if (rows.length === expectedPage2HesapNo.length && gottenHesapNo.every((id, i) => id === expectedPage2HesapNo[i])) {
+        report.pass("Sonraki sayfa (sayfa 2) dogru kayitlari donduruyor", `${rows.length} satir, hesap no'lar: ${gottenHesapNo.join(", ")}`, { screenshot: page2Screenshot });
       } else {
         report.fail(
           "Sonraki sayfa (sayfa 2) beklenen kayitlari donmuyor",
-          `beklenen id'ler [${expectedPage2Ids.join(", ")}], gelen [${gottenIds.join(", ")}]`,
+          `beklenen hesap no'lar [${expectedPage2HesapNo.join(", ")}], gelen [${gottenHesapNo.join(", ")}]`,
           { screenshot: page2Screenshot, diagnostics: diagnostics.getLogs() }
         );
       }
@@ -189,13 +195,17 @@ async function run() {
       }
     }
 
-    // --- Adim 4: Temizle, sonra Yatirimci No filtresi ---
+    // --- Adim 5: Temizle, sonra Yatirimci No filtresi ---
+    // "Temizle" formu varsayilan Gecmis Bildirimler araligina sifirlar (bos
+    // baslangic, bitis=dun) - beklenen sayi da ayni araliga gore hesaplanir,
+    // "bugun" degil (ekranin varsayilaniyla tutarli olsun diye).
     await clickButtonByText(page, "Temizle");
     await new Promise((r) => setTimeout(r, 600));
-    const targetAccount = await runQuery(`SELECT hesap_no FROM accounts WHERE account_id = ${todayFailRows[0].account_id};`);
+    const targetAccountId = uptoYesterdayFailRows[0].account_id;
+    const targetAccount = await runQuery(`SELECT hesap_no FROM accounts WHERE account_id = ${targetAccountId};`);
     const targetHesapNo = targetAccount[0].hesap_no;
     const expectedForAccount = await runQuery(
-      `SELECT COUNT(*) AS cnt FROM notification_events WHERE account_id = ${todayFailRows[0].account_id} AND log_date = CAST(SYSUTCDATETIME() AS DATE);`
+      `SELECT COUNT(*) AS cnt FROM notification_events WHERE account_id = ${targetAccountId} AND log_date <= DATEADD(day, -1, CAST(SYSUTCDATETIME() AS DATE));`
     );
     await fillNthNonDateInput(page, 0, targetHesapNo); // 0 = Yatirimci No (ilk gorunen date-olmayan input)
     await clickButtonByText(page, "Listele");

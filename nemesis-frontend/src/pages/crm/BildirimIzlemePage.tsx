@@ -170,9 +170,17 @@ export function BildirimIzlemePage() {
               setSelected(null)
             }}
           >
-            <TabsList>
-              <TabsTrigger value="bugun">Bugunku Bildirimler</TabsTrigger>
-              <TabsTrigger value="gecmis">
+            <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+              <TabsTrigger
+                value="bugun"
+                className="whitespace-nowrap rounded-md px-3 py-1.5 data-active:bg-accent-muted data-active:text-accent"
+              >
+                Bugunku Bildirimler
+              </TabsTrigger>
+              <TabsTrigger
+                value="gecmis"
+                className="whitespace-nowrap rounded-md px-3 py-1.5 data-active:bg-accent-muted data-active:text-accent"
+              >
                 Gecmis Bildirimler {activeTab === "gecmis" ? `(${totalElements})` : ""}
               </TabsTrigger>
             </TabsList>
@@ -235,20 +243,26 @@ export function BildirimIzlemePage() {
         )}
 
         <div className="min-h-0 min-w-0 flex-1 overflow-auto px-6 py-4">
-          <div className="min-w-max rounded-lg border border-border bg-surface">
-            <Table>
+          {/*
+            table-fixed + explicit widths on every column EXCEPT Mesaj: that
+            leaves Mesaj as the one flexible column that absorbs whatever
+            space remains in the container. Deliberately not min-w-max/a
+            fixed max-w cap on Mesaj (that would just hardcode the table to
+            fit today's fixed sidebar widths) - this way the table stays
+            fluid if the left nav ever becomes collapsible and frees up
+            horizontal space, without needing another manual width pass here.
+          */}
+          <div className="w-full rounded-lg border border-border bg-surface">
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-24">Tarih</TableHead>
-                  <TableHead className="w-28">Saat</TableHead>
+                  <TableHead className="w-20">Saat</TableHead>
                   <TableHead className="w-20">Yatirimci No</TableHead>
-                  <TableHead className="w-32">Kullanici Adi</TableHead>
-                  <TableHead className="w-56">Bildirim Tipi</TableHead>
-                  <TableHead className="min-w-72 w-full">Mesaj</TableHead>
+                  <TableHead className="w-28">Kullanici Adi</TableHead>
+                  <TableHead className="w-36">Bildirim Tipi</TableHead>
+                  <TableHead>Mesaj</TableHead>
                   <TableHead className="w-24 text-center">Durum</TableHead>
-                  <TableHead className="w-16 text-right">Deneme</TableHead>
-                  <TableHead className="w-20 text-right">Bildirim Id</TableHead>
-                  <TableHead className="w-16 text-right">Sablon Id</TableHead>
                 </TableRow>
                 {activeTab === "gecmis" && (
                   <TableRow>
@@ -295,23 +309,20 @@ export function BildirimIzlemePage() {
                         </SelectContent>
                       </Select>
                     </TableHead>
-                    <TableHead />
-                    <TableHead />
-                    <TableHead />
                   </TableRow>
                 )}
               </TableHeader>
               <TableBody>
                 {activeQuery.isLoading && (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-10 text-center text-foreground-muted">
+                    <TableCell colSpan={7} className="py-10 text-center text-foreground-muted">
                       Yukleniyor...
                     </TableCell>
                   </TableRow>
                 )}
                 {!activeQuery.isLoading && rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-10 text-center text-foreground-muted">
+                    <TableCell colSpan={7} className="py-10 text-center text-foreground-muted">
                       Kayit bulunamadi
                     </TableCell>
                   </TableRow>
@@ -333,16 +344,15 @@ export function BildirimIzlemePage() {
                     </TableCell>
                     <TableCell className="font-mono tnum">{row.investorNo}</TableCell>
                     <TableCell>{row.target}</TableCell>
-                    <TableCell>{row.notifHeader}</TableCell>
-                    <TableCell className="max-w-96 truncate text-foreground-muted" title={row.notifMessage}>
+                    <TableCell className="truncate" title={row.notifHeader}>
+                      {row.notifHeader}
+                    </TableCell>
+                    <TableCell className="truncate text-foreground-muted" title={row.notifMessage}>
                       {row.notifMessage}
                     </TableCell>
                     <TableCell className="text-center">
                       <StatusBadge durum={row.status} />
                     </TableCell>
-                    <TableCell className="text-right font-mono tnum">{row.retryCount}</TableCell>
-                    <TableCell className="text-right font-mono tnum">{row.eventId}</TableCell>
-                    <TableCell className="text-right font-mono tnum">{row.templateId}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
