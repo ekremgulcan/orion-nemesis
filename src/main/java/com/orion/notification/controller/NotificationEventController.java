@@ -60,7 +60,7 @@ public class NotificationEventController {
             @RequestParam(required = false) String kullaniciAdi,
             @RequestParam(required = false) String notifHeader) {
         byte[] xlsx = service.exportToExcel(status, dateFrom, dateTo, hesapNo, kullaniciAdi, notifHeader);
-        String filename = "bildirim-izleme-"
+        String filename = "events-"
                 + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

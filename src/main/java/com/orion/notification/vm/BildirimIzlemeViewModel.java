@@ -12,6 +12,7 @@ import org.zkoss.zul.Filedownload;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -151,7 +152,8 @@ public class BildirimIzlemeViewModel {
                 yatirimciNo,
                 kullaniciAdi,
                 bildirimTipi);
-        AMedia media = new AMedia("bildirim-izleme.xlsx", "xlsx",
+        String filename = "events-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        AMedia media = new AMedia(filename, "xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx);
         Filedownload.save(media);
         Clients.showNotification("Rapor olusturuldu.");

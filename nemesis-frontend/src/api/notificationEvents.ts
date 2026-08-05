@@ -73,7 +73,7 @@ export async function exportNotificationEvents(filters: NotificationEventFilters
   const link = document.createElement("a")
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "")
   link.href = url
-  link.download = `bildirim-izleme-${stamp}.xlsx`
+  link.download = `events-${stamp}.xlsx`
   document.body.appendChild(link)
   link.click()
   link.remove()
