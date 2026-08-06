@@ -54,7 +54,10 @@ const rawMenuItems: RawMenuItem[] = [
     label: "Musteri Iletisim Panosu",
     path: "/crm/toplu-mesaj-gonder",
     implemented: true,
-    children: [{ label: "Bildirim Izleme", path: "/crm/bildirim-izleme", implemented: true }],
+    children: [
+      { label: "Bildirim Izleme", path: "/crm/bildirim-izleme", implemented: true },
+      { label: "Musteri Bildirim Tercihleri", path: "/crm/musteri-bildirim-tercihleri", implemented: true },
+    ],
   },
   { label: "SGMK - Ozel Oran Tanimlari", implemented: false },
   { label: "Nakit Yonetimi", path: "/cash/yonetimi", implemented: true },

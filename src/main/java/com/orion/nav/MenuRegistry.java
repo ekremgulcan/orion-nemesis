@@ -22,7 +22,8 @@ public class MenuRegistry {
         items.add(new MenuItem("TradeMaster Yetkilendirme", "/core/trademaster-yetkilendirme.zul"));
         items.add(new MenuItem("VIOP Risk Profili Tanim", "/core/viop-risk-profili.zul"));
         items.add(new MenuItem("Musteri Iletisim Panosu", "/crm/toplu-mesaj-gonder.zul",
-                List.of(new MenuItem("Bildirim Izleme", "/notification/bildirim-izleme.zul"))));
+                List.of(new MenuItem("Bildirim Izleme", "/notification/bildirim-izleme.zul"),
+                        new MenuItem("Musteri Bildirim Tercihleri", "/notification/musteri-bildirim-tercihleri.zul"))));
         items.add(new MenuItem("SGMK - Ozel Oran Tanimlari", null));
         items.add(new MenuItem("Nakit Yonetimi", "/core/nakit-yonetimi.zul"));
         items.add(new MenuItem("Nakit Islem Giris", "/cash/nakit-islem-giris.zul"));

@@ -39,6 +39,18 @@ export async function fetchCustomers(q?: string): Promise<CustomerDto[]> {
   return data
 }
 
+/**
+ * Musteri No'ya gore tek bir musteri getirir - "Musteri No arama" ihtiyaci
+ * olan her ekranin (bkz. components/customer/CustomerLookupCard) ortak
+ * kullanabilmesi icin ayri bir uc nokta.
+ */
+export async function fetchCustomerByMusteriNo(musteriNo: string): Promise<CustomerDto> {
+  const { data } = await apiClient.get<CustomerDto>(
+    `/core/customers/by-musteri-no/${encodeURIComponent(musteriNo)}`
+  )
+  return data
+}
+
 export async function createCustomer(body: CustomerFormDto): Promise<CustomerDto> {
   const { data } = await apiClient.post<CustomerDto>("/core/customers", body)
   return data

@@ -46,6 +46,8 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V31__notification_event_schema.sql | Bildirim Izleme modulu: notification_events |
 | V32__seed_notification_event.sql | Mock veri: 22 bildirim log kaydi (bugun + son 10 gun, SUCCESS/FAIL karisik) |
 | V33__reseed_notification_event_ids.sql | notification_events.event_id identity'sini 120700'den baslayacak sekilde yeniden tohumlar (Bildirim Id ekranda 6 haneli gorunmeli) |
+| V34__bildirim_tercihi_schema.sql | Musteri Bildirim Tercihleri modulu: notification_types, musteri_bildirim_tercihleri |
+| V35__seed_notification_types.sql | Referans veri: 6 bildirim tipi (VIOP Margin Call zorunlu) |
 
 ## Varlik Iliski Ozeti (ER)
 
@@ -427,6 +429,41 @@ CREATE TABLE notification_events (
     log_date          DATE          NOT NULL,
     created           DATETIME2     NOT NULL DEFAULT SYSUTCDATETIME(),
     uuid              VARCHAR(36)   NOT NULL UNIQUE
+);
+```
+
+### Musteri Bildirim Tercihleri (V34-V35)
+
+Ekran: "Musteri Bildirim Tercihleri" (Musteri Iletisim Panosu altinda,
+Bildirim Izleme'nin kardesi). Kullanici bir Musteri No girer, musterinin
+her bildirim tipi icin Push/SMS/E-Posta kanal tercihlerini gorur ve
+degistirir. `notification_types` sabit bir katalog (referans veri,
+uygulama tarafindan degistirilmez); `musteri_bildirim_tercihleri` ise
+musteri x bildirim tipi basina bir satir tutar ve satir ilk sorgulandiginda
+(henuz hic tercih girilmemisse) tum kanallar acik olacak sekilde otomatik
+olusturulur - boylece "Son Guncelleme" her zaman gercek bir tarih tasir.
+`VIOP_MARGIN_CALL` tipi `zorunlu = 1` oldugu icin ekranda kilitli/degistirilemez
+gosterilir; backend de bu tipe yonelik guncelleme isteklerini sessizce yok sayar.
+
+```sql
+CREATE TABLE notification_types (
+    notification_type_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    kod                   VARCHAR(64)   NOT NULL UNIQUE,
+    ad                    NVARCHAR(200) NOT NULL,
+    aciklama              NVARCHAR(500) NULL,
+    zorunlu               BIT           NOT NULL DEFAULT 0,
+    sira                  INT           NOT NULL
+);
+
+CREATE TABLE musteri_bildirim_tercihleri (
+    tercih_id             BIGINT IDENTITY(1,1) PRIMARY KEY,
+    customer_id           BIGINT    NOT NULL REFERENCES customers(customer_id),
+    notification_type_id  BIGINT    NOT NULL REFERENCES notification_types(notification_type_id),
+    push_acik             BIT       NOT NULL DEFAULT 1,
+    sms_acik              BIT       NOT NULL DEFAULT 1,
+    eposta_acik           BIT       NOT NULL DEFAULT 1,
+    son_guncelleme        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT uq_musteri_bildirim_tercih UNIQUE (customer_id, notification_type_id)
 );
 ```
 

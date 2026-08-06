@@ -1,0 +1,33 @@
+<!--
+  Yeniden kullanilabilir "Musteri No arama" kutusu (macro component,
+  inline="true" ile bir sayfaya <?component .../> ile eklenir).
+
+  Kullanan sayfanin ViewModel'i ('vm') su sozlesmeye uymalidir:
+    - String getMusteriNo() / void setMusteriNo(String musteriNo)
+    - @Command("musteriAra") void musteriAra()
+    - String getMusteriSorgulamaHata()   (hata yoksa null donmeli)
+
+  inline="true" oldugu icin bu markup kullanan sayfanin kendi idspace'ine
+  ve ViewModel'ine dogrudan baglanir (kopyala-yapistir gibi calisir) -
+  ayrica bir "arg." haritasi veya event forwarding gerekmez. Musteri No
+  girisi gerektiren her yeni ekran bu dosyayi oldugu gibi kullanabilir.
+-->
+<zk xmlns:n="native">
+    <n:div style="border:1px solid #d7dde3;border-radius:6px;margin-top:16px;overflow:hidden">
+        <n:div style="background:#2f6fad;color:white;padding:10px 16px;font-weight:bold">
+            Musteri Sorgulama
+        </n:div>
+        <n:div style="padding:16px">
+            <label value="Musteri No" style="font-weight:bold;display:block;margin-bottom:6px"/>
+            <hbox spacing="8px" align="center">
+                <textbox value="@bind(vm.musteriNo)" placeholder="Musteri numarasini giriniz" width="260px"/>
+                <button iconSclass="z-icon-search"
+                        style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('musteriAra')"/>
+            </hbox>
+            <label value="@load(vm.musteriSorgulamaHata)"
+                   visible="@load(not empty vm.musteriSorgulamaHata)"
+                   style="color:#c85c5c;margin-top:8px;display:block"/>
+        </n:div>
+    </n:div>
+</zk>

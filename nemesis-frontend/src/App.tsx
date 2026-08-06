@@ -16,6 +16,7 @@ import { PiyasaVeriYonetimiPage } from "@/pages/core/PiyasaVeriYonetimiPage"
 import { ViopRiskProfiliPage } from "@/pages/core/ViopRiskProfiliPage"
 import { TopluMesajGonderPage } from "@/pages/crm/TopluMesajGonderPage"
 import { BildirimIzlemePage } from "@/pages/crm/BildirimIzlemePage"
+import { MusteriBildirimTercihleriPage } from "@/pages/crm/MusteriBildirimTercihleriPage"
 import { RiskParametreleriPage } from "@/pages/risk/RiskParametreleriPage"
 import { HisseGrubuTanimlamaPage } from "@/pages/risk/HisseGrubuTanimlamaPage"
 import { HesapHisseKontrolPage } from "@/pages/risk/HesapHisseKontrolPage"
@@ -57,6 +58,7 @@ function App() {
               <Route path="/core/viop-risk-profili" element={<ViopRiskProfiliPage />} />
               <Route path="/crm/toplu-mesaj-gonder" element={<TopluMesajGonderPage />} />
               <Route path="/crm/bildirim-izleme" element={<BildirimIzlemePage />} />
+              <Route path="/crm/musteri-bildirim-tercihleri" element={<MusteriBildirimTercihleriPage />} />
               <Route path="/risk/risk-parametreleri" element={<RiskParametreleriPage />} />
               <Route path="/risk/hisse-grubu-tanimlama" element={<HisseGrubuTanimlamaPage />} />
               <Route path="/risk/hesap-hisse-kontrol" element={<HesapHisseKontrolPage />} />

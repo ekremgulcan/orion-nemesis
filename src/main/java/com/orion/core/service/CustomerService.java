@@ -33,6 +33,22 @@ public class CustomerService {
         return repository.search(q.trim());
     }
 
+    /**
+     * Musteri No'ya gore tek bir musteri bulur. "Musteri No arama" ihtiyaci
+     * olan her ekranin (orn. Musteri Bildirim Tercihleri) ortak kullanmasi
+     * icin buraya eklendi - mevcut CRUD metotlarina (kaydet/sil) dokunulmadi.
+     */
+    public Customer bulByMusteriNo(String musteriNo) {
+        if (musteriNo == null || musteriNo.isBlank()) {
+            throw new IllegalArgumentException("Musteri No bos birakilamaz");
+        }
+        Customer customer = repository.findByMusteriNo(musteriNo.trim());
+        if (customer == null) {
+            throw new IllegalArgumentException("Musteri bulunamadi: " + musteriNo.trim());
+        }
+        return customer;
+    }
+
     @Transactional
     public Customer kaydet(Long id, String musteriNo, String adSoyadUnvan, String musteriTipi,
                             String tcknVkn, String riskGrubu, String telefon, String email, boolean aktif) {

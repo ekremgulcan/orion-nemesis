@@ -41,6 +41,16 @@ public class CustomerController {
         return mapper.toDtoList(customerService.search(q));
     }
 
+    /**
+     * Musteri No'ya gore tek bir musteri dondurur ("Musteri No arama" ihtiyaci
+     * olan her ekranin - orn. Musteri Bildirim Tercihleri - kullanabilmesi
+     * icin; CustomerService.bulByMusteriNo(...) uzerinden calisir.
+     */
+    @GetMapping("/by-musteri-no/{musteriNo}")
+    public CustomerDto getByMusteriNo(@PathVariable String musteriNo) {
+        return mapper.toDto(customerService.bulByMusteriNo(musteriNo));
+    }
+
     @PostMapping
     public ResponseEntity<CustomerDto> create(@RequestBody CustomerFormDto body) {
         var created = customerService.kaydet(null, body.getMusteriNo(), body.getAdSoyadUnvan(),
