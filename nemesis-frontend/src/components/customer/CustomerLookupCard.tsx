@@ -29,11 +29,15 @@ export function CustomerLookupCard({
   error,
 }: CustomerLookupCardProps) {
   return (
-    <div className="rounded-lg border border-border bg-surface">
-      <div className="rounded-t-lg bg-info px-4 py-2.5 text-sm font-semibold text-white">
-        Musteri Sorgulama
+    <div className="flex h-full flex-col rounded-lg border border-border bg-surface">
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold">Musteri Sorgulama</h3>
       </div>
-      <div className="flex flex-col gap-2 p-4">
+      {/* justify-center: when paired next to the (taller) Musteri Bilgileri
+          card in a stretched flex row, this keeps the search field vertically
+          centered in the extra height instead of pinned to the top with
+          dead space below. */}
+      <div className="flex flex-1 flex-col justify-center gap-2 p-4">
         <Label className="text-xs font-medium text-foreground">Musteri No</Label>
         <div className="flex gap-2">
           <Input

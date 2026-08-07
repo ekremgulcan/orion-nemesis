@@ -21,15 +21,15 @@ export function CustomerSummaryCard({ musteriAdi, tcknVkn, durum, extra }: Custo
   ]
 
   return (
-    <div className="rounded-lg border border-border bg-surface">
-      <div className="rounded-t-lg bg-info px-4 py-2.5 text-sm font-semibold text-white">
-        Musteri Bilgileri
+    <div className="flex h-full flex-col rounded-lg border border-border bg-surface">
+      <div className="border-b border-border px-6 py-4">
+        <h3 className="text-base font-semibold">Musteri Bilgileri</h3>
       </div>
-      <div className="flex flex-wrap justify-between gap-6 p-4">
+      <div className="flex flex-1 flex-wrap items-center justify-between gap-8 px-6 py-6">
         {fields.map((field) => (
           <div key={field.label}>
-            <p className="text-xs text-foreground-muted">{field.label}</p>
-            <p className="text-sm font-semibold">{field.value}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-foreground-muted">{field.label}</p>
+            <p className="mt-1.5 text-lg font-semibold">{field.value}</p>
           </div>
         ))}
       </div>

@@ -206,6 +206,40 @@ async function fillDateInputByIndex(page, index, isoDate) {
 }
 
 /**
+ * Sets the Nth base-ui/shadcn <Switch> (`[role="switch"]`, NOT a real
+ * `<input type="checkbox">`) within `root` to the desired checked state -
+ * idempotent (only clicks if current state differs). base-ui's Switch.Root
+ * renders `<span role="switch" aria-checked="true|false" data-slot="switch">`
+ * (see components/ui/switch.tsx) - state must be read via `aria-checked`,
+ * `.checked` does not exist on a span. Root defaults to `null` (whole page)
+ * since this component is used on same-page forms, not just dialogs.
+ */
+async function setSwitchByIndex(page, index, checked, { root = null } = {}) {
+  const scopeSelector = root ? `${root} ` : "";
+  const switches = await page.$$(`${scopeSelector}[role="switch"]`);
+  if (index >= switches.length) {
+    throw new Error(`setSwitchByIndex: only ${switches.length} switches found within "${root ?? "page"}", index ${index} out of range`);
+  }
+  const current = await page.evaluate((el) => el.getAttribute("aria-checked") === "true", switches[index]);
+  if (current !== checked) {
+    await switches[index].click();
+  }
+}
+
+/** Returns { checked, disabled } for every `[role="switch"]` within `root`, in DOM order. */
+async function getSwitchStates(page, { root = null } = {}) {
+  const scopeSelector = root ? `${root} ` : "";
+  return page.evaluate(
+    (sel) =>
+      Array.from(document.querySelectorAll(`${sel}[role="switch"]`)).map((el) => ({
+        checked: el.getAttribute("aria-checked") === "true",
+        disabled: el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true" || el.getAttribute("data-disabled") !== null,
+      })),
+    scopeSelector
+  );
+}
+
+/**
  * Waits for a sonner toast (success/error) to appear and returns its
  * text, or null if none appears within timeoutMs. Sonner renders each
  * toast with a stable [data-sonner-toast] attribute regardless of
@@ -234,6 +268,8 @@ module.exports = {
   waitForToast,
   setCheckboxByIndex,
   getCheckboxStates,
+  setSwitchByIndex,
+  getSwitchStates,
   fillDateInputByIndex,
   fillNthNonDateInput,
 };

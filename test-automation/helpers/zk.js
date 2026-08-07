@@ -164,6 +164,36 @@ async function findVisibleGridRow(page, expectedFragments) {
   );
 }
 
+/**
+ * Sets the Nth native <input type="checkbox"> on the page (0-indexed DOM
+ * order) to the desired checked state - idempotent (only clicks if the
+ * current state differs). ZK's <checkbox> widget renders a real
+ * <input type="checkbox"> under a wrapping <span class="... z-checkbox">
+ * (any `sclass` is appended to that span's class list, e.g. a
+ * "toggle-switch" custom CSS skin) - the input itself is a normal
+ * checkbox, clickable directly with no ZK-specific quirks.
+ */
+async function setCheckboxByIndex(page, index, checked) {
+  const checkboxes = await page.$$('input[type="checkbox"]');
+  if (index >= checkboxes.length) {
+    throw new Error(`setCheckboxByIndex: only ${checkboxes.length} checkboxes found, index ${index} out of range`);
+  }
+  const current = await page.evaluate((el) => el.checked, checkboxes[index]);
+  if (current !== checked) {
+    await checkboxes[index].click();
+  }
+}
+
+/** Returns { checked, disabled } for every native <input type="checkbox"> on the page, in DOM order. */
+async function getCheckboxStates(page) {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('input[type="checkbox"]')).map((el) => ({
+      checked: el.checked,
+      disabled: el.disabled,
+    }))
+  );
+}
+
 /** Waits for and returns the text of a ZK Messagebox (confirm/alert dialog), or null if none appears within timeoutMs. */
 async function waitForMessagebox(page, timeoutMs = 3000) {
   const start = Date.now();
@@ -193,4 +223,6 @@ module.exports = {
   findVisibleGridRow,
   waitForMessagebox,
   clickMessageboxButton,
+  setCheckboxByIndex,
+  getCheckboxStates,
 };
