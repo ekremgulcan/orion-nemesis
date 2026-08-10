@@ -37,7 +37,7 @@ async function musteriAra(page, musteriNo) {
   const input = (await page.$$("input.z-textbox"))[0];
   await input.click({ clickCount: 3 });
   await input.type(musteriNo);
-  await clickButtonByText(page, ""); // arama butonu ikon-only, metin bos - tek eslesen budur
+  await clickButtonByText(page, "Ara"); // arama butonu artik "Ara" etiketli (diger ekranlarla tutarli)
 }
 
 async function run() {

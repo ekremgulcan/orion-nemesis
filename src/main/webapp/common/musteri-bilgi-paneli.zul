@@ -6,13 +6,16 @@
   Kullanan sayfanin ViewModel'i ('vm') su getter'lari sunmalidir (hepsi
   String, sonGuncelleme zaten formatlanmis olmali):
     getMusteriAdi(), getMusteriTcknVkn(), getMusteriDurum(), getMusteriSonGuncelleme()
+
+  Diger ekranlardaki standart bolum cercevesiyle tutarli olmasi icin
+  native bordered/banner div yerine gercek <groupbox>/<caption> kullanilir;
+  ic alanlardaki flex satir duzeni statik (binding olmayan) bir stil
+  oldugu icin native <n:div> ile kaliyor.
 -->
 <zk xmlns:n="native">
-    <n:div style="border:1px solid #d7dde3;border-radius:6px;margin-top:10px;overflow:hidden">
-        <n:div style="background:#2f6fad;color:white;padding:10px 16px;font-weight:bold">
-            Musteri Bilgileri
-        </n:div>
-        <n:div style="padding:14px 16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <groupbox closable="false" style="margin-top:10px">
+        <caption label="Musteri Bilgileri"/>
+        <n:div style="padding:8px 16px 12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px">
             <n:div>
                 <label value="Musteri Adi" style="color:#8a97a3;font-size:0.85em;display:block"/>
                 <label value="@load(vm.musteriAdi)" style="font-size:1.05em;font-weight:bold"/>
@@ -30,5 +33,5 @@
                 <label value="@load(vm.musteriSonGuncelleme)" style="font-size:1.05em;font-weight:bold"/>
             </n:div>
         </n:div>
-    </n:div>
+    </groupbox>
 </zk>

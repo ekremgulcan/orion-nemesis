@@ -4,7 +4,7 @@
 <zk xmlns:n="native">
     <window apply="org.zkoss.bind.BindComposer"
             viewModel="@id('vm') @init('com.orion.notification.vm.MusteriBildirimTercihleriViewModel')"
-            style="padding:10px">
+            style="padding:16px">
 
         <style>
             /* Checkbox'lari iOS tarzi acik/kapali toggle gibi gostermek icin -
@@ -54,72 +54,67 @@
         <div visible="@load(vm.musteriBulunduMu)">
             <musteriBilgiPaneli/>
 
-            <n:div style="border:1px solid #d7dde3;border-radius:6px;margin-top:10px;overflow:hidden">
-                <n:div style="background:#2f6fad;color:white;padding:8px 16px;font-weight:bold;display:flex;justify-content:space-between;align-items:center">
-                    <n:span>Bildirim Tercihleri (Bildirim Tipi Bazinda)</n:span>
-                    <n:span>&#9650;</n:span>
+            <groupbox closable="false" style="margin-top:10px">
+                <caption label="Bildirim Tercihleri (Bildirim Tipi Bazinda)"/>
+                <n:div style="padding:0 16px;display:flex;justify-content:flex-end;gap:20px;margin-bottom:4px;font-size:0.85em;color:#8a97a3">
+                    <n:span style="display:flex;align-items:center;gap:4px">
+                        <n:span>&#128274;</n:span>Zorunlu (Duzenlenemez)
+                    </n:span>
+                    <n:span style="display:flex;align-items:center;gap:4px">
+                        <n:span>&#9999;</n:span>Duzenlenebilir
+                    </n:span>
                 </n:div>
-                <n:div style="padding:8px 16px 10px">
-                    <n:div style="display:flex;justify-content:flex-end;gap:20px;margin-bottom:4px;font-size:0.85em;color:#8a97a3">
-                        <n:span style="display:flex;align-items:center;gap:4px">
-                            <n:span>&#128274;</n:span>Zorunlu (Duzenlenemez)
-                        </n:span>
-                        <n:span style="display:flex;align-items:center;gap:4px">
-                            <n:span>&#9999;</n:span>Duzenlenebilir
-                        </n:span>
-                    </n:div>
 
-                    <listbox model="@load(vm.tercihler)" emptyMessage="Kayit yok">
-                        <listhead>
-                            <listheader label="Bildirim Tipi" width="300px"/>
-                            <listheader label="Push Bildirim" style="text-align:center"/>
-                            <listheader label="SMS" style="text-align:center"/>
-                            <listheader label="E-Posta" style="text-align:center"/>
-                        </listhead>
-                        <template name="model">
-                            <listitem>
-                                <listcell style="padding:5px 10px">
-                                    <n:div style="display:flex;align-items:center;gap:6px">
-                                        <label value="@load(each.notificationType.ad)" style="font-weight:500"/>
-                                        <label value="&#8505;" style="color:#8a97a3;cursor:help"
-                                               tooltiptext="@load(each.notificationType.aciklama)"/>
-                                    </n:div>
-                                </listcell>
-                                <listcell style="text-align:center;padding:5px 10px">
-                                    <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                        <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
-                                        <checkbox sclass="toggle-switch" checked="@bind(each.pushAcik)"
-                                                  disabled="@load(each.notificationType.zorunlu)"/>
-                                        <label value="@load(each.pushAcik ? 'Acik' : 'Kapali')"/>
-                                    </n:div>
-                                </listcell>
-                                <listcell style="text-align:center;padding:5px 10px">
-                                    <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                        <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
-                                        <checkbox sclass="toggle-switch" checked="@bind(each.smsAcik)"
-                                                  disabled="@load(each.notificationType.zorunlu)"/>
-                                        <label value="@load(each.smsAcik ? 'Acik' : 'Kapali')"/>
-                                    </n:div>
-                                </listcell>
-                                <listcell style="text-align:center;padding:5px 10px">
-                                    <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                        <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
-                                        <checkbox sclass="toggle-switch" checked="@bind(each.epostaAcik)"
-                                                  disabled="@load(each.notificationType.zorunlu)"/>
-                                        <label value="@load(each.epostaAcik ? 'Acik' : 'Kapali')"/>
-                                    </n:div>
-                                </listcell>
-                            </listitem>
-                        </template>
-                    </listbox>
+                <listbox model="@load(vm.tercihler)" emptyMessage="Kayit yok">
+                    <listhead>
+                        <listheader label="Bildirim Tipi" width="300px"/>
+                        <listheader label="Push Bildirim" style="text-align:center"/>
+                        <listheader label="SMS" style="text-align:center"/>
+                        <listheader label="E-Posta" style="text-align:center"/>
+                    </listhead>
+                    <template name="model">
+                        <listitem>
+                            <listcell style="padding:5px 10px">
+                                <n:div style="display:flex;align-items:center;gap:6px">
+                                    <label value="@load(each.notificationType.ad)" style="font-weight:500"/>
+                                    <label value="&#8505;" style="color:#8a97a3;cursor:help"
+                                           tooltiptext="@load(each.notificationType.aciklama)"/>
+                                </n:div>
+                            </listcell>
+                            <listcell style="text-align:center;padding:5px 10px">
+                                <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <checkbox sclass="toggle-switch" checked="@bind(each.pushAcik)"
+                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                    <label value="@load(each.pushAcik ? 'Acik' : 'Kapali')"/>
+                                </n:div>
+                            </listcell>
+                            <listcell style="text-align:center;padding:5px 10px">
+                                <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <checkbox sclass="toggle-switch" checked="@bind(each.smsAcik)"
+                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                    <label value="@load(each.smsAcik ? 'Acik' : 'Kapali')"/>
+                                </n:div>
+                            </listcell>
+                            <listcell style="text-align:center;padding:5px 10px">
+                                <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <checkbox sclass="toggle-switch" checked="@bind(each.epostaAcik)"
+                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                    <label value="@load(each.epostaAcik ? 'Acik' : 'Kapali')"/>
+                                </n:div>
+                            </listcell>
+                        </listitem>
+                    </template>
+                </listbox>
 
-                    <n:div style="display:flex;justify-content:flex-end;margin-top:8px">
-                        <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
-                                style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
-                                onClick="@command('onayaGonder')"/>
-                    </n:div>
+                <n:div style="padding:0 16px 12px;display:flex;justify-content:flex-end;margin-top:8px">
+                    <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
+                            style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                            onClick="@command('onayaGonder')"/>
                 </n:div>
-            </n:div>
+            </groupbox>
         </div>
     </window>
 </zk>

@@ -1,4 +1,14 @@
 <?page title="Orion"?>
+<!--
+  groupbox-polish.css uygulama capinda paylasilan bir stil dosyasidir.
+  <?link?> sayfa-seviyesinde bir direktif oldugu ve alt ekranlarin
+  <include src="..."/> ile yuklenen icerigine YAYILMADIGI icin (dogrulandi:
+  bir alt .zul dosyasinin kendi basina <?link?> tanimlamasi index.zul'un
+  tabbox'u icinde HICBIR ETKI etmiyor), bu dosya sadece burada, gercek
+  ust-seviye sayfada tanimlanir - boylece tum ekranlarda (hangi tab'da
+  acilirsa acilsin) tek seferde devreye girer.
+-->
+<?link rel="stylesheet" type="text/css" href="/common/groupbox-polish.css"?>
 <zk xmlns:n="native">
     <borderlayout apply="org.zkoss.bind.BindComposer"
                   viewModel="@id('vm') @init('com.orion.nav.IndexViewModel')"

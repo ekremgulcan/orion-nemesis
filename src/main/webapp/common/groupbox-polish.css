@@ -1,0 +1,50 @@
+/* Uygulama capinda groupbox/caption icin "solid banner baslik" stili.
+   ZK'nin varsayilan "iceblue" temasinda groupbox/caption, kenarligin
+   uzerinde yuzen (position:relative;top:-12px + beyaz arkaplanla kenarligi
+   "kesiyormus" gibi gosteren) ince bir fieldset-legend efekti kullanir
+   (bkz. .z-caption'in varsayilan stili). Burada bu yuzen efekt iptal
+   edilip .z-groupbox-header duz mavi (#2f6fad) bir banner'a donusturuluyor
+   - .z-groupbox'un gercek <groupbox>/<caption> markup'u aynen kaliyor,
+   sadece gorunumu degisiyor; bu yuzden bu dosyayi kullanan her ekran
+   (index.zul araciligiyla, bkz. oradaki not) ayni banner gorunumu
+   paylasir.
+
+   NOT: !important kullanimi kasitli. ZK'nin kendi "iceblue" temasi bu
+   elemanlari '.z-caption.z-caption-readonly' gibi CIFT class'li (daha
+   yuksek ozgullukte) selector'lerle stiller (dogrulandi: position/top/
+   height gibi bazi ozellikler bizim tek-class selector'lerimizi
+   ozguluk yuzunden eziyordu, caption metni banner'in disina -12px
+   tasip gorunmez oluyordu). Bu dosya SADECE bu framework temasini
+   bilerek ezmek icin var - bu yuzden !important burada gerekli ve
+   izole/gerekce­li, projenin geri kalaninda kullanilmiyor.
+*/
+.z-groupbox {
+    padding-top: 0 !important;
+}
+.z-groupbox-header {
+    background: #2f6fad !important;
+    border: none !important;
+    border-radius: 6px 6px 0 0 !important;
+    padding: 8px 16px !important;
+    height: auto !important;
+    line-height: normal !important;
+}
+.z-caption {
+    position: static !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+.z-caption-content {
+    color: #fff !important;
+    font-weight: bold !important;
+    font-size: 1.02em !important;
+}
+.z-groupbox-content {
+    border: 1px solid #cfcfcf !important;
+    border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
+}

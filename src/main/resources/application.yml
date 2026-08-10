@@ -24,6 +24,20 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  web:
+    resources:
+      # Dev'de src/main/webapp altindaki statik dosyalar (css/js) her
+      # istekte diskten TAZE okunsun diye cache tamamen kapatildi -
+      # aksi halde Spring'in resource-chain cache'i ILK basarili
+      # okumayi surekli hafizada tutuyor, dosya degissede sonraki
+      # istekler eski icerigi donduruyor (yeniden baslatmadan
+      # yakalanmasi zor bir gotcha - .zul dosyalari ZK'nin kendi
+      # servlet'inden gectigi icin bu sorunu yasamiyor, sadece bu
+      # klasordeki css/js gibi statik dosyalar etkileniyor).
+      chain:
+        cache: false
+      cache:
+        period: 0
 
 logging:
   level:
