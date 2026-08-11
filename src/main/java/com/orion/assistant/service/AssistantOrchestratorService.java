@@ -33,7 +33,7 @@ public class AssistantOrchestratorService {
 
     public AssistantQueryResponse query(AssistantQueryRequest request) {
         if (request.getMessage() == null || request.getMessage().isBlank()) {
-            throw new IllegalArgumentException("Mesaj bos olamaz");
+            throw new IllegalArgumentException("Mesaj boş olamaz");
         }
 
         String systemPrompt = buildSystemPrompt();
@@ -83,16 +83,20 @@ public class AssistantOrchestratorService {
 
     private String buildSystemPrompt() {
         return """
-                Sen Orion v3 Nemesis araci kurum back-office platformunun OPERASYON DANISMANISIN.
+                Sen Orion v3 Nemesis aracı kurum back-office platformunun OPERASYON DANIŞMANISIN.
+                Aşağıdaki bilgi tabanı kaynak kod + Flyway + React ekranlarından derlenmiştir; buna güven.
 
-                KRITIK KURALLAR:
-                - SADECE danismanlik yap: hangi ekrana gidilecegi, hangi butona basilacagi, hangi tabloda ne oldugunu acikla.
-                - Hicbir kayit olusturma, guncelleme, silme veya onaylama YAPMA. "Ben sizin icin yaptim" DEME.
-                - Canli veri gerekiyorsa tool cagir; tool sonucu disinda veri uydurma.
-                - Turkce, net, adim adim yaz. Kisa paragraflar ve madde isaretleri kullan.
-                - Yazma islemleri icin kullaniciyi ilgili React ekranindaki butona yonlendir.
+                KRİTİK KURALLAR:
+                - SADECE danışmanlık: hangi menü/ekran path, hangi buton, hangi tablo/enum, hangi iş kuralı.
+                - Hiçbir kayıt oluşturma/güncelleme/silme/onaylama YAPMA. "Ben sizin için yaptım" DEME.
+                - Canlı liste/detay için tool çağır; tool dışı canlı veri uydurma.
+                - Türkçe karakterleri doğru kullan (ı, ğ, ü, ş, ö, ç, İ). Kısa, adım adım, madde işaretleri.
+                - Yazma için kullanıcıyı ilgili React ekranındaki butona yönlendir (buton adını yaz).
+                - SQL isterse: ekranın tablolarına göre salt SELECT ver; DML yok. Procedure/view yok — söyle.
+                - Bilgi tabanında yoksa uydurma; "bilgi tabanında yok / placeholder / tablo henüz yok" de.
+                - Placeholder menülerde işlem yapılamaz — kullanıcıyı net bilgilendir.
 
-                ASAGIDAKI PLATFORM BILGI TABANI:
+                AŞAĞIDAKİ PLATFORM BİLGİ TABANI:
 
                 """
                 + knowledgeService.getKnowledgeBase();
@@ -101,14 +105,14 @@ public class AssistantOrchestratorService {
     private List<String> suggestFollowUps(AssistantContextDto context) {
         if (context != null && context.getPathname() != null) {
             if (context.getPathname().contains("collateral")) {
-                return List.of("Bekleyen teminat transferleri?", "Onay kurallari neler?");
+                return List.of("Bekleyen teminat transferleri?", "Onay kuralları neler?");
             }
             if (context.getPathname().contains("yonetim")) {
-                return List.of("Rolleri listele", "Yeni kullanici nasil eklenir?");
+                return List.of("Rolleri listele", "Yeni kullanıcı nasıl eklenir?");
             }
         }
         return List.of(
-                "Kullanici yetkisini nasil duzenlerim?",
+                "Kullanıcı yetkisini nasıl düzenlerim?",
                 "Bekleyen teminat transferleri?");
     }
 }

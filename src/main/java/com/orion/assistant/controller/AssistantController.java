@@ -35,7 +35,7 @@ public class AssistantController {
     @ResponseStatus(HttpStatus.OK)
     public AssistantQueryResponse query(@RequestBody AssistantQueryRequest request) {
         if (!properties.isEnabled()) {
-            throw new IllegalStateException("Operasyon asistani devre disi.");
+            throw new IllegalStateException("Operasyon asistanı devre dışı.");
         }
         return orchestratorService.query(request);
     }

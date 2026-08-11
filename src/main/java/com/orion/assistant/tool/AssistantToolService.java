@@ -68,14 +68,14 @@ public class AssistantToolService {
         List<Map<String, Object>> fns = new ArrayList<>();
         fns.add(fn("listCollateralTransfers", "Bekleyen veya filtreli teminat transfer taleplerini listeler (read-only).",
                 Map.of("durum", prop("string", "Opsiyonel durum filtresi: BEKLEMEDE, TAMAMLANDI, IPTAL, REVIZYONDA, HAVUZDA"))));
-        fns.add(fn("getCollateralTransferById", "Tek bir teminat transfer talebinin detayini getirir.",
-                Map.of("id", prop("integer", "Transfer kayit ID"))));
-        fns.add(fn("listUsers", "Kullanicilari listeler veya arar (read-only).",
-                Map.of("q", prop("string", "Opsiyonel arama metni (kullanici adi veya ad soyad)"))));
-        fns.add(fn("listRoles", "Tanimli tum rolleri listeler (read-only).", Map.of()));
-        fns.add(fn("listCashTransactionRequests", "Nakit islem taleplerini listeler (read-only).",
+        fns.add(fn("getCollateralTransferById", "Tek bir teminat transfer talebinin detayını getirir.",
+                Map.of("id", prop("integer", "Transfer kayıt ID"))));
+        fns.add(fn("listUsers", "Kullanıcıları listeler veya arar (read-only).",
+                Map.of("q", prop("string", "Opsiyonel arama metni (kullanıcı adı veya ad soyad)"))));
+        fns.add(fn("listRoles", "Tanımlı tüm rolleri listeler (read-only).", Map.of()));
+        fns.add(fn("listCashTransactionRequests", "Nakit işlem taleplerini listeler (read-only).",
                 Map.of("durum", prop("string", "Opsiyonel durum: BEKLEMEDE, ONAYLANDI, REDDEDILDI, TAMAMLANDI"))));
-        fns.add(fn("listOpenWorkflowTasks", "Acik workflow gorevlerini listeler (demo kullanici: admin).", Map.of()));
+        fns.add(fn("listOpenWorkflowTasks", "Açık workflow görevlerini listeler (demo kullanıcı: admin).", Map.of()));
         return fns;
     }
 

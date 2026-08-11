@@ -11,7 +11,7 @@ public class AssistantProperties {
     /** Google Gemini API key (free tier). Empty => mock/fallback mode. */
     private String geminiApiKey = "";
 
-    private String model = "gemini-2.0-flash";
+    private String model = "gemini-flash-latest";
 
     /** Max tool-call rounds when Gemini requests live data. */
     private int maxToolRounds = 3;

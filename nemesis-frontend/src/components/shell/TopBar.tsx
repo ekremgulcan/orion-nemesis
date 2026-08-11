@@ -21,7 +21,7 @@ export function TopBar({
           className="gap-2"
         >
           <Bot className="h-4 w-4" />
-          Danisman
+          Danışman
         </Button>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-muted text-xs font-medium text-accent">
           OK

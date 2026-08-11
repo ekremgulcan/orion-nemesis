@@ -11,6 +11,11 @@ import { useAssistantChat } from "@/hooks/useAssistantChat"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
+const DEFAULT_SUGGESTIONS = [
+  "Kullanıcı yetkisini nasıl düzenlerim?",
+  "Bekleyen teminat transferleri var mı?",
+]
+
 interface AssistantPanelProps {
   pageTitle: string
   onClose: () => void
@@ -23,10 +28,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<AssistantStatus | null>(null)
-  const [suggestions, setSuggestions] = useState<string[]>([
-    "Kullanici yetkisini nasil duzenlerim?",
-    "Bekleyen teminat transferleri var mi?",
-  ])
+  const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,13 +64,13 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
         setSuggestions(response.suggestedFollowUps)
       }
     } catch (err) {
-      setError(extractErrorMessage(err, "Asistan yanit veremedi."))
+      setError(extractErrorMessage(err, "Asistan yanıt veremedi."))
     } finally {
       setLoading(false)
     }
   }
 
-  const modeLabel = status?.geminiConfigured ? "Gemini" : "Mock (danisman)"
+  const modeLabel = status?.geminiConfigured ? "Gemini" : "Mock (danışman)"
 
   return (
     <aside className="flex w-[360px] shrink-0 flex-col border-l border-border bg-surface">
@@ -76,7 +78,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-accent" />
           <div>
-            <p className="text-sm font-semibold">Operasyon Danismani</p>
+            <p className="text-sm font-semibold">Operasyon Danışmanı</p>
             <p className="text-[10px] text-muted-foreground">{modeLabel} · salt okuma</p>
           </div>
         </div>
@@ -87,10 +89,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
             title="Sohbeti temizle"
             onClick={() => {
               clearMessages()
-              setSuggestions([
-                "Kullanici yetkisini nasil duzenlerim?",
-                "Bekleyen teminat transferleri var mi?",
-              ])
+              setSuggestions(DEFAULT_SUGGESTIONS)
             }}
           >
             <Trash2 className="h-4 w-4" />
@@ -106,11 +105,11 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
           <div className="rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
             <div className="mb-2 flex items-center gap-2 text-foreground">
               <Sparkles className="h-4 w-4 text-accent" />
-              <span className="font-medium">Nasil yardimci olabilirim?</span>
+              <span className="font-medium">Nasıl yardımcı olabilirim?</span>
             </div>
             <p>
-              Hangi ekrana gitmeniz, hangi butona basmaniz ve verinin hangi tabloda
-              tutuldugunu anlatirim. Kayit degistirmem — sadece danismanlik.
+              Hangi ekrana gitmeniz, hangi butona basmanız ve verinin hangi tabloda
+              tutulduğunu anlatırım. Kayıt değiştirmem — sadece danışmanlık.
             </p>
           </div>
         )}
@@ -131,7 +130,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Dusunuyor...
+            Düşünüyor...
           </div>
         )}
 
@@ -165,7 +164,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ornek: Kullanici yetkisini nasil duzenlerim?"
+            placeholder="Örnek: Kullanıcı yetkisini nasıl düzenlerim?"
             rows={2}
             className="min-h-[60px] resize-none text-sm"
             onKeyDown={(e) => {

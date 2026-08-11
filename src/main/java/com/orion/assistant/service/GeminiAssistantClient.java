@@ -69,13 +69,13 @@ public class GeminiAssistantClient {
             JsonNode response = postGenerate(url, body);
             JsonNode candidate = firstCandidate(response);
             if (candidate == null) {
-                return GeminiResult.fail("Gemini bos yanit dondurdu.");
+                return GeminiResult.fail("Gemini boş yanıt döndürdü.");
             }
 
             JsonNode content = candidate.path("content");
             ArrayNode parts = (ArrayNode) content.path("parts");
             if (parts == null || parts.isEmpty()) {
-                return GeminiResult.fail("Gemini icerik parcasi dondurmedi.");
+                return GeminiResult.fail("Gemini içerik parçası döndürmedi.");
             }
 
             JsonNode firstPart = parts.get(0);
@@ -98,12 +98,12 @@ public class GeminiAssistantClient {
 
             String text = extractText(parts);
             if (text == null || text.isBlank()) {
-                return GeminiResult.fail("Gemini metin cevabi uretemedi.");
+                return GeminiResult.fail("Gemini metin cevabı üretemedi.");
             }
             return GeminiResult.ok(text.trim(), toolCalls);
         }
 
-        return GeminiResult.fail("Tool cagri limiti asildi; soruyu daha spesifik sorun.");
+        return GeminiResult.fail("Tool çağrı limiti aşıldı; soruyu daha spesifik sorun.");
     }
 
     private JsonNode postGenerate(String url, ObjectNode body) {
@@ -114,7 +114,7 @@ public class GeminiAssistantClient {
         try {
             return objectMapper.readTree(response.getBody());
         } catch (Exception e) {
-            throw new IllegalStateException("Gemini yaniti parse edilemedi: " + e.getMessage(), e);
+            throw new IllegalStateException("Gemini yanıtı parse edilemedi: " + e.getMessage(), e);
         }
     }
 
@@ -204,10 +204,10 @@ public class GeminiAssistantClient {
                 sb.append("- Ekran yolu: ").append(context.getPathname()).append("\n");
             }
             if (context.getPageTitle() != null) {
-                sb.append("- Ekran basligi: ").append(context.getPageTitle()).append("\n");
+                sb.append("- Ekran başlığı: ").append(context.getPageTitle()).append("\n");
             }
             if (context.getSelectedEntityId() != null) {
-                sb.append("- Secili kayit ID: ").append(context.getSelectedEntityId());
+                sb.append("- Seçili kayıt ID: ").append(context.getSelectedEntityId());
                 if (context.getSelectedEntityType() != null) {
                     sb.append(" (").append(context.getSelectedEntityType()).append(")");
                 }

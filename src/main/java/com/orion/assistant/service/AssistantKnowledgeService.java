@@ -30,7 +30,7 @@ public class AssistantKnowledgeService {
             ClassPathResource resource = new ClassPathResource(KNOWLEDGE_PATH);
             return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            return "Orion v3 Nemesis back-office platformu. Bilgi tabani yuklenemedi.";
+            return "Orion v3 Nemesis back-office platformu. Bilgi tabanı yüklenemedi.";
         }
     }
 }
