@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
+import { AssistantPanel } from "@/components/assistant/AssistantPanel"
 import { Sidebar } from "@/components/shell/Sidebar"
 import { TopBar } from "@/components/shell/TopBar"
 
@@ -16,15 +17,28 @@ export interface PageTitleContext {
  */
 export function AppShell() {
   const [title, setTitle] = useState("Orion v3 Nemesis")
+  const [assistantOpen, setAssistantOpen] = useState(false)
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} />
-        <main className="flex min-h-0 flex-1 flex-col">
-          <Outlet context={{ setTitle } satisfies PageTitleContext} />
-        </main>
+        <TopBar
+          title={title}
+          assistantOpen={assistantOpen}
+          onToggleAssistant={() => setAssistantOpen((o) => !o)}
+        />
+        <div className="flex min-h-0 flex-1">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <Outlet context={{ setTitle } satisfies PageTitleContext} />
+          </main>
+          {assistantOpen && (
+            <AssistantPanel
+              pageTitle={title}
+              onClose={() => setAssistantOpen(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

@@ -4,6 +4,8 @@
 services:
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    # Apple Silicon (Colima/Rosetta): MSSQL 2022 image is amd64-only
+    platform: linux/amd64
     container_name: orion-mssql
     environment:
       ACCEPT_EULA: "Y"
