@@ -1,5 +1,7 @@
 import { apiClient } from "@/api/client"
 
+export type AssistantMode = "advisor" | "executor"
+
 export interface AssistantContext {
   pathname: string
   pageTitle: string
@@ -18,12 +20,28 @@ export interface ToolCallRecord {
   recordCount: number
 }
 
+export interface PendingAction {
+  actionId: string
+  tool: string
+  summary: string
+  args: Record<string, unknown>
+}
+
 export interface AssistantQueryResponse {
   answer: string
   mockMode: boolean
   provider: string
+  assistantMode?: string
   toolCalls: ToolCallRecord[]
   suggestedFollowUps: string[]
+  pendingAction?: PendingAction | null
+}
+
+export interface AssistantConfirmResponse {
+  executed: boolean
+  message: string
+  tool?: string
+  success: boolean
 }
 
 export interface AssistantStatus {
@@ -40,9 +58,18 @@ export async function fetchAssistantStatus(): Promise<AssistantStatus> {
 
 export async function postAssistantQuery(body: {
   message: string
+  mode: AssistantMode
   context: AssistantContext
   history: AssistantHistoryMessage[]
 }): Promise<AssistantQueryResponse> {
   const { data } = await apiClient.post<AssistantQueryResponse>("/assistant/query", body)
+  return data
+}
+
+export async function confirmAssistantAction(body: {
+  actionId: string
+  confirmed: boolean
+}): Promise<AssistantConfirmResponse> {
+  const { data } = await apiClient.post<AssistantConfirmResponse>("/assistant/confirm", body)
   return data
 }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.orion.assistant.config.AssistantProperties;
 import com.orion.assistant.dto.AssistantContextDto;
 import com.orion.assistant.dto.AssistantHistoryMessageDto;
+import com.orion.assistant.dto.PendingActionDto;
 import com.orion.assistant.dto.ToolCallRecordDto;
 import com.orion.assistant.tool.AssistantToolService;
 import org.slf4j.Logger;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,15 +30,18 @@ public class GeminiAssistantClient {
 
     private final AssistantProperties properties;
     private final AssistantToolService toolService;
+    private final PendingActionStore pendingActionStore;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     public GeminiAssistantClient(AssistantProperties properties,
                                   AssistantToolService toolService,
+                                  PendingActionStore pendingActionStore,
                                   RestTemplate assistantRestTemplate,
                                   ObjectMapper objectMapper) {
         this.properties = properties;
         this.toolService = toolService;
+        this.pendingActionStore = pendingActionStore;
         this.restTemplate = assistantRestTemplate;
         this.objectMapper = objectMapper;
     }
@@ -46,7 +49,8 @@ public class GeminiAssistantClient {
     public GeminiResult chat(String systemPrompt,
                              String userMessage,
                              AssistantContextDto context,
-                             List<AssistantHistoryMessageDto> history) {
+                             List<AssistantHistoryMessageDto> history,
+                             boolean executorMode) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/"
                 + properties.getModel() + ":generateContent?key=" + properties.getGeminiApiKey();
 
@@ -59,7 +63,7 @@ public class GeminiAssistantClient {
 
         ObjectNode tools = body.putObject("tools");
         ArrayNode functionDeclarations = tools.putArray("functionDeclarations");
-        for (Map<String, Object> decl : AssistantToolService.geminiFunctionDeclarations()) {
+        for (Map<String, Object> decl : AssistantToolService.geminiFunctionDeclarations(executorMode)) {
             functionDeclarations.add(objectMapper.valueToTree(decl));
         }
 
@@ -73,16 +77,42 @@ public class GeminiAssistantClient {
             }
 
             JsonNode content = candidate.path("content");
-            ArrayNode parts = (ArrayNode) content.path("parts");
+            ArrayNode parts = content.has("parts") && content.path("parts").isArray()
+                    ? (ArrayNode) content.path("parts")
+                    : null;
             if (parts == null || parts.isEmpty()) {
                 return GeminiResult.fail("Gemini içerik parçası döndürmedi.");
             }
 
-            JsonNode firstPart = parts.get(0);
-            if (firstPart.has("functionCall")) {
-                JsonNode fnCall = firstPart.get("functionCall");
+            JsonNode functionCallPart = findFunctionCallPart(parts);
+            if (functionCallPart != null) {
+                JsonNode fnCall = functionCallPart.get("functionCall");
                 String name = fnCall.path("name").asText();
+                @SuppressWarnings("unchecked")
                 Map<String, Object> args = objectMapper.convertValue(fnCall.path("args"), Map.class);
+
+                if (AssistantToolService.isWriteTool(name)) {
+                    if (!executorMode) {
+                        return GeminiResult.fail("Yazma işlemleri yalnızca Yürütücü modda kullanılabilir.");
+                    }
+                    String summary = toolService.summarizeWriteAction(name, args);
+                    String actionId = pendingActionStore.put(name, args, summary);
+                    PendingActionDto pending = new PendingActionDto();
+                    pending.setActionId(actionId);
+                    pending.setTool(name);
+                    pending.setSummary(summary);
+                    pending.setArgs(args);
+
+                    ToolCallRecordDto record = new ToolCallRecordDto();
+                    record.setTool(name);
+                    record.setInput(args);
+                    record.setRecordCount(0);
+                    toolCalls.add(record);
+
+                    String answer = "Bu işlem için onayınız gerekiyor.\n\n**" + summary + "**\n\n"
+                            + "Aşağıdaki onay kartından **Onayla** veya **Vazgeç** seçin.";
+                    return GeminiResult.pending(answer, toolCalls, pending);
+                }
 
                 AssistantToolService.ToolExecutionResult result = toolService.execute(name, args);
                 ToolCallRecordDto record = new ToolCallRecordDto();
@@ -91,7 +121,8 @@ public class GeminiAssistantClient {
                 record.setRecordCount(result.isSuccess() ? result.getRecordCount() : 0);
                 toolCalls.add(record);
 
-                contents.add(modelTurnFunctionCall(name, args));
+                // Echo model content as-is (preserves thought_signature required by Gemini Flash).
+                contents.add(content.deepCopy());
                 contents.add(userTurnFunctionResponse(name, result));
                 continue;
             }
@@ -104,6 +135,15 @@ public class GeminiAssistantClient {
         }
 
         return GeminiResult.fail("Tool çağrı limiti aşıldı; soruyu daha spesifik sorun.");
+    }
+
+    private JsonNode findFunctionCallPart(ArrayNode parts) {
+        for (JsonNode part : parts) {
+            if (part.has("functionCall")) {
+                return part;
+            }
+        }
+        return null;
     }
 
     private JsonNode postGenerate(String url, ObjectNode body) {
@@ -149,16 +189,6 @@ public class GeminiAssistantClient {
         turn.put("role", "user");
         ArrayNode parts = turn.putArray("parts");
         parts.addObject().put("text", text);
-        return turn;
-    }
-
-    private ObjectNode modelTurnFunctionCall(String name, Map<String, Object> args) {
-        ObjectNode turn = objectMapper.createObjectNode();
-        turn.put("role", "model");
-        ArrayNode parts = turn.putArray("parts");
-        ObjectNode fn = parts.addObject().putObject("functionCall");
-        fn.put("name", name);
-        fn.set("args", objectMapper.valueToTree(args));
         return turn;
     }
 
@@ -222,20 +252,27 @@ public class GeminiAssistantClient {
         private final String answer;
         private final String error;
         private final List<ToolCallRecordDto> toolCalls;
+        private final PendingActionDto pendingAction;
 
-        private GeminiResult(boolean success, String answer, String error, List<ToolCallRecordDto> toolCalls) {
+        private GeminiResult(boolean success, String answer, String error,
+                             List<ToolCallRecordDto> toolCalls, PendingActionDto pendingAction) {
             this.success = success;
             this.answer = answer;
             this.error = error;
             this.toolCalls = toolCalls;
+            this.pendingAction = pendingAction;
         }
 
         static GeminiResult ok(String answer, List<ToolCallRecordDto> toolCalls) {
-            return new GeminiResult(true, answer, null, toolCalls);
+            return new GeminiResult(true, answer, null, toolCalls, null);
+        }
+
+        static GeminiResult pending(String answer, List<ToolCallRecordDto> toolCalls, PendingActionDto pending) {
+            return new GeminiResult(true, answer, null, toolCalls, pending);
         }
 
         static GeminiResult fail(String error) {
-            return new GeminiResult(false, null, error, List.of());
+            return new GeminiResult(false, null, error, List.of(), null);
         }
 
         public boolean isSuccess() {
@@ -252,6 +289,10 @@ public class GeminiAssistantClient {
 
         public List<ToolCallRecordDto> getToolCalls() {
             return toolCalls;
+        }
+
+        public PendingActionDto getPendingAction() {
+            return pendingAction;
         }
     }
 }

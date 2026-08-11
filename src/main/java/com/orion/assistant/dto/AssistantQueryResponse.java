@@ -8,8 +8,10 @@ public class AssistantQueryResponse {
     private String answer;
     private boolean mockMode;
     private String provider;
+    private String assistantMode;
     private List<ToolCallRecordDto> toolCalls = new ArrayList<>();
     private List<String> suggestedFollowUps = new ArrayList<>();
+    private PendingActionDto pendingAction;
 
     public String getAnswer() {
         return answer;
@@ -49,5 +51,21 @@ public class AssistantQueryResponse {
 
     public void setSuggestedFollowUps(List<String> suggestedFollowUps) {
         this.suggestedFollowUps = suggestedFollowUps != null ? suggestedFollowUps : new ArrayList<>();
+    }
+
+    public String getAssistantMode() {
+        return assistantMode;
+    }
+
+    public void setAssistantMode(String assistantMode) {
+        this.assistantMode = assistantMode;
+    }
+
+    public PendingActionDto getPendingAction() {
+        return pendingAction;
+    }
+
+    public void setPendingAction(PendingActionDto pendingAction) {
+        this.pendingAction = pendingAction;
     }
 }

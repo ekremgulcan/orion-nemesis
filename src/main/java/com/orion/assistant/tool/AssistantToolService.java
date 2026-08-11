@@ -25,14 +25,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Read-only tools the assistant may invoke. No create/update/delete paths.
+ * Assistant tools. Read tools are always available; write tools require executor mode
+ * and UI confirmation before {@link #executeWrite} is called.
  */
 @Service
 public class AssistantToolService {
 
     private static final String DEMO_USER = "admin";
+    private static final long DEMO_APPROVER_USER_ID = 1L;
+
+    public static final Set<String> WRITE_TOOLS = Set.of(
+            "approveCollateralTransfer",
+            "cancelCollateralTransfer",
+            "reviseCollateralTransfer",
+            "poolCollateralTransfer",
+            "approveCashTransaction",
+            "rejectCashTransaction"
+    );
 
     private final CollateralService collateralService;
     private final CollateralTransferRepository transferRepository;
@@ -64,7 +76,11 @@ public class AssistantToolService {
         this.objectMapper = objectMapper;
     }
 
-    public static List<Map<String, Object>> geminiFunctionDeclarations() {
+    public static boolean isWriteTool(String name) {
+        return name != null && WRITE_TOOLS.contains(name);
+    }
+
+    public static List<Map<String, Object>> geminiFunctionDeclarations(boolean executorMode) {
         List<Map<String, Object>> fns = new ArrayList<>();
         fns.add(fn("listCollateralTransfers", "Bekleyen veya filtreli teminat transfer taleplerini listeler (read-only).",
                 Map.of("durum", prop("string", "Opsiyonel durum filtresi: BEKLEMEDE, TAMAMLANDI, IPTAL, REVIZYONDA, HAVUZDA"))));
@@ -76,10 +92,52 @@ public class AssistantToolService {
         fns.add(fn("listCashTransactionRequests", "Nakit işlem taleplerini listeler (read-only).",
                 Map.of("durum", prop("string", "Opsiyonel durum: BEKLEMEDE, ONAYLANDI, REDDEDILDI, TAMAMLANDI"))));
         fns.add(fn("listOpenWorkflowTasks", "Açık workflow görevlerini listeler (demo kullanıcı: admin).", Map.of()));
+
+        if (executorMode) {
+            Map<String, Map<String, String>> idOnly = Map.of(
+                    "id", prop("integer", "Kayıt ID (zorunlu)"));
+            fns.add(fn("approveCollateralTransfer",
+                    "Teminat transfer talebini onaylar (BEKLEMEDE → TAMAMLANDI). UI onayı gerekir.", idOnly));
+            fns.add(fn("cancelCollateralTransfer",
+                    "Teminat transfer talebini iptal eder. UI onayı gerekir.", idOnly));
+            fns.add(fn("reviseCollateralTransfer",
+                    "Teminat transfer talebini revizyona gönderir. UI onayı gerekir.", idOnly));
+            fns.add(fn("poolCollateralTransfer",
+                    "Teminat transfer talebini havuza gönderir. UI onayı gerekir.", idOnly));
+            fns.add(fn("approveCashTransaction",
+                    "Nakit işlem talebini onaylayıp tamamlar. UI onayı gerekir.", idOnly));
+            fns.add(fn("rejectCashTransaction",
+                    "Nakit işlem talebini reddeder. UI onayı gerekir.", idOnly));
+        }
         return fns;
     }
 
+    public String summarizeWriteAction(String toolName, Map<String, Object> args) {
+        Long id = longArg(args, "id");
+        String idLabel = id != null ? String.valueOf(id) : "?";
+        return switch (toolName) {
+            case "approveCollateralTransfer" ->
+                    "Teminat transfer #" + idLabel + " onaylanacak (BEKLEMEDE → TAMAMLANDI).";
+            case "cancelCollateralTransfer" ->
+                    "Teminat transfer #" + idLabel + " iptal edilecek.";
+            case "reviseCollateralTransfer" ->
+                    "Teminat transfer #" + idLabel + " revizyona gönderilecek.";
+            case "poolCollateralTransfer" ->
+                    "Teminat transfer #" + idLabel + " havuza gönderilecek.";
+            case "approveCashTransaction" ->
+                    "Nakit işlem talebi #" + idLabel + " onaylanıp tamamlanacak.";
+            case "rejectCashTransaction" ->
+                    "Nakit işlem talebi #" + idLabel + " reddedilecek.";
+            default -> toolName + " (id=" + idLabel + ")";
+        };
+    }
+
+    /** Read-only execute path used during Gemini tool rounds. */
     public ToolExecutionResult execute(String toolName, Map<String, Object> args) {
+        if (isWriteTool(toolName)) {
+            return ToolExecutionResult.error(
+                    "Yazma tool'u doğrudan çalıştırılamaz. Yürütücü modda UI onayı gerekir.");
+        }
         try {
             return switch (toolName) {
                 case "listCollateralTransfers" -> listCollateralTransfers(args);
@@ -93,6 +151,84 @@ public class AssistantToolService {
         } catch (Exception e) {
             return ToolExecutionResult.error(e.getMessage());
         }
+    }
+
+    /** Called only after UI confirmation of a pending write action. */
+    public ToolExecutionResult executeWrite(String toolName, Map<String, Object> args) {
+        if (!isWriteTool(toolName)) {
+            return ToolExecutionResult.error("Bu tool yazma aracı değil: " + toolName);
+        }
+        try {
+            return switch (toolName) {
+                case "approveCollateralTransfer" -> approveCollateral(args);
+                case "cancelCollateralTransfer" -> cancelCollateral(args);
+                case "reviseCollateralTransfer" -> reviseCollateral(args);
+                case "poolCollateralTransfer" -> poolCollateral(args);
+                case "approveCashTransaction" -> approveCash(args);
+                case "rejectCashTransaction" -> rejectCash(args);
+                default -> ToolExecutionResult.error("Bilinmeyen yazma tool: " + toolName);
+            };
+        } catch (Exception e) {
+            return ToolExecutionResult.error(e.getMessage());
+        }
+    }
+
+    private ToolExecutionResult approveCollateral(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        collateralService.onayla(id, DEMO_APPROVER_USER_ID);
+        return writeOk("approveCollateralTransfer", args, id, "TAMAMLANDI");
+    }
+
+    private ToolExecutionResult cancelCollateral(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        collateralService.iptalEt(id);
+        return writeOk("cancelCollateralTransfer", args, id, "IPTAL");
+    }
+
+    private ToolExecutionResult reviseCollateral(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        collateralService.revizyonaGonder(id);
+        return writeOk("reviseCollateralTransfer", args, id, "REVIZYONDA");
+    }
+
+    private ToolExecutionResult poolCollateral(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        collateralService.havuzaGonder(id);
+        return writeOk("poolCollateralTransfer", args, id, "HAVUZDA");
+    }
+
+    private ToolExecutionResult approveCash(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        CashTransactionRequest updated = cashTransactionService.onaylaVeTamamla(id);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", updated.getId());
+        payload.put("durum", updated.getDurum());
+        return ToolExecutionResult.ok("approveCashTransaction", args, 1, toJson(payload));
+    }
+
+    private ToolExecutionResult rejectCash(Map<String, Object> args) throws JsonProcessingException {
+        Long id = requireId(args);
+        CashTransactionRequest updated = cashTransactionService.reddet(id);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", updated.getId());
+        payload.put("durum", updated.getDurum());
+        return ToolExecutionResult.ok("rejectCashTransaction", args, 1, toJson(payload));
+    }
+
+    private ToolExecutionResult writeOk(String tool, Map<String, Object> args, Long id, String durum)
+            throws JsonProcessingException {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", id);
+        payload.put("durum", durum);
+        return ToolExecutionResult.ok(tool, args, 1, toJson(payload));
+    }
+
+    private Long requireId(Map<String, Object> args) {
+        Long id = longArg(args, "id");
+        if (id == null) {
+            throw new IllegalArgumentException("id parametresi gerekli");
+        }
+        return id;
     }
 
     private ToolExecutionResult listCollateralTransfers(Map<String, Object> args) throws JsonProcessingException {
@@ -176,7 +312,8 @@ public class AssistantToolService {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("type", "OBJECT");
         params.put("properties", properties);
-        params.put("required", List.of());
+        List<String> required = properties.containsKey("id") ? List.of("id") : List.of();
+        params.put("required", required);
         fn.put("parameters", params);
         return fn;
     }

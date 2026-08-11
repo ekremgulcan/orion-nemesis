@@ -1,9 +1,11 @@
 package com.orion.assistant.controller;
 
+import com.orion.assistant.config.AssistantProperties;
+import com.orion.assistant.dto.AssistantConfirmRequest;
+import com.orion.assistant.dto.AssistantConfirmResponse;
 import com.orion.assistant.dto.AssistantQueryRequest;
 import com.orion.assistant.dto.AssistantQueryResponse;
 import com.orion.assistant.dto.AssistantStatusDto;
-import com.orion.assistant.config.AssistantProperties;
 import com.orion.assistant.service.AssistantOrchestratorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,5 +40,14 @@ public class AssistantController {
             throw new IllegalStateException("Operasyon asistanı devre dışı.");
         }
         return orchestratorService.query(request);
+    }
+
+    @PostMapping("/confirm")
+    @ResponseStatus(HttpStatus.OK)
+    public AssistantConfirmResponse confirm(@RequestBody AssistantConfirmRequest request) {
+        if (!properties.isEnabled()) {
+            throw new IllegalStateException("Operasyon asistanı devre dışı.");
+        }
+        return orchestratorService.confirm(request);
     }
 }

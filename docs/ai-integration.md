@@ -364,14 +364,17 @@ orion:
 
 ---
 
-### 2.10 Kararlar (uygulandi — 2026-08-11)
+### 2.10 Kararlar (uygulandi — 2026-08-11, güncellendi 2026-08-11)
 
-1. **Panel konumu:** Sağ drawer (360px), TopBar'da "Danisman" butonu
+1. **Panel konumu:** Sağ drawer (360px), TopBar'da "Danışman" / asistan butonu
 2. **Streaming:** v1 non-streaming JSON
 3. **Conversation persistence:** `localStorage` (`orion-assistant-chat-v1`)
-4. **LLM sağlayıcı:** Google Gemini (`gemini-2.0-flash`), env: `ORION_GEMINI_API_KEY`
+4. **LLM sağlayıcı:** Google Gemini (`gemini-flash-latest`), env: `ORION_GEMINI_API_KEY`
 5. **Mock mode:** API key yoksa veya Gemini hata verirse keyword + read-only tool fallback
-6. **Mod:** Salt danışman — kayıt oluşturma/güncelleme/silme yok; adım adım rehberlik
+6. **Asistan modları** (panel toggle, `orion-assistant-mode-v1`):
+   - **Danışman (default):** salt rehberlik + read-only tool'lar; yazma yok
+   - **Yürütücü:** teminat onay/iptal/revizyon/havuz + nakit onay/red yazma tool'ları; doğrudan uygulanmaz — `pendingAction` + `POST /api/v1/assistant/confirm` onay kartı zorunlu
+7. Auth/JWT yok (demo); yürütücü herkese açık — dikkat
 
 **Kurulum:**
 
@@ -380,7 +383,7 @@ export ORION_GEMINI_API_KEY="your-key-from-aistudio.google.com"
 # Backend restart
 ```
 
-Key olmadan da mock modda calisir (ornek: "Kullanici yetkisini nasil duzenlerim?").
+Key olmadan da danışman mock modda çalışır. Yürütücü yazma işlemleri Gemini gerektirir.
 
 ---
 
