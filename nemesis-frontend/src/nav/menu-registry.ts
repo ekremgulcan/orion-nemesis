@@ -57,6 +57,7 @@ const rawMenuItems: RawMenuItem[] = [
     children: [
       { label: "Bildirim Izleme", path: "/crm/bildirim-izleme", implemented: true },
       { label: "Musteri Bildirim Tercihleri", path: "/crm/musteri-bildirim-tercihleri", implemented: true },
+      { label: "Bildirim Ayarlari", path: "/crm/bildirim-ayarlari", implemented: true },
     ],
   },
   { label: "SGMK - Ozel Oran Tanimlari", implemented: false },

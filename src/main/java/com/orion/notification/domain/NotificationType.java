@@ -4,11 +4,14 @@ import javax.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 /**
- * Bildirim tipi katalogu (referans veri, uygulama tarafindan degistirilmez).
- * "Musteri Bildirim Tercihleri" ekraninda her satir bir NotificationType'a
- * karsilik gelir. `zorunlu = true` olan tip (VIOP Margin Call) kullanici
- * tarafindan kapatilamaz.
+ * Bildirim tipi katalogu. "Musteri Bildirim Tercihleri" ekraninda her satir
+ * bir NotificationType'a karsilik gelir. `zorunlu = true` olan tip (VIOP
+ * Margin Call) kullanici tarafindan kapatilamaz. `active` alani "Bildirim
+ * Ayarlari" ekranindaki kanallardan bagimsiz genel durumu tutar - bu tek
+ * alan haric, satirlar referans veridir ve uygulama tarafindan degistirilmez.
  */
 @Entity
 @Table(name = "notification_types")
@@ -35,4 +38,19 @@ public class NotificationType {
 
     @Column(name = "sira", nullable = false)
     private int sira;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean active = true;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "created_time")
+    private LocalDateTime createdTime;
+
+    @Column(name = "last_updated_by")
+    private String lastUpdatedBy;
+
+    @Column(name = "last_updated_time")
+    private LocalDateTime lastUpdatedTime;
 }

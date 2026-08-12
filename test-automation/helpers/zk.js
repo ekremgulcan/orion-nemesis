@@ -51,6 +51,15 @@ async function fillTextboxesInOrder(page, values, selector = "input.z-textbox, i
  * `input.z-combobox-input` only focuses the text field for typing - it
  * does NOT open the dropdown popup. The popup is opened by its sibling
  * `.z-combobox-button` (the caret icon) instead.
+ *
+ * IMPORTANT (discovered on Bildirim Ayarlari): a `<combobox model="@load(...)">`
+ * with a `<template name="model"><comboitem label="@load(each.xxx)"/></template>`
+ * renders multi-word labels with `\u00A0` (non-breaking space) in place of
+ * EVERY regular space in the DOM text content, even though the bound Java
+ * string itself only has plain ASCII spaces (confirmed via direct DB byte
+ * check) - a client-side ZK rendering quirk, not a data bug. Both sides of
+ * the text comparison are normalized below so callers can keep passing
+ * plain-space strings.
  */
 async function selectComboboxByIndex(page, index, optionText) {
   const combos = await page.$$("input.z-combobox-input");
@@ -67,6 +76,8 @@ async function selectComboboxByIndex(page, index, optionText) {
   // The popup uses position:fixed, so offsetParent is always null for
   // its items regardless of real visibility (a DOM spec quirk) - use
   // bounding-rect dimensions to filter to the currently-open popup.
+  const normalize = (s) => s.replace(/\u00A0/g, " ");
+  const target = normalize(optionText);
   const items = await page.$$(".z-comboitem");
   for (const item of items) {
     const visible = await page.evaluate((el) => {
@@ -74,8 +85,8 @@ async function selectComboboxByIndex(page, index, optionText) {
       return r.width > 0 && r.height > 0;
     }, item);
     if (!visible) continue;
-    const t = await page.evaluate((el) => el.textContent.trim(), item);
-    if (t === optionText) {
+    const t = normalize(await page.evaluate((el) => el.textContent.trim(), item));
+    if (t === target) {
       await item.click();
       return true;
     }
@@ -184,6 +195,18 @@ async function setCheckboxByIndex(page, index, checked) {
   }
 }
 
+/**
+ * Returns the displayed text of every ZK combobox on the page, in DOM
+ * order. IMPORTANT: `document.body.innerText`/`textContent` do NOT
+ * include an `<input>` element's `value` (it's an attribute/property,
+ * not a text node) - a combobox's currently-selected display text is
+ * invisible to any innerText-based assertion. Read `input.value`
+ * directly instead, as this helper does.
+ */
+async function getComboboxValues(page) {
+  return page.evaluate(() => Array.from(document.querySelectorAll("input.z-combobox-input")).map((el) => el.value));
+}
+
 /** Returns { checked, disabled } for every native <input type="checkbox"> on the page, in DOM order. */
 async function getCheckboxStates(page) {
   return page.evaluate(() =>
@@ -225,4 +248,5 @@ module.exports = {
   clickMessageboxButton,
   setCheckboxByIndex,
   getCheckboxStates,
+  getComboboxValues,
 };

@@ -1,0 +1,112 @@
+<?page title="Bildirim Ayarlari"?>
+<zk xmlns:n="native">
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.notification.vm.BildirimAyarlariViewModel')"
+            style="padding:16px">
+
+        <style>
+            /* Bilgilendirme kutusu - "Devam etmek icin bildirim tipi seciniz"
+               gibi yardimci mesajlar icin, projedeki mavi ton (#2f6fad) ile
+               tutarli hafif bir vurgu kutusu. */
+            .info-box {
+                background: #eef4fa;
+                border: 1px solid #b8d4ec;
+                border-radius: 4px;
+                padding: 10px 14px;
+                color: #2f6fad;
+                font-size: 0.85em;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        </style>
+
+        <label value="Bildirim Ayarlari Ekrani"
+               style="color:#2f6fad;font-size:20px;font-weight:bold"/>
+
+        <groupbox closable="false" style="margin-top:10px">
+            <caption label="@load(vm.tipSecilmisMi ? 'Bildirim Tipi ve Genel Durum' : 'Bildirim Tipi Secimi')"/>
+
+            <n:div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px">
+
+                <!-- Satir 1: Bildirim Tipi + (secildiyse) Durum + bilgi kutusu -->
+                <n:div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+                    <n:div style="min-width:280px">
+                        <n:div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                            <label value="Bildirim Tipi" style="font-weight:500"/>
+                            <label value="&#8505;" style="color:#8a97a3;cursor:help"
+                                   tooltiptext="Kanal ve sablon ayarlarinin uygulanacagi bildirim tipini seciniz."/>
+                        </n:div>
+                        <combobox model="@load(vm.notificationTypes)" selectedItem="@bind(vm.selectedType)"
+                                  placeholder="Seciniz" readonly="true" width="320px">
+                            <template name="model">
+                                <comboitem label="@load(each.ad)"/>
+                            </template>
+                        </combobox>
+                    </n:div>
+
+                    <div visible="@load(vm.tipSecilmisMi)" style="min-width:220px">
+                        <n:div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                            <label value="Durum (Kanallardan Bagimsiz)" style="font-weight:500"/>
+                            <label value="&#8505;" style="color:#8a97a3;cursor:help"
+                                   tooltiptext="Bu durum, secilen bildirim tipinin tum kanallar icin ust durumudur."/>
+                        </n:div>
+                        <combobox model="@load(vm.durumSecenekleri)" selectedItem="@bind(vm.genelDurum)"
+                                  readonly="true" width="160px">
+                            <template name="model">
+                                <comboitem label="@load(each ? '&#128994; Acik' : '&#128308; Kapali')"/>
+                            </template>
+                        </combobox>
+                    </div>
+
+                    <div visible="@load(not vm.tipSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
+                        <n:span>&#8505;</n:span>
+                        <n:span>Devam etmek icin lutfen bir bildirim tipi seciniz. Bildirim tipine gore kanal ve sablon ayarlari goruntulenecektir.</n:span>
+                    </div>
+                    <div visible="@load(vm.tipSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
+                        <n:span>&#8505;</n:span>
+                        <n:span>Bu durum, secilen bildirim tipinin tum kanallar icin ust durumdur. Kanal bazli acik/kapali durumlar bu alandan bagimsiz olarak yonetilir.</n:span>
+                    </div>
+                </n:div>
+
+                <!-- Satir 2: Bildirim Kanali + bilgi kutusu (sadece bildirim tipi secildiyse) -->
+                <div visible="@load(vm.tipSecilmisMi)">
+                    <n:div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+                        <n:div style="min-width:280px">
+                            <label value="Bildirim Kanali" style="font-weight:500;display:block;margin-bottom:4px"/>
+                            <combobox model="@load(vm.kanalSecenekleri)" selectedItem="@bind(vm.selectedChannel)"
+                                      placeholder="Seciniz" readonly="true" width="320px">
+                                <template name="model">
+                                    <comboitem label="@load(each.etiket)"/>
+                                </template>
+                            </combobox>
+                        </n:div>
+
+                        <div visible="@load(not vm.kanalSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
+                            <n:span>&#8505;</n:span>
+                            <n:span>Sablon ve kanal bazli ayarlari goruntulemek ve duzenlemek icin lutfen bir bildirim kanali seciniz.</n:span>
+                        </div>
+                        <!-- Kanal secildikten sonraki gercek panel (sablon/parametreler/diger
+                             ayarlar) henuz uygulanmadi - bkz. ViewModel javadoc. Bu blok o
+                             panel eklendiginde degistirilecek tek yer tutucu. -->
+                        <div visible="@load(vm.kanalSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
+                            <n:span>&#128712;</n:span>
+                            <label value="@load(vm.kanalAyarlariMesaji)"/>
+                        </div>
+                    </n:div>
+                </div>
+
+                <!-- Alt bilgi + Onaya Gonder -->
+                <div visible="@load(vm.tipSecilmisMi)">
+                    <n:div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8ee;padding-top:12px">
+                        <n:span style="color:#8a97a3;font-size:0.85em">Kanal bagimsiz durum guncellendikten sonra Onaya Gonder islemi yapilabilir.</n:span>
+                        <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
+                                style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('onayaGonder')"/>
+                    </n:div>
+                </div>
+
+            </n:div>
+        </groupbox>
+    </window>
+</zk>
