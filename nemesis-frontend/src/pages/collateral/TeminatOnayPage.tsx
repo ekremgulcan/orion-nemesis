@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 type TabKey = "bekleyen" | "dosyali" | "takasHatali" | "tamamlanan" | "problemli"
 
@@ -260,7 +261,7 @@ export function TeminatOnayPage() {
       </div>
 
       {/* Right column: detail / action panel */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -360,7 +361,7 @@ export function TeminatOnayPage() {
             )}
           </div>
         )}
-      </aside>
+      </DetailAside>
 
       <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
         <AlertDialogContent>

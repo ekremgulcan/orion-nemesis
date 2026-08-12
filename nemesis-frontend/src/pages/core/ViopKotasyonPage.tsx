@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 export function ViopKotasyonPage() {
   const { setTitle } = useOutletContext<PageTitleContext>()
@@ -108,7 +109,7 @@ export function ViopKotasyonPage() {
       </div>
 
       {/* Right column: selected contract detail */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -148,7 +149,7 @@ export function ViopKotasyonPage() {
             </div>
           </div>
         )}
-      </aside>
+      </DetailAside>
     </div>
   )
 }

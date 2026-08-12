@@ -1,12 +1,16 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
 import { AssistantPanel } from "@/components/assistant/AssistantPanel"
+import { ResizeHandle } from "@/components/layout/ResizeHandle"
 import { Sidebar } from "@/components/shell/Sidebar"
 import { TopBar } from "@/components/shell/TopBar"
+import { useResizableWidth } from "@/hooks/useResizableWidth"
 
 export interface PageTitleContext {
   setTitle: (title: string) => void
 }
+
+const ASSISTANT_WIDTH_KEY = "orion-assistant-width-v1"
 
 /**
  * Persistent global shell: top bar + left nav (Sidebar) + a content area
@@ -18,6 +22,12 @@ export interface PageTitleContext {
 export function AppShell() {
   const [title, setTitle] = useState("Orion v3 Nemesis")
   const [assistantOpen, setAssistantOpen] = useState(false)
+  const { width: assistantWidth, onResizeStart } = useResizableWidth({
+    defaultWidth: 360,
+    minWidth: 280,
+    maxWidth: 560,
+    storageKey: ASSISTANT_WIDTH_KEY,
+  })
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
@@ -33,10 +43,16 @@ export function AppShell() {
             <Outlet context={{ setTitle } satisfies PageTitleContext} />
           </main>
           {assistantOpen && (
-            <AssistantPanel
-              pageTitle={title}
-              onClose={() => setAssistantOpen(false)}
-            />
+            <div
+              style={{ width: assistantWidth }}
+              className="relative flex shrink-0 flex-col border-l border-border"
+            >
+              <ResizeHandle onMouseDown={onResizeStart} />
+              <AssistantPanel
+                pageTitle={title}
+                onClose={() => setAssistantOpen(false)}
+              />
+            </div>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { Bot, Loader2, Send, Sparkles, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   confirmAssistantAction,
   fetchAssistantStatus,
@@ -37,6 +38,7 @@ interface AssistantPanelProps {
 
 export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
   const location = useLocation()
+  const queryClient = useQueryClient()
   const { messages, appendMessage, clearMessages } = useAssistantChat()
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -116,6 +118,9 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
       })
       setPendingAction(null)
       appendMessage({ role: "assistant", content: result.message })
+      if (result.executed && result.success) {
+        await queryClient.invalidateQueries()
+      }
     } catch (err) {
       setError(extractErrorMessage(err, "Onay işlemi başarısız."))
     } finally {
@@ -130,7 +135,7 @@ export function AssistantPanel({ pageTitle, onClose }: AssistantPanelProps) {
       : "Danışman · salt rehberlik"
 
   return (
-    <aside className="flex w-[360px] shrink-0 flex-col border-l border-border bg-surface">
+    <aside className="flex h-full min-h-0 w-full flex-col bg-surface">
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-accent" />

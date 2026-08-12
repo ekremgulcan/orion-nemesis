@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 function formatMoney(value: number): string {
   return value.toLocaleString("tr-TR", { minimumFractionDigits: 2 })
@@ -166,7 +167,7 @@ export function NakitYonetimiPage() {
       </div>
 
       {/* Right column: selected account detail */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -205,7 +206,7 @@ export function NakitYonetimiPage() {
             </div>
           </div>
         )}
-      </aside>
+      </DetailAside>
     </div>
   )
 }

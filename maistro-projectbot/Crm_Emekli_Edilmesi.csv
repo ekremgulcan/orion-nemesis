@@ -1,0 +1,40 @@
+﻿Sorular : ;Cevaplar : 
+CRM Emekli Edilmesi projesinde amaç ve kapsam nedir?;"CRM Emekli Edilmesi Projesi ile mevcut CRM sisteminin XRM framework yapısı kaldırılarak yerine yeni bir veri tabanı yapısının oluşturulması hedeflemektedir. Mevcut sistemin XRM framework bağımlılığı, tablo ilişkilerinin doğrudan yönetilememesi gibi problemler proje kapsamında çözüme kavuşturulacaktır.  CRM’e bağlı olan ve operasyonel süreçleri etkileyen modüller de bu geçiş sürecine dahil edilecektir.
+"
+CRM Emekli Edilmesi  Projesinin ilişkili iş alanları nelerdir ? ;"Sermaye Piyasaları ürünlerinden CRM,Orion Yeni Hisse Emir Ekranları, o	İş Bankası Modülü Parya Ekranları, MYS Ekranları,Kredi Ekranları, Yerindelik/Uygunluk ve İş Yatırım Web Sitesi gibi alanlar ile ilişkisi bulunmaktadır. "
+CRM Emekli Edilmesi Projesinin ilişkili iş süreci var mı  ? ;CRM Emekli Edilmesi Projesinin ilişkili iş süreci bulunmamaktadır
+CRM Emekli Edilmesi Projesi ilişkili uygulama ve modüller nelerdir  ? ;CRM Emekli Edilmesi projesinde ilişkili uygulama ve modüller arasında sermaye piyasaları backoffice sistemleri bulunur.
+IYM nedir? ;İş Yatırım Menkul Değerler demektir.
+CRM nedir ?;Müşteri İlişkileri Yönetimi demektir.
+MYS nedir ? ;Müşteri Yönetim Sistemi demektir.
+CRM Emekli Edilmesi Projesinin referansı var mıdır ? ;Hayır yoktur.
+CRM Emekli Edilmesi projesinin iş gereksinimleri  nelerdir ? ;"•	Yeni bir relational database üzerinde mevcut tabloların eşlenikleri oluşturulacak. Tablo ilişkileri ve tabloların birincil anahtar yapısı düzenlenecek ve CRM’in veri yönetiminin yeni bağımsız bir veritabanına taşınması sağlanacaktır.
+•	Yeni oluşturulacak tablolara eski tablolardan migration işlemi yapılacak.
+•	Mevcut ilişkilerin korunması için çalışma yapılacak.
+•	Bu sistemi kullanan orion ve diğer ortamlarda değişiklikler yapılacak.
+•	CRM’e bağlı sistemler yeni sisteme entegre edilecektir.
+•	Modül bazında geliştirmelerin planlanması ve optimize edilmesi sağlanacaktır.
+•	CRM, Parya, MYS, Kredi, Tmigo, Form, Service.WCF, ServiceInterface için servis geliştirmeleri yapılacaktır. 
+•	BPM dönüştürme ve geliştirmeleri yapılacaktır. 
+•	XRM Yerine Ado.net’e geçilecektir.  
+•	CRM’in müşteri ilişkileri yönetimi tarafındaki süreçlerde ve arayüzlerde bir değişiklik olmayacaktır.
+•	Web sitesi üyelik kayıtlarına ait veriler CRM üzerinde tutulmaya devam edecektir.
+Orion üzerindeki aşağıdaki ekranlarda ilgili değişiklikler test edilecektir:
+o	Yeni Hisse Emir Ekranları
+o	İş Bankası Modülü Parya Ekranları
+o	MYS ekranları
+o	Kredi ekranları
+o	Yerindelik /Uygunluk
+o	Web sitesi"
+CRM Emekli Edilmesi projesinin entegrasyon analizi nasıldır ? ;"FAPI gibi dışarıya açılan servislerden de ESB aracılığıyla CRM ile ilişki kuran servisler bulunmaktadır. 
+CRM/v1/{lang}/contact/list
+CRM/v1/{lang}/isbankmeeting/list
+CRM/v1/{lang}/lead/list
+CRM/v1/{lang}/compliance/email
+CRM/v1/{lang}/legitimacy/email
+CRM/v1/{lang}/isbankmeeting"
+CRM Emekli Edilmesi Projesinde raporlama gereksinimi bulunuyor mu ? ;Esktra bir rapor gereksinimi bulunmamaktadır. Mevcutta kullanılan tüm raporlar aynı şekilde kullanılmaya devam edilecektir.
+CRM Emekli Edilmesi Projesinde mevcut uygulamalarla etkileşim nasıl gerçekleşir ? ;Mevcut uygulamalar ile etkileşim aynı şekilde devam edecektir. Farklı bir yöntem kullanılmayacaktır.
+CRM Emekli Edilmesi Projesinde  otomatik zamanlı işlemler nasıl gerçekleşir ? ;Otomatik zamanlı işlem bulunmamaktadır.
+CRM Emekli Edilmesi  projesinide tamamlayıcı gereksinimler nelerdir ? ;Tamamlayıcı gereksinim bulunmamaktadır. 
+CRM Emekli Edilmesi  projesinide ek bulunuyor mu ?;Ek bulunmuyor.
