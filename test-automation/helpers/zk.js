@@ -41,6 +41,26 @@ async function fillTextboxesInOrder(page, values, selector = "input.z-textbox, i
 }
 
 /**
+ * Sets the Nth ZK `<intbox>` (input.z-intbox) on the page to a given
+ * numeric value (0-indexed DOM order) - selects existing content first
+ * so it replaces rather than appends.
+ */
+async function setIntboxByIndex(page, index, value) {
+  const inputs = await page.$$("input.z-intbox");
+  if (index >= inputs.length) {
+    throw new Error(`setIntboxByIndex: only ${inputs.length} intboxes found, index ${index} out of range`);
+  }
+  await inputs[index].click({ clickCount: 3 });
+  await inputs[index].type(String(value));
+  await inputs[index].press("Tab");
+}
+
+/** Returns the current value of every ZK `<intbox>` on the page, in DOM order. */
+async function getIntboxValues(page) {
+  return page.evaluate(() => Array.from(document.querySelectorAll("input.z-intbox")).map((el) => el.value));
+}
+
+/**
  * Selects an option in the Nth ZK combobox on the page (0-indexed, DOM
  * order) by opening it and choosing the item whose text matches
  * exactly. If the combobox already defaults to the desired value this
@@ -249,4 +269,6 @@ module.exports = {
   setCheckboxByIndex,
   getCheckboxStates,
   getComboboxValues,
+  setIntboxByIndex,
+  getIntboxValues,
 };

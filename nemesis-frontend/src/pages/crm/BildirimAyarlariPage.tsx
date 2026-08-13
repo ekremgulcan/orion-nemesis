@@ -2,18 +2,24 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Info, Send } from "lucide-react";
+import { Check, Info, Pencil, Send, X } from "lucide-react";
 
 import {
+  fetchChannelTemplate,
   fetchNotificationTypes,
+  updateChannelTemplate,
   updateGenelDurum,
+  type NotifChannelTemplateDto,
   type NotificationTypeDto,
 } from "@/api/bildirimAyarlari";
 import { extractErrorMessage } from "@/api/client";
 import type { PageTitleContext } from "@/components/shell/AppShell";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,17 +36,31 @@ const KANAL_OPTIONS: { value: Kanal; label: string }[] = [
   { value: "EPOSTA", label: "E-Posta" },
 ];
 
+const PARAM_PATTERN = /\$\{(\w+)\}/g;
+
+function extractParametreler(templateBody: string): string[] {
+  const seen = new Set<string>();
+  for (const match of templateBody.matchAll(PARAM_PATTERN)) {
+    seen.add(match[1]);
+  }
+  return Array.from(seen);
+}
+
 /**
  * "Bildirim Ayarlari Ekrani" (notification/bildirim-ayarlari.zul /
- * BildirimAyarlariViewModel). Bugun icin sadece ilk iki bolum uygulandi:
- * bildirim tipi secimi + kanallardan bagimsiz genel durum. Bir kanal
- * secildiginde su an sadece bir yer tutucu mesaj gosterilir - sablon/
- * parametre/diger-ayarlar bolumu ZK tarafinda da henuz yok (bkz.
- * BildirimAyarlariViewModel javadoc), bu React sayfasi ayni sinirlamayi
- * birebir yansitir. Musteri Bildirim Tercihleri'nde oldugu gibi bu
- * ekranin da "cok kayitli liste" kavrami yok (tek seferde bir bildirim
- * tipi secilir) - bu yuzden standart liste+detay 3 kolonlu duzen yerine
- * tek kart kullanildi.
+ * BildirimAyarlariViewModel). Bir bildirim kanali secildiginde o kanala
+ * ait sablon + "Diger Ayarlar" goruntulenir; "Duzenle" ile Mevcut Sablon +
+ * Diger Ayarlar duzenlenebilir olur - Bildirim Tipi/Durum/Bildirim Kanali
+ * her zaman duzenlenebilir kalir (ZK ile ayni davranis, bkz. ViewModel
+ * javadoc). `channelDraft` ZK'daki selectedTemplate ile ayni rol - sunucudan
+ * gelen veriyi DOGRUDAN tutar ve duzenler, ayri bir "duzenlenen deger"
+ * tamponu YOKTUR (ZK tarafinda once boyle bir tampon denendi, "sadece
+ * Duzenle'den sonra gorunuyor"/"baska kanala gecince eski metin
+ * gorunuyor" gibi senkronizasyon hatalarina yol acti - dogrudan mutasyon
+ * cok daha guvenilir, bkz. BildirimAyarlariViewModel javadoc). Musteri
+ * Bildirim Tercihleri'nde oldugu gibi bu ekranin da "cok kayitli liste"
+ * kavrami yok - bu yuzden standart liste+detay 3 kolonlu duzen yerine tek
+ * kart kullanildi.
  */
 export function BildirimAyarlariPage() {
   const { setTitle } = useOutletContext<PageTitleContext>();
@@ -52,6 +72,8 @@ export function BildirimAyarlariPage() {
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const [pendingActive, setPendingActive] = useState<boolean | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<Kanal | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [channelDraft, setChannelDraft] = useState<NotifChannelTemplateDto | null>(null);
 
   const query = useQuery({
     queryKey: ["notification-types"],
@@ -61,6 +83,21 @@ export function BildirimAyarlariPage() {
   const types = query.data ?? [];
   const selectedType = types.find((t) => t.id === selectedTypeId) ?? null;
   const currentActive = pendingActive ?? selectedType?.active ?? true;
+
+  const channelQuery = useQuery({
+    queryKey: ["channel-template", selectedTypeId, selectedChannel],
+    queryFn: () => fetchChannelTemplate(selectedTypeId as number, selectedChannel as string),
+    enabled: selectedTypeId != null && selectedChannel != null,
+  });
+
+  // Sunucudan yeni veri geldiginde (tip/kanal degisti veya Kaydet basarili
+  // oldu) bellekteki taslak TAZE veriyle degistirilir ve duzenleme modu
+  // kapatilir - ZK'daki setSelectedType/setSelectedChannel/Kaydet ile ayni
+  // "kaydedilmemis degisiklikleri at" davranisi.
+  useEffect(() => {
+    setChannelDraft(channelQuery.data ?? null);
+    setEditMode(false);
+  }, [channelQuery.data]);
 
   const saveMutation = useMutation({
     mutationFn: () => updateGenelDurum(selectedTypeId as number, currentActive),
@@ -76,6 +113,26 @@ export function BildirimAyarlariPage() {
     },
   });
 
+  const channelSaveMutation = useMutation({
+    mutationFn: () => {
+      const draft = channelDraft as NotifChannelTemplateDto;
+      return updateChannelTemplate(draft.id, {
+        musteriGorurVeDegistir: draft.musteriGorurVeDegistir,
+        maxRetry: draft.maxRetry,
+        errorBackoffTime: draft.errorBackoffTime,
+        active: draft.active,
+        templateBody: draft.templateBody,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["channel-template", selectedTypeId, selectedChannel], data);
+      toast.success("Kanal ayarlari kaydedildi.");
+    },
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Kanal ayarlari kaydedilirken hata olustu"));
+    },
+  });
+
   function handleTypeChange(value: string | null) {
     setSelectedTypeId(value ? Number(value) : null);
     setPendingActive(null);
@@ -83,6 +140,17 @@ export function BildirimAyarlariPage() {
     // ayarlar her bildirim tipi icin bagimsizdir (ZK ViewModel ile ayni davranis).
     setSelectedChannel(null);
   }
+
+  function updateDraft(patch: Partial<NotifChannelTemplateDto>) {
+    setChannelDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
+  function handleIptal() {
+    setChannelDraft(channelQuery.data ?? null);
+    setEditMode(false);
+  }
+
+  const parametreler = channelDraft ? extractParametreler(channelDraft.templateBody) : [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -98,10 +166,32 @@ export function BildirimAyarlariPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
         <div className="rounded-lg border border-border bg-surface">
-          <div className="border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="text-sm font-semibold">
               {selectedType ? "Bildirim Tipi ve Genel Durum" : "Bildirim Tipi Secimi"}
             </h3>
+            {selectedChannel && !editMode && (
+              <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
+                <Pencil />
+                Duzenle
+              </Button>
+            )}
+            {selectedChannel && editMode && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleIptal}>
+                  <X />
+                  Iptal
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => channelSaveMutation.mutate()}
+                  disabled={channelSaveMutation.isPending}
+                >
+                  <Check />
+                  {channelSaveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-4 p-4">
@@ -202,21 +292,134 @@ export function BildirimAyarlariPage() {
                   </Select>
                 </Field>
 
-                {!selectedChannel ? (
+                {!selectedChannel && (
                   <InfoBox className="min-w-64 flex-1">
                     Sablon ve kanal bazli ayarlari goruntulemek ve
                     duzenlemek icin lutfen bir bildirim kanali seciniz.
-                  </InfoBox>
-                ) : (
-                  <InfoBox className="min-w-64 flex-1">
-                    Bu kanal icin sablon ve diger ayarlar yakinda
-                    eklenecektir.
                   </InfoBox>
                 )}
               </div>
             )}
 
-            {selectedType && (
+            {selectedChannel && channelDraft && (
+              <div className="flex flex-col gap-4 border-t border-border pt-4">
+                <div>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Label className="text-xs text-foreground-muted">
+                      Sablonda Kullanilabilecek Parametreler
+                    </Label>
+                    <Info className="size-3.5 text-foreground-faint" />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {parametreler.length === 0 ? (
+                      <p className="text-xs text-foreground-faint">
+                        Bu sablonda parametre bulunmuyor.
+                      </p>
+                    ) : (
+                      parametreler.map((p) => (
+                        <Badge key={p} variant="outline" className="font-mono">
+                          {`\${${p}}`}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-xs text-foreground-muted">
+                    {editMode ? "Mevcut Sablon" : "Mevcut Sablon (Salt Okunur)"}
+                  </Label>
+                  <Textarea
+                    value={channelDraft.templateBody}
+                    readOnly={!editMode}
+                    onChange={(e) => updateDraft({ templateBody: e.target.value })}
+                    rows={3}
+                    className={cn(!editMode && "bg-muted/40")}
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-2 block text-xs font-medium text-foreground-muted">
+                    Diger Ayarlar
+                  </Label>
+                  <div className="flex flex-wrap items-start gap-6">
+                    <Field label="Musteri Gorur ve Degistirir">
+                      <Select
+                        value={channelDraft.musteriGorurVeDegistir ? "true" : "false"}
+                        onValueChange={(v) => updateDraft({ musteriGorurVeDegistir: v === "true" })}
+                        disabled={!editMode}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue>
+                            {(value: string | null) => (value === "true" ? "Evet" : "Hayir")}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Evet</SelectItem>
+                          <SelectItem value="false">Hayir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+
+                    <Field label="Max Deneme Sayisi">
+                      <Input
+                        type="number"
+                        className="w-40"
+                        value={channelDraft.maxRetry}
+                        readOnly={!editMode}
+                        onChange={(e) => updateDraft({ maxRetry: Number(e.target.value) })}
+                      />
+                    </Field>
+
+                    <Field label="Tekrar Deneme Suresi (sn)">
+                      <Input
+                        type="number"
+                        className="w-40"
+                        value={channelDraft.errorBackoffTime}
+                        readOnly={!editMode}
+                        onChange={(e) => updateDraft({ errorBackoffTime: Number(e.target.value) })}
+                      />
+                    </Field>
+
+                    <Field label="Kanal Durumu">
+                      <Select
+                        value={channelDraft.active ? "true" : "false"}
+                        onValueChange={(v) => updateDraft({ active: v === "true" })}
+                        disabled={!editMode}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue>
+                            {(value: string | null) => (
+                              <span className="flex items-center gap-1.5">
+                                <span
+                                  className={cn(
+                                    "inline-block h-2 w-2 rounded-full",
+                                    value === "true" ? "bg-success" : "bg-danger",
+                                  )}
+                                />
+                                {value === "true" ? "Acik" : "Kapali"}
+                              </span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">
+                            <span className="inline-block h-2 w-2 rounded-full bg-success" />
+                            Acik
+                          </SelectItem>
+                          <SelectItem value="false">
+                            <span className="inline-block h-2 w-2 rounded-full bg-danger" />
+                            Kapali
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedType && !editMode && (
               <div className="flex items-center justify-between border-t border-border pt-3">
                 <p className="text-xs text-foreground-muted">
                   Kanal bagimsiz durum guncellendikten sonra Onaya Gonder

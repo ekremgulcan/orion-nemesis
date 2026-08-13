@@ -1,10 +1,6 @@
 /**
  * Senaryo: Bildirim Ayarlari (ZK: notification/bildirim-ayarlari.zul)
- * ekraninda kapsamli fonksiyonel test - su an sadece ekranin ilk iki
- * bolumu uygulandi (bildirim tipi secimi + kanallardan bagimsiz genel
- * durum); kanal secildikten sonraki sablon/parametre/diger-ayarlar
- * bolumu henuz yok, bu yuzden bu senaryo sadece yer tutucu mesaji
- * dogrular:
+ * ekraninda kapsamli fonksiyonel test:
  *   1. Ekran ilk acildiginda "Bildirim Tipi Secimi" basligi ve "devam
  *      etmek icin bildirim tipi seciniz" mesaji gorunur; Durum ve
  *      Bildirim Kanali alanlari henuz gorunmez.
@@ -16,21 +12,35 @@
  *      mesaji + veritabaninda is_active=0 dogrulanir.
  *   4. Sayfa yeniden yuklenip ayni tip tekrar secilir -> degisikligin
  *      kalici oldugu (Durum hala Kapali gorunur) dogrulanir.
- *   5. Bildirim Kanali secilir (Mobil) -> henuz uygulanmamis kanal bazli
- *      bolum icin yer tutucu mesaj gorunur.
- *   6. Baska bir bildirim tipi secilince kanal seciminin sifirlandigi
- *      (yer tutucu mesajin kaybolup "kanal seciniz" mesajinin geri
- *      geldigi) dogrulanir.
- *   7. Teardown: Durum tekrar "Acik" yapilir ve kaydedilir, veritabaninda
- *      dogrulanir - kalici referans veri (PARTIALLY_FILLED) baska
- *      senaryolari etkilemesin diye.
+ *   5. Bildirim Kanali secilir (Mobil) -> gercek kanal paneli gorunur:
+ *      parametre badge'leri + Mevcut Sablon (salt okunur) icerigi dogru
+ *      yansitir, "Duzenle" gorunur, "Iptal"/"Kaydet" gizlidir.
+ *   6. "Duzenle" tiklanir -> "Iptal"/"Kaydet" gorunur, Musteri Gorur ve
+ *      Degistirir/Max Deneme Sayisi/Tekrar Deneme Suresi/Kanal Durumu
+ *      degistirilir, "Kaydet" ile kaydedilir -> basari mesaji +
+ *      veritabaninda yeni degerler dogrulanir.
+ *   7. "Duzenle" tekrar tiklanir, bir alan degistirilir, "Iptal" ile
+ *      vazgecilir -> degisiklik ekranda da veritabaninda da uygulanmamis
+ *      olmali (bir onceki adimda kaydedilen deger degismeden kalir).
+ *   8. Baska bir bildirim tipi secilince kanal seciminin (ve kanal
+ *      panelinin) sifirlandigi dogrulanir.
+ *   9. Teardown: Durum tekrar "Acik" yapilir; kanal ayarlari (Max Deneme
+ *      Sayisi/Tekrar Deneme Suresi/Musteri Gorur ve Degistirir/Kanal
+ *      Durumu) orijinal degerlerine geri alinir - kalici referans veri
+ *      baska senaryolari etkilemesin diye.
  *
  * Kullanim: node screens/zk/bildirim-ayarlari-guncelleme.cjs
  * Ortam degiskenleri (opsiyonel): BASE_URL (varsayilan http://localhost:8080)
  */
 const path = require("node:path");
 const { launchBrowser, newPage } = require("../../helpers/browser");
-const { clickButtonByText, selectComboboxByIndex, getComboboxValues } = require("../../helpers/zk");
+const {
+  clickButtonByText,
+  selectComboboxByIndex,
+  getComboboxValues,
+  setIntboxByIndex,
+  getIntboxValues,
+} = require("../../helpers/zk");
 const { runQuery } = require("../../helpers/db");
 const { ScenarioReport } = require("../../helpers/report");
 const { attachPageDiagnostics } = require("../../helpers/diagnostics");
@@ -41,6 +51,13 @@ const REPORT_PATH = path.join(__dirname, "..", "..", "reports", `bildirim-ayarla
 const TIP_ADI = "Emrinizin Durumunda Degisiklik Oldu"; // PARTIALLY_FILLED, zorunlu degil
 const DIGER_TIP_ADI = "VIOP Margin Call Bildirimi"; // sadece kanal-sifirlama testi icin secilir, durumu degistirilmez
 const DB_QUERY = "SELECT is_active FROM notification_types WHERE kod = 'PARTIALLY_FILLED';";
+const CHANNEL_DB_QUERY =
+  "SELECT nct.max_retry, nct.error_backoff_time, nct.musteri_gorur_ve_degistir, nct.is_active FROM notif_channel_templates nct " +
+  "JOIN notification_types nt ON nt.notification_type_id = nct.notification_type_id " +
+  "WHERE nt.kod = 'PARTIALLY_FILLED' AND nct.kanal = 'PUSH';";
+// Orijinal (V38 seed) degerler - teardown'da buraya geri donulur.
+const ORIJINAL_MAX_RETRY = "3";
+const ORIJINAL_ERROR_BACKOFF = "180";
 
 async function run() {
   const report = new ScenarioReport("Bildirim Ayarlari (ZK) - Kapsamli Test");
@@ -117,32 +134,94 @@ async function run() {
       report.fail("Yeniden yuklemeden sonra Durum degisikligi kaybolmus", JSON.stringify(reloadCombos), { screenshot: reloadScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 5: Bildirim Kanali sec -> yer tutucu mesaj ---
+    // --- Adim 5: Bildirim Kanali sec (Mobil) -> gercek kanal paneli gorunur ---
     await selectComboboxByIndex(page, 2, "Mobil");
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 500));
     const channelBody = await page.evaluate(() => document.body.innerText);
+    const channelTextarea = await page.evaluate(() => document.querySelector("textarea")?.value ?? "");
     const channelScreenshot = await page.screenshot();
-    if (channelBody.includes("Bu kanal icin sablon ve diger ayarlar yakinda eklenecektir")) {
-      report.pass("Kanal secildikten sonra yer tutucu mesaj goruntulendi", "Mobil kanali secildi", { screenshot: channelScreenshot });
+    if (
+      channelBody.includes("Sablonda Kullanilabilecek Parametreler") &&
+      channelBody.includes("${Symbol}") &&
+      channelBody.includes("Mevcut Sablon (Salt Okunur)") &&
+      channelTextarea.includes("${OrderId}") &&
+      channelBody.includes("Duzenle") &&
+      !channelBody.includes("Iptal")
+    ) {
+      report.pass("Kanal secildikten sonra gercek panel (parametreler + sablon) goruntulendi", "Duzenle gorunur, Iptal/Kaydet gizli", { screenshot: channelScreenshot });
     } else {
-      report.fail("Kanal secildikten sonra beklenen yer tutucu mesaj goruntulenmedi", channelBody.slice(0, 300), { screenshot: channelScreenshot, diagnostics: diagnostics.getLogs() });
+      report.fail("Kanal secildikten sonra beklenen panel goruntulenmedi", channelBody.slice(0, 400), { screenshot: channelScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 6: Baska bir bildirim tipi sec -> kanal secimi sifirlanmali ---
+    // --- Adim 6: Duzenle -> Diger Ayarlar'i degistir, Kaydet ---
+    await clickButtonByText(page, "Duzenle");
+    await new Promise((r) => setTimeout(r, 400));
+    const editBody = await page.evaluate(() => document.body.innerText);
+    if (editBody.includes("Iptal") && editBody.includes("Kaydet") && !editBody.includes("Mevcut Sablon (Salt Okunur)")) {
+      report.pass("Duzenle sonrasi Iptal/Kaydet goruntulendi, '(Salt Okunur)' ibaresi kayboldu", "Duzenleme modu aktif");
+    } else {
+      report.fail("Duzenle sonrasi beklenen degisiklikler olmadi", editBody.slice(0, 400), { diagnostics: diagnostics.getLogs() });
+    }
+
+    await selectComboboxByIndex(page, 3, "Hayir"); // Musteri Gorur ve Degistirir
+    await setIntboxByIndex(page, 0, "5"); // Max Deneme Sayisi
+    await setIntboxByIndex(page, 1, "300"); // Tekrar Deneme Suresi
+    await selectComboboxByIndex(page, 4, "\uD83D\uDD34 Kapali"); // Kanal Durumu
+    await new Promise((r) => setTimeout(r, 300));
+    await clickButtonByText(page, "Kaydet");
+    await new Promise((r) => setTimeout(r, 1000));
+    const kaydetBody = await page.evaluate(() => document.body.innerText);
+    const kaydetScreenshot = await page.screenshot();
+    if (kaydetBody.includes("Kanal ayarlari kaydedildi")) {
+      report.pass("Kanal ayarlari icin basari mesaji goruldu", "Kanal ayarlari kaydedildi.", { screenshot: kaydetScreenshot });
+    } else {
+      report.fail("Kanal ayarlari basari mesaji goruntulenmedi", kaydetBody.slice(0, 300), { screenshot: kaydetScreenshot, diagnostics: diagnostics.getLogs() });
+    }
+
+    const channelRows = await runQuery(CHANNEL_DB_QUERY);
+    report.sql("Veritabani sorgusu calistirildi", CHANNEL_DB_QUERY, channelRows);
+    if (
+      channelRows.length === 1 &&
+      channelRows[0].max_retry === "5" &&
+      channelRows[0].error_backoff_time === "300" &&
+      channelRows[0].musteri_gorur_ve_degistir === "0" &&
+      channelRows[0].is_active === "0"
+    ) {
+      report.pass("Veritabaninda kanal ayarlari guncellemesi dogrulandi", JSON.stringify(channelRows[0]));
+    } else {
+      report.fail("Veritabaninda beklenen kanal ayarlari bulunamadi", JSON.stringify(channelRows), { diagnostics: diagnostics.getLogs() });
+    }
+
+    // --- Adim 7: Duzenle -> bir alani degistir -> Iptal ile vazgec ---
+    await clickButtonByText(page, "Duzenle");
+    await new Promise((r) => setTimeout(r, 400));
+    await setIntboxByIndex(page, 0, "1"); // Max Deneme Sayisi - kaydedilmeyecek
+    await clickButtonByText(page, "Iptal");
+    await new Promise((r) => setTimeout(r, 500));
+    const afterIptalIntboxes = await getIntboxValues(page);
+    const iptalRows = await runQuery(CHANNEL_DB_QUERY);
+    if (afterIptalIntboxes[0] === "5" && iptalRows[0]?.max_retry === "5") {
+      report.pass("Iptal, kaydedilmemis degisikligi atti", `Max Deneme Sayisi hala 5 (ekranda ve DB'de)`);
+    } else {
+      report.fail("Iptal beklenen sekilde vazgecmedi", `ekran=${afterIptalIntboxes[0]}, db=${iptalRows[0]?.max_retry}`, { diagnostics: diagnostics.getLogs() });
+    }
+
+    // --- Adim 8: Baska bir bildirim tipi sec -> kanal secimi sifirlanmali ---
     await selectComboboxByIndex(page, 0, DIGER_TIP_ADI);
     await new Promise((r) => setTimeout(r, 500));
     const resetBody = await page.evaluate(() => document.body.innerText);
     const resetScreenshot = await page.screenshot();
     if (
       resetBody.includes("Sablon ve kanal bazli ayarlari goruntulemek ve duzenlemek icin lutfen bir bildirim kanali seciniz") &&
-      !resetBody.includes("Bu kanal icin sablon ve diger ayarlar yakinda eklenecektir")
+      !resetBody.includes("Sablonda Kullanilabilecek Parametreler")
     ) {
       report.pass("Bildirim tipi degisince kanal secimi sifirlandi", `Yeni tip: ${DIGER_TIP_ADI}`, { screenshot: resetScreenshot });
     } else {
       report.fail("Bildirim tipi degisince kanal secimi sifirlanmadi", resetBody.slice(0, 300), { screenshot: resetScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 7 (Teardown): PARTIALLY_FILLED'i tekrar sec, Durum'u Acik yap ---
+    // --- Adim 9 (Teardown): PARTIALLY_FILLED'i tekrar sec, Durum'u Acik yap,
+    //     kanal ayarlarini orijinal degerlerine geri al ---
     await selectComboboxByIndex(page, 0, TIP_ADI);
     await new Promise((r) => setTimeout(r, 500));
     await selectComboboxByIndex(page, 1, "\uD83D\uDFE2 Acik");
@@ -155,6 +234,31 @@ async function run() {
       report.pass("Teardown: genel durum varsayilan (Acik) durumuna geri alindi", "PARTIALLY_FILLED / is_active=1");
     } else {
       report.fail("Teardown basarisiz: genel durum varsayilan duruma donmedi", JSON.stringify(teardownRows));
+    }
+
+    await selectComboboxByIndex(page, 2, "Mobil");
+    await new Promise((r) => setTimeout(r, 500));
+    await clickButtonByText(page, "Duzenle");
+    await new Promise((r) => setTimeout(r, 400));
+    await selectComboboxByIndex(page, 3, "Evet");
+    await setIntboxByIndex(page, 0, ORIJINAL_MAX_RETRY);
+    await setIntboxByIndex(page, 1, ORIJINAL_ERROR_BACKOFF);
+    await selectComboboxByIndex(page, 4, "\uD83D\uDFE2 Acik");
+    await new Promise((r) => setTimeout(r, 300));
+    await clickButtonByText(page, "Kaydet");
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const channelTeardownRows = await runQuery(CHANNEL_DB_QUERY);
+    if (
+      channelTeardownRows.length === 1 &&
+      channelTeardownRows[0].max_retry === ORIJINAL_MAX_RETRY &&
+      channelTeardownRows[0].error_backoff_time === ORIJINAL_ERROR_BACKOFF &&
+      channelTeardownRows[0].musteri_gorur_ve_degistir === "1" &&
+      channelTeardownRows[0].is_active === "1"
+    ) {
+      report.pass("Teardown: kanal ayarlari varsayilan degerlerine geri alindi", JSON.stringify(channelTeardownRows[0]));
+    } else {
+      report.fail("Teardown basarisiz: kanal ayarlari varsayilan degerlere donmedi", JSON.stringify(channelTeardownRows));
     }
   } finally {
     if (browser) await browser.close();

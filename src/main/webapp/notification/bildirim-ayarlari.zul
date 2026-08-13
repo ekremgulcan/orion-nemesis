@@ -24,8 +24,28 @@
         <label value="Bildirim Ayarlari Ekrani"
                style="color:#2f6fad;font-size:20px;font-weight:bold"/>
 
-        <groupbox closable="false" style="margin-top:10px">
+        <groupbox closable="false" style="margin-top:10px;position:relative">
             <caption label="@load(vm.tipSecilmisMi ? 'Bildirim Tipi ve Genel Durum' : 'Bildirim Tipi Secimi')"/>
+
+            <!-- Caption'in kendi icine konan buton'lar, caption'in label
+                 degistikce (bkz. yukaridaki @load) tum alt bileşenlerini
+                 yeniden olusturuyor ve o sirada visible=false olan
+                 dugmeleri DOM'dan tamamen dusuruyordu (sonraki
+                 NotifyChange bunlari geri getiremiyordu) - bu yuzden
+                 dugmeler caption'in DISINA alinip groupbox'in sag ust
+                 kosesine mutlak konumlandirildi (groupbox'a bunun icin
+                 position:relative eklendi). -->
+            <div visible="@load(vm.kanalSecilmisMi and not vm.duzenlemeModu)"
+                 style="position:absolute;top:9px;right:14px;z-index:2">
+                <button label="Duzenle" iconSclass="z-icon-pencil" onClick="@command('duzenle')"/>
+            </div>
+            <div visible="@load(vm.duzenlemeModu)"
+                 style="position:absolute;top:9px;right:14px;z-index:2">
+                <button label="Iptal" iconSclass="z-icon-times" style="margin-right:6px" onClick="@command('iptal')"/>
+                <button label="Kaydet" iconSclass="z-icon-check"
+                        style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('kanalAyarlariniKaydet')"/>
+            </div>
 
             <n:div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px">
 
@@ -86,18 +106,72 @@
                             <n:span>&#8505;</n:span>
                             <n:span>Sablon ve kanal bazli ayarlari goruntulemek ve duzenlemek icin lutfen bir bildirim kanali seciniz.</n:span>
                         </div>
-                        <!-- Kanal secildikten sonraki gercek panel (sablon/parametreler/diger
-                             ayarlar) henuz uygulanmadi - bkz. ViewModel javadoc. Bu blok o
-                             panel eklendiginde degistirilecek tek yer tutucu. -->
-                        <div visible="@load(vm.kanalSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
-                            <n:span>&#128712;</n:span>
-                            <label value="@load(vm.kanalAyarlariMesaji)"/>
-                        </div>
                     </n:div>
                 </div>
 
-                <!-- Alt bilgi + Onaya Gonder -->
-                <div visible="@load(vm.tipSecilmisMi)">
+                <!-- Kanal secildikten sonraki gercek panel: sablon parametreleri +
+                     mevcut sablon (salt okunur) + diger ayarlar. -->
+                <div visible="@load(vm.kanalSecilmisMi)" style="border-top:1px solid #e2e8ee;padding-top:14px">
+                    <n:div style="display:flex;flex-direction:column;gap:14px">
+
+                        <n:div>
+                            <n:div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                                <label value="Sablonda Kullanilabilecek Parametreler" style="font-weight:500"/>
+                                <label value="&#8505;" style="color:#8a97a3;cursor:help"
+                                       tooltiptext="Liste, Emir Iletim servislerinden anlik olarak alinmaktadir."/>
+                            </n:div>
+                            <n:div style="display:flex;flex-wrap:wrap">
+                                <html content="@load(vm.parametrelerHtml)"/>
+                            </n:div>
+                        </n:div>
+
+                        <n:div>
+                            <label value="@load(vm.mevcutSablonEtiketi)" style="font-weight:500;display:block;margin-bottom:4px"/>
+                            <textbox value="@bind(vm.mevcutSablon)" readonly="@load(not vm.duzenlemeModu)"
+                                     multiline="true" rows="3" width="100%"
+                                     style="@load(vm.duzenlemeModu ? '' : 'background:#f7f9fb')"/>
+                        </n:div>
+
+                        <n:div>
+                            <label value="Diger Ayarlar" style="font-weight:500;display:block;margin-bottom:8px"/>
+                            <n:div style="display:flex;gap:24px;flex-wrap:wrap">
+                                <n:div style="min-width:160px">
+                                    <label value="Musteri Gorur ve Degistirir" style="display:block;margin-bottom:4px;font-size:0.9em"/>
+                                    <combobox model="@load(vm.evetHayirSecenekleri)" selectedItem="@bind(vm.musteriGorur)"
+                                              readonly="true" width="160px" disabled="@load(not vm.duzenlemeModu)">
+                                        <template name="model">
+                                            <comboitem label="@load(each ? 'Evet' : 'Hayir')"/>
+                                        </template>
+                                    </combobox>
+                                </n:div>
+                                <n:div style="min-width:160px">
+                                    <label value="Max Deneme Sayisi" style="display:block;margin-bottom:4px;font-size:0.9em"/>
+                                    <intbox value="@bind(vm.maxRetry)" width="160px"
+                                            readonly="@load(not vm.duzenlemeModu)"/>
+                                </n:div>
+                                <n:div style="min-width:160px">
+                                    <label value="Tekrar Deneme Suresi (sn)" style="display:block;margin-bottom:4px;font-size:0.9em"/>
+                                    <intbox value="@bind(vm.errorBackoff)" width="160px"
+                                            readonly="@load(not vm.duzenlemeModu)"/>
+                                </n:div>
+                                <n:div style="min-width:160px">
+                                    <label value="Kanal Durumu" style="display:block;margin-bottom:4px;font-size:0.9em"/>
+                                    <combobox model="@load(vm.durumSecenekleri)" selectedItem="@bind(vm.kanalDurumu)"
+                                              readonly="true" width="160px" disabled="@load(not vm.duzenlemeModu)">
+                                        <template name="model">
+                                            <comboitem label="@load(each ? '&#128994; Acik' : '&#128308; Kapali')"/>
+                                        </template>
+                                    </combobox>
+                                </n:div>
+                            </n:div>
+                        </n:div>
+
+                    </n:div>
+                </div>
+
+                <!-- Alt bilgi + Onaya Gonder (duzenleme modunda gizlenir - o sirada
+                     sadece Iptal/Kaydet gecerlidir, bkz. caption). -->
+                <div visible="@load(vm.tipSecilmisMi and not vm.duzenlemeModu)">
                     <n:div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8ee;padding-top:12px">
                         <n:span style="color:#8a97a3;font-size:0.85em">Kanal bagimsiz durum guncellendikten sonra Onaya Gonder islemi yapilabilir.</n:span>
                         <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"

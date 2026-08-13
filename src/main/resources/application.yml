@@ -24,6 +24,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    # Bildirim sablonlari (notif_channel_templates seed verisi) literal
+    # ${Param} tokenlari icerir (bkz. V38) - Flyway varsayilan olarak
+    # ${...} yi kendi placeholder sozdizimi sanip deger bulamayinca hata
+    # veriyordu. Bu ozellik projede hicbir migration'da kullanilmiyor,
+    # bu yuzden tamamen kapatildi.
+    placeholder-replacement: false
   web:
     resources:
       # Dev'de src/main/webapp altindaki statik dosyalar (css/js) her
