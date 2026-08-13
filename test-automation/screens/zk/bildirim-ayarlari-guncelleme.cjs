@@ -9,7 +9,7 @@
  *      etmek icin bildirim tipi seciniz" mesaji gorunur; Durum ve
  *      Bildirim Kanali alanlari henuz gorunmez.
  *   2. Duzenlenebilir bir bildirim tipi (Emrinizin Durumunda Degisiklik
- *      Oldu / STATUS_CHANGED) secilir -> baslik "Bildirim Tipi ve Genel
+ *      Oldu / PARTIALLY_FILLED) secilir -> baslik "Bildirim Tipi ve Genel
  *      Durum" olur, Durum ve Bildirim Kanali alanlari gorunur, Durum
  *      mevcut degeri (Acik) dogru yansitir.
  *   3. Durum "Kapali" yapilir, "Onaya Gonder" ile kaydedilir -> basari
@@ -22,7 +22,7 @@
  *      (yer tutucu mesajin kaybolup "kanal seciniz" mesajinin geri
  *      geldigi) dogrulanir.
  *   7. Teardown: Durum tekrar "Acik" yapilir ve kaydedilir, veritabaninda
- *      dogrulanir - kalici referans veri (STATUS_CHANGED) baska
+ *      dogrulanir - kalici referans veri (PARTIALLY_FILLED) baska
  *      senaryolari etkilemesin diye.
  *
  * Kullanim: node screens/zk/bildirim-ayarlari-guncelleme.cjs
@@ -38,9 +38,9 @@ const { attachPageDiagnostics } = require("../../helpers/diagnostics");
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
 const REPORT_PATH = path.join(__dirname, "..", "..", "reports", `bildirim-ayarlari-guncelleme-${Date.now()}.html`);
 
-const TIP_ADI = "Emrinizin Durumunda Degisiklik Oldu"; // STATUS_CHANGED, zorunlu degil
+const TIP_ADI = "Emrinizin Durumunda Degisiklik Oldu"; // PARTIALLY_FILLED, zorunlu degil
 const DIGER_TIP_ADI = "VIOP Margin Call Bildirimi"; // sadece kanal-sifirlama testi icin secilir, durumu degistirilmez
-const DB_QUERY = "SELECT is_active FROM notification_types WHERE kod = 'STATUS_CHANGED';";
+const DB_QUERY = "SELECT is_active FROM notification_types WHERE kod = 'PARTIALLY_FILLED';";
 
 async function run() {
   const report = new ScenarioReport("Bildirim Ayarlari (ZK) - Kapsamli Test");
@@ -99,7 +99,7 @@ async function run() {
     const rowsAfterToggle = await runQuery(DB_QUERY);
     report.sql("Veritabani sorgusu calistirildi", DB_QUERY, rowsAfterToggle);
     if (rowsAfterToggle.length === 1 && rowsAfterToggle[0].is_active === "0") {
-      report.pass("Veritabaninda genel durum guncellemesi dogrulandi", "is_active=0 (STATUS_CHANGED)");
+      report.pass("Veritabaninda genel durum guncellemesi dogrulandi", "is_active=0 (PARTIALLY_FILLED)");
     } else {
       report.fail("Veritabaninda beklenen is_active degeri bulunamadi", JSON.stringify(rowsAfterToggle), { diagnostics: diagnostics.getLogs() });
     }
@@ -142,7 +142,7 @@ async function run() {
       report.fail("Bildirim tipi degisince kanal secimi sifirlanmadi", resetBody.slice(0, 300), { screenshot: resetScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 7 (Teardown): STATUS_CHANGED'i tekrar sec, Durum'u Acik yap ---
+    // --- Adim 7 (Teardown): PARTIALLY_FILLED'i tekrar sec, Durum'u Acik yap ---
     await selectComboboxByIndex(page, 0, TIP_ADI);
     await new Promise((r) => setTimeout(r, 500));
     await selectComboboxByIndex(page, 1, "\uD83D\uDFE2 Acik");
@@ -152,7 +152,7 @@ async function run() {
 
     const teardownRows = await runQuery(DB_QUERY);
     if (teardownRows.length === 1 && teardownRows[0].is_active === "1") {
-      report.pass("Teardown: genel durum varsayilan (Acik) durumuna geri alindi", "STATUS_CHANGED / is_active=1");
+      report.pass("Teardown: genel durum varsayilan (Acik) durumuna geri alindi", "PARTIALLY_FILLED / is_active=1");
     } else {
       report.fail("Teardown basarisiz: genel durum varsayilan duruma donmedi", JSON.stringify(teardownRows));
     }

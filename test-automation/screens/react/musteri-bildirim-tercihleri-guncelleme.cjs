@@ -5,7 +5,7 @@
  * ayni senaryo/DB tablosu:
  *   1. Var olmayan bir Musteri No aranir -> hata mesaji gorunur, tercih
  *      paneli gizli kalir.
- *   2. Var olan bir Musteri No aranir -> Musteri Bilgileri karti ve 7
+ *   2. Var olan bir Musteri No aranir -> Musteri Bilgileri karti ve 6
  *      satirlik bildirim tercihi tablosu gorunur.
  *   3. VIOP Margin Call satirinin 3 kanalinin da (Push/SMS/E-Posta)
  *      kilitli/disabled oldugu dogrulanir.
@@ -87,11 +87,11 @@ async function run() {
     }
 
     // --- Adim 4: VIOP Margin Call satirinin kilitli oldugunu dogrula ---
-    // DOM sirasi: 7 satir x 3 switch (Push, SMS, E-Posta) = 21 switch; son
-    // 3 tane (index 18-20) VIOP Margin Call satirina ait.
+    // DOM sirasi: 6 satir x 3 switch (Push, SMS, E-Posta) = 18 switch; son
+    // 3 tane (index 15-17) VIOP Margin Call satirina ait.
     const statesBefore = await getSwitchStates(page);
-    if (statesBefore.length === 21 && statesBefore.slice(18, 21).every((s) => s.disabled)) {
-      report.pass("VIOP Margin Call satiri kilitli (disabled)", "index 18-20 tumu disabled=true");
+    if (statesBefore.length === 18 && statesBefore.slice(15, 18).every((s) => s.disabled)) {
+      report.pass("VIOP Margin Call satiri kilitli (disabled)", "index 15-17 tumu disabled=true");
     } else {
       report.fail("VIOP Margin Call satiri kilitli degil veya switch sayisi beklenenden farkli", JSON.stringify(statesBefore));
     }
