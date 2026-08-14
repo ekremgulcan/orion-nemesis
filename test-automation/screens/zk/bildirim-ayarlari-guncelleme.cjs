@@ -12,7 +12,7 @@
  *      mesaji + veritabaninda is_active=0 dogrulanir.
  *   4. Sayfa yeniden yuklenip ayni tip tekrar secilir -> degisikligin
  *      kalici oldugu (Durum hala Kapali gorunur) dogrulanir.
- *   5. Bildirim Kanali secilir (Mobil) -> gercek kanal paneli gorunur:
+ *   5. Bildirim Kanali secilir (Push) -> gercek kanal paneli gorunur:
  *      parametre badge'leri + Mevcut Sablon (salt okunur) icerigi dogru
  *      yansitir, "Duzenle" gorunur, "Iptal"/"Kaydet" gizlidir.
  *   6. "Duzenle" tiklanir -> "Iptal"/"Kaydet" gorunur, Musteri Gorur ve
@@ -134,8 +134,8 @@ async function run() {
       report.fail("Yeniden yuklemeden sonra Durum degisikligi kaybolmus", JSON.stringify(reloadCombos), { screenshot: reloadScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 5: Bildirim Kanali sec (Mobil) -> gercek kanal paneli gorunur ---
-    await selectComboboxByIndex(page, 2, "Mobil");
+    // --- Adim 5: Bildirim Kanali sec (Push) -> gercek kanal paneli gorunur ---
+    await selectComboboxByIndex(page, 2, "Push");
     await new Promise((r) => setTimeout(r, 500));
     const channelBody = await page.evaluate(() => document.body.innerText);
     const channelTextarea = await page.evaluate(() => document.querySelector("textarea")?.value ?? "");
@@ -165,7 +165,12 @@ async function run() {
 
     await selectComboboxByIndex(page, 3, "Hayir"); // Musteri Gorur ve Degistirir
     await setIntboxByIndex(page, 0, "5"); // Max Deneme Sayisi
+    // Ard arda iki intbox bind istegi, birbirinin AU round-trip'ini
+    // "gecebilir" (stale bir yanit daha yeni degeri ezebilir) - her
+    // bind'in oturmasini bekleyerek bu yarisi ortadan kaldirilir.
+    await new Promise((r) => setTimeout(r, 350));
     await setIntboxByIndex(page, 1, "300"); // Tekrar Deneme Suresi
+    await new Promise((r) => setTimeout(r, 350));
     await selectComboboxByIndex(page, 4, "\uD83D\uDD34 Kapali"); // Kanal Durumu
     await new Promise((r) => setTimeout(r, 300));
     await clickButtonByText(page, "Kaydet");
@@ -196,6 +201,7 @@ async function run() {
     await clickButtonByText(page, "Duzenle");
     await new Promise((r) => setTimeout(r, 400));
     await setIntboxByIndex(page, 0, "1"); // Max Deneme Sayisi - kaydedilmeyecek
+    await new Promise((r) => setTimeout(r, 350)); // bind'in AU round-trip'inin oturmasini bekle
     await clickButtonByText(page, "Iptal");
     await new Promise((r) => setTimeout(r, 500));
     const afterIptalIntboxes = await getIntboxValues(page);
@@ -236,13 +242,16 @@ async function run() {
       report.fail("Teardown basarisiz: genel durum varsayilan duruma donmedi", JSON.stringify(teardownRows));
     }
 
-    await selectComboboxByIndex(page, 2, "Mobil");
+    await selectComboboxByIndex(page, 2, "Push");
     await new Promise((r) => setTimeout(r, 500));
     await clickButtonByText(page, "Duzenle");
     await new Promise((r) => setTimeout(r, 400));
     await selectComboboxByIndex(page, 3, "Evet");
+    await new Promise((r) => setTimeout(r, 350));
     await setIntboxByIndex(page, 0, ORIJINAL_MAX_RETRY);
+    await new Promise((r) => setTimeout(r, 350));
     await setIntboxByIndex(page, 1, ORIJINAL_ERROR_BACKOFF);
+    await new Promise((r) => setTimeout(r, 350));
     await selectComboboxByIndex(page, 4, "\uD83D\uDFE2 Acik");
     await new Promise((r) => setTimeout(r, 300));
     await clickButtonByText(page, "Kaydet");

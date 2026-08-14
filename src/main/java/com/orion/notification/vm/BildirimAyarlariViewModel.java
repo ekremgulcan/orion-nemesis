@@ -10,12 +10,9 @@ import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.zk.ui.util.Clients;
+import org.zkoss.zul.Messagebox;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * "Bildirim Ayarlari" ekrani - bildirim tipi secilir, kanallardan bagimsiz
@@ -23,7 +20,9 @@ import java.util.regex.Pattern;
  * o kanala ait sablon + "Diger Ayarlar" (Musteri Gorur ve Degistirir /
  * Max Deneme Sayisi / Tekrar Deneme Suresi / Kanal Durumu) goruntulenir.
  * "Duzenle" ile Mevcut Sablon + Diger Ayarlar duzenlenebilir hale gelir -
- * Bildirim Tipi/Durum/Bildirim Kanali her zaman duzenlenebilir kalir.
+ * Bildirim Tipi/Durum/Bildirim Kanali de bu sirada KILITLENIR (disabled),
+ * boylece kullanici bir kanalin ayarlarini duzenlerken ayni anda tipi/kanali
+ * degistirip yarim kalmis bir duzenlemeyi baska bir baglamda birakamaz.
  * "Mevcut Sablon" etiketindeki "(Salt Okunur)" ibaresi duzenleme modunda
  * kaybolur (bkz. getMevcutSablonEtiketi()). templateHeader bu ekranda hic
  * gosterilmez/duzenlenmez, sadece templateBody.
@@ -43,7 +42,8 @@ import java.util.regex.Pattern;
  */
 public class BildirimAyarlariViewModel {
 
-    private static final Pattern PARAM_PATTERN = Pattern.compile("\\$\\{(\\w+)}");
+    private static final int MAX_RETRY_UST_SINIR = 20;
+    private static final int ERROR_BACKOFF_UST_SINIR = 86400;
 
     private final BildirimAyarlariService bildirimAyarlariService =
             SpringContextHolder.getBean(BildirimAyarlariService.class);
@@ -158,19 +158,16 @@ public class BildirimAyarlariViewModel {
     }
 
     /**
-     * "Sablonda Kullanilabilecek Parametreler" - templateBody icindeki
-     * ${Param} tokenlarindan turetilir, ilk gorunme sirasina gore tekrarsiz.
+     * "Sablonda Kullanilabilecek Parametreler" - bu bildirim tipinde
+     * kullanilabilecek SABIT parametre listesi (selectedTemplate'in
+     * allowedParametreler kolonundan). templateBody'nin o anki icerigi
+     * bu listeyi ETKILEMEZ - once regex ile templateBody'den anlik
+     * turetiliyordu, bu da kullaniciya sablona yeni bir ${Param} yazip
+     * listeye sahte bir parametre ekleme imkani veriyordu (bkz.
+     * kanalAyarlariniKaydet() ve V39 migration).
      */
     public List<String> getParametreler() {
-        if (selectedTemplate == null) {
-            return List.of();
-        }
-        Set<String> parametreler = new LinkedHashSet<>();
-        Matcher matcher = PARAM_PATTERN.matcher(selectedTemplate.getTemplateBody());
-        while (matcher.find()) {
-            parametreler.add(matcher.group(1));
-        }
-        return List.copyOf(parametreler);
+        return selectedTemplate == null ? List.of() : selectedTemplate.getAllowedParametrelerList();
     }
 
     /**
@@ -215,22 +212,45 @@ public class BildirimAyarlariViewModel {
         return selectedTemplate == null ? null : selectedTemplate.getMaxRetry();
     }
 
+    /**
+     * 0 ve pozitif dogal sayilar disinda (negatif) ya da
+     * {@link #MAX_RETRY_UST_SINIR} ustunde bir deger girilirse en yakin
+     * sinira ("clamp") cekilir - kullaniciyi ayri bir hata mesajiyla
+     * durdurmak yerine gecerli en yakin degeri gostermek daha az
+     * rahatsiz edici. Sinir uygulandiginda kisa bir bilgilendirme
+     * gosterilir.
+     */
     @NotifyChange("maxRetry")
     public void setMaxRetry(Integer maxRetry) {
-        if (selectedTemplate != null && maxRetry != null) {
-            selectedTemplate.setMaxRetry(maxRetry);
+        if (selectedTemplate == null || maxRetry == null) {
+            return;
         }
+        int sinirlanmisDeger = sinirla(maxRetry, 0, MAX_RETRY_UST_SINIR);
+        if (sinirlanmisDeger != maxRetry) {
+            Clients.showNotification("Max Deneme Sayisi 0 ile " + MAX_RETRY_UST_SINIR + " arasinda olmalidir.");
+        }
+        selectedTemplate.setMaxRetry(sinirlanmisDeger);
     }
 
     public Integer getErrorBackoff() {
         return selectedTemplate == null ? null : selectedTemplate.getErrorBackoffTime();
     }
 
+    /** Bkz. {@link #setMaxRetry(Integer)} - ayni "clamp" mantigi. */
     @NotifyChange("errorBackoff")
     public void setErrorBackoff(Integer errorBackoff) {
-        if (selectedTemplate != null && errorBackoff != null) {
-            selectedTemplate.setErrorBackoffTime(errorBackoff);
+        if (selectedTemplate == null || errorBackoff == null) {
+            return;
         }
+        int sinirlanmisDeger = sinirla(errorBackoff, 0, ERROR_BACKOFF_UST_SINIR);
+        if (sinirlanmisDeger != errorBackoff) {
+            Clients.showNotification("Tekrar Deneme Suresi 0 ile " + ERROR_BACKOFF_UST_SINIR + " arasinda olmalidir.");
+        }
+        selectedTemplate.setErrorBackoffTime(sinirlanmisDeger);
+    }
+
+    private static int sinirla(int deger, int minimum, int maksimum) {
+        return Math.max(minimum, Math.min(maksimum, deger));
     }
 
     public Boolean getKanalDurumu() {
@@ -287,8 +307,15 @@ public class BildirimAyarlariViewModel {
         request.setErrorBackoffTime(selectedTemplate.getErrorBackoffTime());
         request.setActive(selectedTemplate.isActive());
         request.setTemplateBody(selectedTemplate.getTemplateBody());
-        this.selectedTemplate = bildirimAyarlariService.kanalAyarlariniKaydet(selectedTemplate.getId(), request);
-        this.duzenlemeModu = false;
-        Clients.showNotification("Kanal ayarlari kaydedildi.");
+        try {
+            this.selectedTemplate = bildirimAyarlariService.kanalAyarlariniKaydet(selectedTemplate.getId(), request);
+            this.duzenlemeModu = false;
+            Clients.showNotification("Kanal ayarlari kaydedildi.");
+        } catch (IllegalArgumentException ex) {
+            // Gecersiz bir sablon parametresi (bkz. servis) - duzenleme
+            // modunda kalinir, kullanicinin girdigi (henuz kaydedilmemis)
+            // metin ekranda aynen durur ki duzeltebilsin.
+            Messagebox.show(ex.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+        }
     }
 }

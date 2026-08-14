@@ -88,6 +88,21 @@ async function selectDropdownByIndex(page, index, optionText) {
   throw new Error(`selectDropdownByIndex: option "${optionText}" not found in select #${index}`);
 }
 
+/**
+ * Returns { disabled } for every shadcn/base-ui `[data-slot="select-trigger"]`
+ * on the page, in DOM order. base-ui's Select.Trigger renders as a real
+ * `<button>` and reflects the `disabled` prop straight onto the DOM
+ * `disabled` attribute/property, so this is a plain read (same
+ * confidence level as `zk.js#getComboboxStates`).
+ */
+async function getSelectDisabledStates(page) {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-slot="select-trigger"]')).map((el) => ({
+      disabled: el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled"),
+    }))
+  );
+}
+
 /** Clicks a row in a shadcn <Table> whose cell text contains every string in expectedFragments. */
 async function clickTableRowContaining(page, expectedFragments) {
   const rows = await page.$$("tbody tr");
@@ -278,6 +293,7 @@ module.exports = {
   clickButtonByText,
   fillInputsInOrder,
   selectDropdownByIndex,
+  getSelectDisabledStates,
   clickTableRowContaining,
   getTableRows,
   findTableRow,

@@ -24,9 +24,11 @@ public class NotifChannelTemplateDto {
     private LocalDateTime lastUpdatedTime;
 
     /**
-     * templateBody icindeki ${Param} tokenlarindan turetilir (bkz.
-     * NotifChannelTemplateMapper) - "Sablonda Kullanilabilecek
-     * Parametreler" listesi icin, ayri bir kolon olarak saklanmaz.
+     * Bu bildirim tipinde kullanilabilecek SABIT parametre listesi
+     * (entity'nin allowedParametreler kolonundan, bkz.
+     * NotifChannelTemplateMapper) - templateBody'nin o anki icerigine
+     * BAKILMAKSIZIN sabittir, "Sablonda Kullanilabilecek Parametreler"
+     * bolumu bu listeyi gosterir.
      */
     private List<String> parametreler;
 }

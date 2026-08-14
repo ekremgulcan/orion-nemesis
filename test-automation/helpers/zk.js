@@ -227,6 +227,22 @@ async function getComboboxValues(page) {
   return page.evaluate(() => Array.from(document.querySelectorAll("input.z-combobox-input")).map((el) => el.value));
 }
 
+/**
+ * Returns { value, disabled } for every ZK combobox on the page, in DOM
+ * order. ZK renders `disabled="true"` as the real `disabled` attribute
+ * on the underlying `input.z-combobox-input`, so this is a plain DOM
+ * read - no ZK-specific quirk beyond the usual "select by DOM order,
+ * never by id" rule.
+ */
+async function getComboboxStates(page) {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll("input.z-combobox-input")).map((el) => ({
+      value: el.value,
+      disabled: el.disabled,
+    }))
+  );
+}
+
 /** Returns { checked, disabled } for every native <input type="checkbox"> on the page, in DOM order. */
 async function getCheckboxStates(page) {
   return page.evaluate(() =>
@@ -269,6 +285,7 @@ module.exports = {
   setCheckboxByIndex,
   getCheckboxStates,
   getComboboxValues,
+  getComboboxStates,
   setIntboxByIndex,
   getIntboxValues,
 };

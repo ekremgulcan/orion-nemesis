@@ -8,7 +8,7 @@ package com.orion.notification.domain;
  * uygulanmadi (bkz. BildirimAyarlariViewModel javadoc).
  */
 public enum BildirimKanali {
-    PUSH("Mobil"),
+    PUSH("Push"),
     SMS("SMS"),
     EPOSTA("E-Posta");
 

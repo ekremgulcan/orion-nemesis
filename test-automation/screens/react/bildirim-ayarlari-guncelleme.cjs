@@ -13,7 +13,7 @@
  *      veritabaninda is_active=0 dogrulanir.
  *   4. Sayfa yeniden yuklenip ayni tip tekrar secilir -> degisikligin
  *      kalici oldugu dogrulanir (ayri bir onay ekrani yok).
- *   5. Bildirim Kanali secilir (Mobil) -> gercek kanal paneli gorunur:
+ *   5. Bildirim Kanali secilir (Push) -> gercek kanal paneli gorunur:
  *      parametre badge'leri + Mevcut Sablon (salt okunur) icerigi dogru
  *      yansitir, "Duzenle" gorunur, "Iptal"/"Kaydet" gizlidir.
  *   6. "Duzenle" tiklanir -> Musteri Gorur ve Degistirir/Max Deneme
@@ -134,8 +134,8 @@ async function run() {
       report.fail("Yeniden yuklemeden sonra Durum degisikligi kaybolmus", reloadBody.slice(0, 300), { screenshot: reloadScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
-    // --- Adim 5: Bildirim Kanali sec (Mobil) -> gercek kanal paneli gorunur ---
-    await selectDropdownByIndex(page, 2, "Mobil");
+    // --- Adim 5: Bildirim Kanali sec (Push) -> gercek kanal paneli gorunur ---
+    await selectDropdownByIndex(page, 2, "Push");
     await new Promise((r) => setTimeout(r, 500));
     const channelBody = await page.evaluate(() => document.body.innerText);
     const channelTextarea = await page.evaluate(() => document.querySelector("textarea")?.value ?? "");
@@ -236,7 +236,7 @@ async function run() {
       report.fail("Teardown basarisiz: genel durum varsayilan duruma donmedi", JSON.stringify(teardownRows));
     }
 
-    await selectDropdownByIndex(page, 2, "Mobil");
+    await selectDropdownByIndex(page, 2, "Push");
     await new Promise((r) => setTimeout(r, 700));
     await clickButtonByText(page, "Duzenle");
     await new Promise((r) => setTimeout(r, 400));

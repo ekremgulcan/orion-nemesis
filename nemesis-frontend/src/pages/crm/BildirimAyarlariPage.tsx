@@ -31,19 +31,43 @@ import {
 type Kanal = "PUSH" | "SMS" | "EPOSTA";
 
 const KANAL_OPTIONS: { value: Kanal; label: string }[] = [
-  { value: "PUSH", label: "Mobil" },
+  { value: "PUSH", label: "Push" },
   { value: "SMS", label: "SMS" },
   { value: "EPOSTA", label: "E-Posta" },
 ];
 
-const PARAM_PATTERN = /\$\{(\w+)\}/g;
+const MAX_RETRY_UST_SINIR = 20;
+const ERROR_BACKOFF_UST_SINIR = 86400;
 
-function extractParametreler(templateBody: string): string[] {
-  const seen = new Set<string>();
-  for (const match of templateBody.matchAll(PARAM_PATTERN)) {
-    seen.add(match[1]);
-  }
-  return Array.from(seen);
+function sinirla(deger: number, minimum: number, maksimum: number): number {
+  return Math.max(minimum, Math.min(maksimum, deger));
+}
+
+/**
+ * Max Deneme Sayisi / Tekrar Deneme Suresi alanlarinin blur (odaktan
+ * cikis) anindaki degerini hesaplar. Bilerek onChange'de DEGIL, onBlur'da
+ * cagrilir - ZK tarafindaki <intbox @bind> de ayni sekilde sadece blur'da
+ * commit ediyor (bkz. ViewModel). Onceden bu clamp her tus vurusunda
+ * calisiyordu: kullanici alani BOSALTTIGINDA (e.target.value === "")
+ * Number("") == 0 oldugu icin state aninda 0'a "kilitleniyor", input hicbir
+ * zaman gercekten bos gorunmuyor ve kullanici mevcut degeri silip yeni
+ * coklu haneli bir sayi yazamiyordu (orn. "3" -> sil -> "0" -> "0"u da
+ * silemiyor -> "10" yerine "010" yazmak zorunda kaliyordu, bu da
+ * duzelmiyordu). Artik kullanici serbestce yazip silebiliyor, sadece
+ * alandan cikinca (Tab/blur) normallestirilip sinirlaniyor.
+ */
+function blurDegeriniHesapla(
+  rawText: string,
+  minimum: number,
+  maksimum: number,
+): { deger: number; sinirlandi: boolean } {
+  const raw = Number(rawText === "" ? minimum : rawText);
+  const parsed = Number.isNaN(raw) ? minimum : raw;
+  const deger = sinirla(parsed, minimum, maksimum);
+  // Bos birakma/gecersiz metin (harf vb.) sessizce minimuma duser - bu bir
+  // "sinirlama" sayilmaz, sadece gercekten sinirin disinda bir SAYI
+  // girildiginde (orn. 25 veya 90000) kullaniciya bilgi verilir.
+  return { deger, sinirlandi: deger !== parsed };
 }
 
 /**
@@ -51,8 +75,8 @@ function extractParametreler(templateBody: string): string[] {
  * BildirimAyarlariViewModel). Bir bildirim kanali secildiginde o kanala
  * ait sablon + "Diger Ayarlar" goruntulenir; "Duzenle" ile Mevcut Sablon +
  * Diger Ayarlar duzenlenebilir olur - Bildirim Tipi/Durum/Bildirim Kanali
- * her zaman duzenlenebilir kalir (ZK ile ayni davranis, bkz. ViewModel
- * javadoc). `channelDraft` ZK'daki selectedTemplate ile ayni rol - sunucudan
+ * de bu sirada kilitlenir (ZK ile ayni davranis, bkz. ViewModel javadoc).
+ * `channelDraft` ZK'daki selectedTemplate ile ayni rol - sunucudan
  * gelen veriyi DOGRUDAN tutar ve duzenler, ayri bir "duzenlenen deger"
  * tamponu YOKTUR (ZK tarafinda once boyle bir tampon denendi, "sadece
  * Duzenle'den sonra gorunuyor"/"baska kanala gecince eski metin
@@ -74,6 +98,12 @@ export function BildirimAyarlariPage() {
   const [selectedChannel, setSelectedChannel] = useState<Kanal | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [channelDraft, setChannelDraft] = useState<NotifChannelTemplateDto | null>(null);
+  // Max Deneme Sayisi / Tekrar Deneme Suresi'nin YAZILMAKTA olan ham metni -
+  // null iken input degerini dogrudan channelDraft'tan gosterir (bkz.
+  // blurDegeriniHesapla javadoc'u - neden channelDraft'a aninda yazilmadigi
+  // icin ayri bir state gerekiyor).
+  const [maxRetryInput, setMaxRetryInput] = useState<string | null>(null);
+  const [errorBackoffInput, setErrorBackoffInput] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["notification-types"],
@@ -97,6 +127,8 @@ export function BildirimAyarlariPage() {
   useEffect(() => {
     setChannelDraft(channelQuery.data ?? null);
     setEditMode(false);
+    setMaxRetryInput(null);
+    setErrorBackoffInput(null);
   }, [channelQuery.data]);
 
   const saveMutation = useMutation({
@@ -148,9 +180,15 @@ export function BildirimAyarlariPage() {
   function handleIptal() {
     setChannelDraft(channelQuery.data ?? null);
     setEditMode(false);
+    setMaxRetryInput(null);
+    setErrorBackoffInput(null);
   }
 
-  const parametreler = channelDraft ? extractParametreler(channelDraft.templateBody) : [];
+  // Sunucudan gelen SABIT liste (channelDraft.parametreler) kullanilir -
+  // templateBody'nin o anki (henuz kaydedilmemis) icerigi bu listeyi
+  // ETKILEMEZ, boylece kullanici sablona yeni bir ${Param} yazarak
+  // listeye sahte bir parametre ekleyemez (bkz. backend javadoc'lari).
+  const parametreler = channelDraft?.parametreler ?? [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -200,6 +238,7 @@ export function BildirimAyarlariPage() {
                 <Select
                   value={selectedTypeId?.toString() ?? ""}
                   onValueChange={handleTypeChange}
+                  disabled={editMode}
                 >
                   <SelectTrigger className="w-80">
                     <SelectValue placeholder="Seciniz">
@@ -223,6 +262,7 @@ export function BildirimAyarlariPage() {
                   <Select
                     value={currentActive ? "true" : "false"}
                     onValueChange={(v) => setPendingActive(v === "true")}
+                    disabled={editMode}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue>
@@ -274,6 +314,7 @@ export function BildirimAyarlariPage() {
                   <Select
                     value={selectedChannel ?? ""}
                     onValueChange={(v) => setSelectedChannel(v as Kanal)}
+                    disabled={editMode}
                   >
                     <SelectTrigger className="w-80">
                       <SelectValue placeholder="Seciniz">
@@ -365,9 +406,19 @@ export function BildirimAyarlariPage() {
                       <Input
                         type="number"
                         className="w-40"
-                        value={channelDraft.maxRetry}
+                        min={0}
+                        max={MAX_RETRY_UST_SINIR}
+                        value={maxRetryInput ?? channelDraft.maxRetry}
                         readOnly={!editMode}
-                        onChange={(e) => updateDraft({ maxRetry: Number(e.target.value) })}
+                        onChange={(e) => setMaxRetryInput(e.target.value)}
+                        onBlur={(e) => {
+                          const { deger, sinirlandi } = blurDegeriniHesapla(e.target.value, 0, MAX_RETRY_UST_SINIR);
+                          if (sinirlandi) {
+                            toast.warning(`Max Deneme Sayisi 0 ile ${MAX_RETRY_UST_SINIR} arasinda olmalidir.`);
+                          }
+                          updateDraft({ maxRetry: deger });
+                          setMaxRetryInput(null);
+                        }}
                       />
                     </Field>
 
@@ -375,9 +426,19 @@ export function BildirimAyarlariPage() {
                       <Input
                         type="number"
                         className="w-40"
-                        value={channelDraft.errorBackoffTime}
+                        min={0}
+                        max={ERROR_BACKOFF_UST_SINIR}
+                        value={errorBackoffInput ?? channelDraft.errorBackoffTime}
                         readOnly={!editMode}
-                        onChange={(e) => updateDraft({ errorBackoffTime: Number(e.target.value) })}
+                        onChange={(e) => setErrorBackoffInput(e.target.value)}
+                        onBlur={(e) => {
+                          const { deger, sinirlandi } = blurDegeriniHesapla(e.target.value, 0, ERROR_BACKOFF_UST_SINIR);
+                          if (sinirlandi) {
+                            toast.warning(`Tekrar Deneme Suresi 0 ile ${ERROR_BACKOFF_UST_SINIR} arasinda olmalidir.`);
+                          }
+                          updateDraft({ errorBackoffTime: deger });
+                          setErrorBackoffInput(null);
+                        }}
                       />
                     </Field>
 

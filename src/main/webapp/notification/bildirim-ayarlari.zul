@@ -58,7 +58,7 @@
                                    tooltiptext="Kanal ve sablon ayarlarinin uygulanacagi bildirim tipini seciniz."/>
                         </n:div>
                         <combobox model="@load(vm.notificationTypes)" selectedItem="@bind(vm.selectedType)"
-                                  placeholder="Seciniz" readonly="true" width="320px">
+                                  placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu)">
                             <template name="model">
                                 <comboitem label="@load(each.ad)"/>
                             </template>
@@ -72,7 +72,7 @@
                                    tooltiptext="Bu durum, secilen bildirim tipinin tum kanallar icin ust durumudur."/>
                         </n:div>
                         <combobox model="@load(vm.durumSecenekleri)" selectedItem="@bind(vm.genelDurum)"
-                                  readonly="true" width="160px">
+                                  readonly="true" width="160px" disabled="@load(vm.duzenlemeModu)">
                             <template name="model">
                                 <comboitem label="@load(each ? '&#128994; Acik' : '&#128308; Kapali')"/>
                             </template>
@@ -95,7 +95,7 @@
                         <n:div style="min-width:280px">
                             <label value="Bildirim Kanali" style="font-weight:500;display:block;margin-bottom:4px"/>
                             <combobox model="@load(vm.kanalSecenekleri)" selectedItem="@bind(vm.selectedChannel)"
-                                      placeholder="Seciniz" readonly="true" width="320px">
+                                      placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu)">
                                 <template name="model">
                                     <comboitem label="@load(each.etiket)"/>
                                 </template>
