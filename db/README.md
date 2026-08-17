@@ -43,6 +43,10 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V27__seed_scale_crm.sql | Veri hacmi buyutme: +2 kampanya, +90 hedef hesap, +30 mesaj |
 | V28__seed_scale_workflow.sql | Veri hacmi buyutme: +15 surec, +15 gorev |
 | V29__seed_scale_meta_position.sql | Veri hacmi buyutme: +50 pozisyon anlik goruntusu |
+| V30__credit_optimization_result_uygulandi.sql | credit_optimization_results: uygulandi / uygulama_tarihi |
+| V31__investor_schema.sql | Bireysel Yatirimci Bilgileri: customers/accounts genisletme + yatirimci alt tablolari |
+| V32__seed_investor.sql | Mock veri: yatirimci alanlari, 1. musteri icin dolu alt sekmeler |
+| V33__seed_investor_fill.sql | Tum musteriler icin yatirimci master + alt sekme verisi doldurma |
 
 ## Varlik Iliski Ozeti (ER)
 
@@ -77,6 +81,14 @@ accounts ---< cash_transaction_requests
 users ---< report_definitions (olusturan / degistiren)
 
 accounts ---< position_snapshots >--- instruments (opsiyonel)
+
+customers ---< customer_addresses / customer_contacts / customer_identities (1-1)
+customers ---< customer_notes / customer_education / customer_references
+customers ---< customer_channels / customer_required_documents / customer_webmailer_prefs
+customers ---< customer_external_bank_accounts / customer_suitability_tests / customer_external_user_ids
+accounts ---< account_proxies / account_partners / account_commissions / account_contracts
+accounts ---< account_channels / account_groups / account_custody / account_control_values
+accounts ---< account_reporting_prefs / account_hidden_accounts / account_derivative_commissions
 ```
 
 ## Tablo Detaylari
@@ -319,6 +331,28 @@ CREATE TABLE channel_authorizations (
     tanimlama_tarihi DATETIME2   NOT NULL DEFAULT SYSUTCDATETIME()
 );
 ```
+
+### Bireysel Yatirimci Bilgileri (V31)
+
+Ekran: ZK `core/bireysel-yatirimci.zul` (React henuz yok).
+
+`customers` tablosuna yatirimci master alanlari eklendi (isim/soyisim,
+vergi, IYS izinleri, nitelikli yatirimci, MKK/Takasbank sicil, vb.).
+`accounts` tablosuna hesap duzenleme alanlari eklendi (`hesap_sinifi`,
+danisman, dis sistem checkbox'lari). Mevcut `hesap_tipi` (NAKIT/KREDI/VIOP)
+diger moduller icin aynen durur.
+
+Musteri alt sekmeleri: `customer_addresses`, `customer_contacts`,
+`customer_identities` (1-1), `customer_channels`, `customer_required_documents`,
+`customer_notes`, `customer_external_bank_accounts`, `customer_education`,
+`customer_references`, `customer_webmailer_prefs`, `customer_suitability_tests`,
+`customer_external_user_ids`.
+
+Hesap duzenleme alt sekmeleri: `account_proxies`, `account_partners`,
+`account_commissions`, `account_contracts`, `account_channels`,
+`account_groups`, `account_custody`, `account_control_values`,
+`account_reporting_prefs`, `account_hidden_accounts`,
+`account_derivative_commissions`.
 
 ### Nakit Yonetimi - Islem Giris (V15)
 

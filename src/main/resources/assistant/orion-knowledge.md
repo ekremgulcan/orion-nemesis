@@ -3,7 +3,7 @@
 Asistan **iki modda** çalışır:
 - **Danışman (default):** ekran/buton/tablo yönlendirir, read-only tool ile veri okur; kayıt oluşturmaz/onaylamaz.
 - **Yürütücü:** aynı bilgi + yazma tool'ları (teminat onay/iptal/revizyon/havuz, nakit onay/red). Yazma **doğrudan uygulanmaz** — panelde Onayla/Vazgeç kartı zorunlu.
-Kaynak: `db/README.md`, Flyway V1–V30, `nemesis-frontend` pages, `menu-registry.ts`.
+Kaynak: `db/README.md`, Flyway V1–V32, `nemesis-frontend` pages, `menu-registry.ts`.
 
 ## Yürütücü mod (v1 yazma tool'ları)
 
@@ -26,7 +26,7 @@ Auth/JWT yok (demo); yürütücü herkese açık — dikkatli kullan.
 | React (Nemesis) | `http://localhost:5173` — Vite, REST `/api/v1` |
 | ZK7 (legacy) | `http://localhost:8080/index.zul` |
 | Backend | Spring Boot 2.7, paylaşılan `@Service` |
-| DB | MSSQL `orion`, Docker `localhost:1433`, Flyway V1–V30 |
+| DB | MSSQL `orion`, Docker `localhost:1433`, Flyway V1–V32 |
 
 **Önemli:** Stored procedure / view / function / trigger **yok**. İş kuralları Java `@Service` içinde.
 **Auth:** JWT yok (demo). Workflow görev listesi şu an kullanıcıyı hardcode (`ademir`) kullanabilir.
@@ -48,6 +48,7 @@ sqlcmd -S localhost,1433 -U sa -P 'Orion_2026_Str0ng!' -d orion -C
 | Hisse Kotasyon İzleme | `/core/hisse-kotasyon` | `instruments` (tip=HISSE) |
 | Piyasa Veri Yönetimi | `/core/piyasa-veri-yonetimi` | `instruments` |
 | Müşteri Yönetim Sistemi | `/core/musteriler` | `customers` |
+| Bireysel Yatırımcı Bilgileri (şimdilik yalnız ZK) | ZK: `/core/bireysel-yatirimci.zul` | `customers` + V31 alt tablolar |
 | TradeMaster Yetkilendirme | `/core/trademaster-yetkilendirme` | `channel_authorizations` |
 | VIOP Risk Profili Tanım | `/core/viop-risk-profili` | `viop_risk_profiles` |
 | Yönetim Paneli | `/core/yonetim-paneli` | `users`, `roles`, `user_roles` |
@@ -93,6 +94,13 @@ sqlcmd -S localhost,1433 -U sa -P 'Orion_2026_Str0ng!' -d orion -C
 - **Enum:** musteri_tipi BIREYSEL/KURUMSAL; risk_grubu DUSUK/ORTA/YUKSEK.
 - **API:** `/api/v1/core/customers`.
 - **DB:** `customers` (+ ilişkili `accounts` ayrı tabloda).
+
+### Bireysel Yatırımcı Bilgileri — ZK `/core/bireysel-yatirimci.zul`
+- **Ne:** CRM tarzı bireysel yatırımcı master + 13 alt sekme + Hesap Düzenle modalı (11 sekme).
+- **Butonlar:** Getir · Yeni Yatırımcı · Kaydet · Hesap +/Düzenle · sekme içi +.
+- **ZK:** `core/bireysel-yatirimci.zul`. React henüz yok.
+- **DB:** V31/V32. `InvestorService` iş kuralları.
+- **Kurallar:** TCKN ve İsim zorunlu; alt kayıt için önce yatırımcı kaydı gerekir.
 
 ### Teminat İşlemleri — `/collateral/islemleri`
 - **Ne:** Transfer **talebi oluşturma** (onay burada değil).
