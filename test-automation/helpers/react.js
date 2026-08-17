@@ -53,6 +53,20 @@ async function fillInputsInOrder(page, values, { root = '[role="dialog"]' } = {}
  * Opens the Nth shadcn/base-ui <Select> on the page (0-indexed, DOM
  * order of [data-slot="select-trigger"]) and picks the option whose
  * text matches exactly.
+ *
+ * IMPORTANT (discovered on Bildirim Ayarlari, multiple Acik/Kapali
+ * selects on one page): base-ui's Select pre-renders EVERY select's
+ * option list into the DOM at all times (only the currently-open
+ * popup's items get real layout - closed ones report a zero/null
+ * bounding box) - the same "all tabpanels rendered at once" quirk
+ * already known from ZK `<tabbox>`, just in the base-ui world. A plain
+ * text-match search across `[data-slot="select-item"]` can therefore
+ * click a stale item belonging to a DIFFERENT, closed select if two
+ * selects on the page share an option label (e.g. two "Acik"/"Kapali"
+ * dropdowns) - it silently grabs the first DOM match, which fails with
+ * "Node is either not clickable" since it has no real layout. Items
+ * are filtered to only those with a non-zero bounding box (i.e.
+ * belonging to the popup that's actually open) before matching text.
  */
 async function selectDropdownByIndex(page, index, optionText) {
   const triggers = await page.$$('[data-slot="select-trigger"]');
@@ -63,6 +77,8 @@ async function selectDropdownByIndex(page, index, optionText) {
   await new Promise((r) => setTimeout(r, 250));
   const items = await page.$$('[data-slot="select-item"], [role="option"]');
   for (const item of items) {
+    const box = await item.boundingBox();
+    if (!box || box.width === 0 || box.height === 0) continue;
     const t = await page.evaluate((el) => el.textContent.trim(), item);
     if (t === optionText) {
       await item.click();
@@ -70,6 +86,21 @@ async function selectDropdownByIndex(page, index, optionText) {
     }
   }
   throw new Error(`selectDropdownByIndex: option "${optionText}" not found in select #${index}`);
+}
+
+/**
+ * Returns { disabled } for every shadcn/base-ui `[data-slot="select-trigger"]`
+ * on the page, in DOM order. base-ui's Select.Trigger renders as a real
+ * `<button>` and reflects the `disabled` prop straight onto the DOM
+ * `disabled` attribute/property, so this is a plain read (same
+ * confidence level as `zk.js#getComboboxStates`).
+ */
+async function getSelectDisabledStates(page) {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-slot="select-trigger"]')).map((el) => ({
+      disabled: el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled"),
+    }))
+  );
 }
 
 /** Clicks a row in a shadcn <Table> whose cell text contains every string in expectedFragments. */
@@ -262,6 +293,7 @@ module.exports = {
   clickButtonByText,
   fillInputsInOrder,
   selectDropdownByIndex,
+  getSelectDisabledStates,
   clickTableRowContaining,
   getTableRows,
   findTableRow,

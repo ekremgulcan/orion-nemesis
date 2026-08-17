@@ -113,7 +113,7 @@ async function run() {
     const dbQuery =
       "SELECT c.musteri_no, nt.kod, t.push_acik, t.sms_acik, t.eposta_acik FROM musteri_bildirim_tercihleri t " +
       "JOIN customers c ON c.customer_id = t.customer_id JOIN notification_types nt ON nt.notification_type_id = t.notification_type_id " +
-      `WHERE c.musteri_no = '${MEVCUT_MUSTERI_NO}' AND nt.kod = 'EMIR_TAMAMI_GERCEKLESTI';`;
+      `WHERE c.musteri_no = '${MEVCUT_MUSTERI_NO}' AND nt.kod = 'FILLED';`;
     const rows = await runQuery(dbQuery);
     report.sql("Veritabani sorgusu calistirildi", dbQuery, rows);
     if (rows.length === 1 && rows[0].push_acik === "0" && rows[0].sms_acik === "0" && rows[0].eposta_acik === "1") {

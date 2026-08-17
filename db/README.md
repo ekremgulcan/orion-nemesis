@@ -48,6 +48,10 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V33__reseed_notification_event_ids.sql | notification_events.event_id identity'sini 120700'den baslayacak sekilde yeniden tohumlar (Bildirim Id ekranda 6 haneli gorunmeli) |
 | V34__bildirim_tercihi_schema.sql | Musteri Bildirim Tercihleri modulu: notification_types, musteri_bildirim_tercihleri |
 | V35__seed_notification_types.sql | Referans veri: 6 bildirim tipi (VIOP Margin Call zorunlu) |
+| V36__notification_type_genel_durum.sql | Bildirim Ayarlari modulu: notification_types tablosuna is_active (kanallardan bagimsiz genel durum) + audit kolonlari (created_by/created_time/last_updated_by/last_updated_time) eklenir; kod degerleri gercek/production sistemiyle hizalanir (orn. EMIR_TAMAMI_GERCEKLESTI -> FILLED); yeni bildirim tipi eklenir: PARTIALLY_FILLED |
+| V37__notification_type_partially_filled_realign.sql | V36'daki kurgusal PARTIALLY_FILLED satiri silinir (gercek kanal-sablon verisi bu tipin gereksiz oldugunu gosterdi); STATUS_CHANGED, gercek production koduna (PARTIALLY_FILLED) yeniden adlandirilir; notification_types 7 satirdan 6 satira duser |
+| V38__notif_channel_template_schema.sql | Bildirim Ayarlari modulu: notif_channel_templates (bildirim tipi x kanal bazinda sablon/parametreler/deneme ayarlari/kanal durumu). Referans/mock veri: 6 bildirim tipi x 3 kanal (PUSH/SMS/EPOSTA) = 18 satir, gercek production kanal-sablon JSON'undan alinan PUSH icerigi mock oldugu icin diger kanallarda da tekrar kullanilir |
+| V39__notif_channel_template_allowed_parametreler.sql | notif_channel_templates tablosuna allowed_parametreler (bildirim tipine gore SABIT, degistirilemez parametre listesi) eklenir - "Sablonda Kullanilabilecek Parametreler" artik template_body'den anlik turetilmez; kaydetme sirasinda bu listenin disinda bir parametre kullanan template_body reddedilir |
 
 ## Varlik Iliski Ozeti (ER)
 
