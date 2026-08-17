@@ -32,6 +32,10 @@ public final class AssistantSqlHints {
         if (matchesModule(message, pathname, "gorev", "görev", "workflow", "surec", "süreç")) {
             return workflowSql();
         }
+        if (matchesModule(message, pathname, "yatirimci", "yatırımcı", "bireysel-yatirimci",
+                "investor", "kimlik", "vekil")) {
+            return yatirimciSql();
+        }
         if (matchesModule(message, pathname, "musteri", "müşteri", "customer")) {
             return musteriSql();
         }
@@ -186,9 +190,44 @@ public final class AssistantSqlHints {
                 """ + sqlFooter();
     }
 
+    public static String yatirimciSql() {
+        return """
+                **Bireysel Yatırımcı Bilgileri** `/core/bireysel-yatirimci`
+                Master: `customers` (V31 alanlar) + `customer_identities`.
+                Hesap: `accounts.hesap_sinifi` (NAKIT/KREDI/VIOP olan `hesap_tipi` değil).
+                Tam CRM **Müşteri Yönetim** `/core/musteriler` ekranından ayrıdır.
+
+                ```sql
+                SELECT TOP 50
+                    a.hesap_no, a.hesap_sinifi, a.durum AS hesap_durum,
+                    c.yatirimci_no, c.isim, c.soyisim, c.tckn_vkn,
+                    c.yatirimci_durumu, c.musteri_siniflandirmasi, c.nitelikli_yatirimci
+                FROM accounts a
+                JOIN customers c ON c.customer_id = a.customer_id
+                ORDER BY a.hesap_no;
+
+                SELECT c.yatirimci_no, c.isim, c.soyisim, i.seri_no, i.medeni_hali, i.anne_adi
+                FROM customers c
+                LEFT JOIN customer_identities i ON i.customer_id = c.customer_id
+                WHERE c.tckn_vkn = '10000000010';
+
+                SELECT adres_tipi, il, ilce, cadde_sokak
+                FROM customer_addresses
+                WHERE customer_id = 1;
+
+                SELECT p.isim, p.soyisim, p.vekil_tipi
+                FROM account_proxies p
+                JOIN accounts a ON a.account_id = p.account_id
+                WHERE a.hesap_no = '10001';
+                ```
+                """ + sqlFooter()
+                + "\nYatırımcı CRUD asistan tool'u yok; kayıt **Bireysel Yatırımcı Bilgileri** ekranından yapılır.\n";
+    }
+
     public static String musteriSql() {
         return """
                 **Müşteri Yönetim** `/core/musteriler` → `customers`, `accounts`, `account_balances`.
+                Tam yatırımcı CRM için **Bireysel Yatırımcı Bilgileri** (`/core/bireysel-yatirimci`) SQL'ine bakın.
 
                 ```sql
                 SELECT TOP 50
@@ -322,7 +361,7 @@ public final class AssistantSqlHints {
     public static String genelSqlRehberi() {
         return """
                 Hangi ekran/modül için SQL istediğinizi belirtin
-                (Yönetim Paneli, Teminat, Nakit, Kredi, Risk, CRM, Müşteri, Meta, Rapor…).
+                (Yönetim Paneli, Teminat, Nakit, Kredi, Risk, CRM, Müşteri, Yatırımcı, Meta, Rapor…).
 
                 """ + sqlFooter()
                 + "\nŞema: `db/README.md` + Flyway `src/main/resources/db/migration`. Procedure/view yok.\n";

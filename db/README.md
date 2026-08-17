@@ -334,7 +334,8 @@ CREATE TABLE channel_authorizations (
 
 ### Bireysel Yatirimci Bilgileri (V31)
 
-Ekran: ZK `core/bireysel-yatirimci.zul` (React henuz yok).
+Ekran: React `/core/bireysel-yatirimci` + ZK `core/bireysel-yatirimci.zul` (paralel).
+Asistan bilgi karti: `src/main/resources/assistant/orion-knowledge.md`.
 
 `customers` tablosuna yatirimci master alanlari eklendi (isim/soyisim,
 vergi, IYS izinleri, nitelikli yatirimci, MKK/Takasbank sicil, vb.).

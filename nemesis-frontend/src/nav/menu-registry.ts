@@ -46,6 +46,7 @@ const rawMenuItems: RawMenuItem[] = [
   { label: "Halka Arz Islemleri", implemented: false },
   { label: "VIOP Kotasyon Izleme", path: "/core/viop-kotasyon", implemented: true },
   { label: "Musteri Yonetim Sistemi", path: "/core/musteriler", implemented: true },
+  { label: "Bireysel Yatirimci Bilgileri", path: "/core/bireysel-yatirimci", implemented: true },
   { label: "TradeMaster Yetkilendirme", path: "/core/trademaster-yetkilendirme", implemented: true },
   { label: "VIOP Risk Profili Tanim", path: "/core/viop-risk-profili", implemented: true },
   { label: "Musteri Iletisim Panosu", path: "/crm/toplu-mesaj-gonder", implemented: true },

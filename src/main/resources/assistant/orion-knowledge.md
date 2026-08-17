@@ -3,7 +3,7 @@
 Asistan **iki modda** çalışır:
 - **Danışman (default):** ekran/buton/tablo yönlendirir, read-only tool ile veri okur; kayıt oluşturmaz/onaylamaz.
 - **Yürütücü:** aynı bilgi + yazma tool'ları (teminat onay/iptal/revizyon/havuz, nakit onay/red). Yazma **doğrudan uygulanmaz** — panelde Onayla/Vazgeç kartı zorunlu.
-Kaynak: `db/README.md`, Flyway V1–V32, `nemesis-frontend` pages, `menu-registry.ts`.
+Kaynak: `db/README.md`, Flyway V1–V33, `nemesis-frontend` pages, `menu-registry.ts`.
 
 ## Yürütücü mod (v1 yazma tool'ları)
 
@@ -26,7 +26,7 @@ Auth/JWT yok (demo); yürütücü herkese açık — dikkatli kullan.
 | React (Nemesis) | `http://localhost:5173` — Vite, REST `/api/v1` |
 | ZK7 (legacy) | `http://localhost:8080/index.zul` |
 | Backend | Spring Boot 2.7, paylaşılan `@Service` |
-| DB | MSSQL `orion`, Docker `localhost:1433`, Flyway V1–V32 |
+| DB | MSSQL `orion`, Docker `localhost:1433`, Flyway V1–V33 |
 
 **Önemli:** Stored procedure / view / function / trigger **yok**. İş kuralları Java `@Service` içinde.
 **Auth:** JWT yok (demo). Workflow görev listesi şu an kullanıcıyı hardcode (`ademir`) kullanabilir.
@@ -48,7 +48,7 @@ sqlcmd -S localhost,1433 -U sa -P 'Orion_2026_Str0ng!' -d orion -C
 | Hisse Kotasyon İzleme | `/core/hisse-kotasyon` | `instruments` (tip=HISSE) |
 | Piyasa Veri Yönetimi | `/core/piyasa-veri-yonetimi` | `instruments` |
 | Müşteri Yönetim Sistemi | `/core/musteriler` | `customers` |
-| Bireysel Yatırımcı Bilgileri (şimdilik yalnız ZK) | ZK: `/core/bireysel-yatirimci.zul` | `customers` + V31 alt tablolar |
+| Bireysel Yatırımcı Bilgileri | `/core/bireysel-yatirimci` | `customers` (V31 alanlar) + `accounts.hesap_sinifi` + V31 alt tablolar |
 | TradeMaster Yetkilendirme | `/core/trademaster-yetkilendirme` | `channel_authorizations` |
 | VIOP Risk Profili Tanım | `/core/viop-risk-profili` | `viop_risk_profiles` |
 | Yönetim Paneli | `/core/yonetim-paneli` | `users`, `roles`, `user_roles` |
@@ -89,18 +89,28 @@ sqlcmd -S localhost,1433 -U sa -P 'Orion_2026_Str0ng!' -d orion -C
 - **DB:** `channel_authorizations`.
 
 ### Müşteri Yönetim Sistemi — `/core/musteriler`
+- **Ne:** Kısa müşteri kartı (tip / risk grubu). Tam CRM yatırımcı kartı **değil** — o **Bireysel Yatırımcı Bilgileri**.
 - **Butonlar:** Yeni Müşteri · Düzenle · Sil · Kaydet.
 - **Grid:** Müşteri No, Ad Soyad/Unvan, Tip, TCKN/VKN, Risk Grubu, Aktif.
 - **Enum:** musteri_tipi BIREYSEL/KURUMSAL; risk_grubu DUSUK/ORTA/YUKSEK.
 - **API:** `/api/v1/core/customers`.
-- **DB:** `customers` (+ ilişkili `accounts` ayrı tabloda).
+- **DB:** `customers` (+ ilişkili `accounts` ayrı tabloda). `CustomerService` V31 yatırımcı alanlarını buradan yönetmez.
 
-### Bireysel Yatırımcı Bilgileri — ZK `/core/bireysel-yatirimci.zul`
-- **Ne:** CRM tarzı bireysel yatırımcı master + 13 alt sekme + Hesap Düzenle modalı (11 sekme).
-- **Butonlar:** Getir · Yeni Yatırımcı · Kaydet · Hesap +/Düzenle · sekme içi +.
-- **ZK:** `core/bireysel-yatirimci.zul`. React henüz yok.
-- **DB:** V31/V32. `InvestorService` iş kuralları.
-- **Kurallar:** TCKN ve İsim zorunlu; alt kayıt için önce yatırımcı kaydı gerekir.
+### Bireysel Yatırımcı Bilgileri — `/core/bireysel-yatirimci`
+- **Ne:** CRM bireysel yatırımcı master + 13 müşteri alt sekmesi + Hesap Düzenle modalı (11 sekme). ZK ile **aynı** `InvestorService`.
+- **KPI (listeden):** Aktif / Pasif (`yatirimci_durumu`) · Nitelikli · Profesyonel (`musteri_siniflandirmasi`).
+- **Orta tablo:** Hesap No, Müşteri, Yatırımcı No, TCKN/YKN, Durum, Hesap Sınıfı. Satır tıkla = Getir.
+- **Butonlar:** Yeni Yatırımcı · Kaydet! · + Hesap · Düzenle · sekme içi +.
+- **Master (customers V31):** tckn_vkn, yatirimci_no, isim/soyisim, baba_adi, cinsiyet, uyruk, sube, dogum_*, vergi_*, mkk/takasbank sicil, yatirimci_tipi/durumu, musteri_siniflandirmasi, meslek, IYS izinleri, green_card, nitelikli_yatirimci, interaktif_kullanici, web_mailer_raporlari, …
+- **13 sekme → tablolar:** Hesaplar (`accounts`) · Adresler (`customer_addresses`) · İletişim (`customer_contacts`) · Kimlik (`customer_identities`, 1-1) · İşlem Kanalları (`customer_channels`) · Gerekli Belgeler (`customer_required_documents`) · Notlar (`customer_notes`) · Dış Kurum/Banka (`customer_external_bank_accounts`) · Eğitim (`customer_education`) · Referanslar (`customer_references`) · WebMailer (`customer_webmailer_prefs`) · Yerindelik (`customer_suitability_tests`) · Dış Sistem ID (`customer_external_user_ids`).
+- **Hesap modal 11 sekme → tablolar:** Vekil (`account_proxies`) · Ortaklar (`account_partners`) · Komisyonlar (`account_commissions`) · Sözleşmeler (`account_contracts`) · Kanallar (`account_channels`) · Gruplar (`account_groups`) · Saklama (`account_custody`) · Kontrol (`account_control_values`) · Raporlama (`account_reporting_prefs`) · Gizli (`account_hidden_accounts`) · Türev (`account_derivative_commissions`).
+- **Önemli kolon ayrımı:** `accounts.hesap_tipi` = NAKIT/KREDI/VIOP (diğer modüller; **dokunma**). Ekrandaki “Hesap Tipi=Genel” = `hesap_sinifi`.
+- **API:** `GET /api/v1/core/investors/accounts|blank|by-account/{accountId}|/{customerId}` · `POST /api/v1/core/investors` (body `{customer, identity}`) · `POST .../{customerId}/accounts` · `GET .../accounts/{accountId}/extras` · child POST/PUT/DELETE (addresses, contacts, channels, documents, notes, external-banks, education, references, webmailer, tests, external-user-ids, proxies, partners, commissions/template, contracts, groups, custody, controls, reporting, hidden, derivatives).
+- **Kurallar / mesajlar (aynen):** `TCKN / YKN bos birakilamaz` · `Isim bos birakilamaz` · `Once yatirimci kaydedilmelidir` · `Once hesap kaydedilmelidir` · başarı: `Yatirimci kaydedildi.` / `Hesap kaydedildi.` / `Belgeler kaydedildi.` / `WebMailer tercihleri kaydedildi.`
+- **Adımlar (Getir+Kaydet):** Menü → Bireysel Yatırımcı Bilgileri → satır seç → sağ panelde düzelt → **Kaydet!** Yeni kayıt: **Yeni Yatırımcı** → TCKN+İsim → Kaydet → sonra alt sekme / hesap.
+- **ZK:** `core/bireysel-yatirimci.zul` (paralel, hâlâ çalışır).
+- **Yürütücü:** yatırımcı yazma tool’u **yok** — kullanıcıyı bu ekrana yönlendir. Canlı liste için yatırımcı read tool’u da yok; ekran veya SELECT (aşağıdaki envanter).
+- **Seed:** V32 müşteri 1 (Ahmet Yılmaz / hesap 10001) zengin; V33 diğer müşterileri doldurur (cinsiyet/isim uyumsuzluğu olabilir).
 
 ### Teminat İşlemleri — `/collateral/islemleri`
 - **Ne:** Transfer **talebi oluşturma** (onay burada değil).
@@ -199,11 +209,15 @@ sqlcmd -S localhost,1433 -U sa -P 'Orion_2026_Str0ng!' -d orion -C
 
 ### Çekirdek
 - `roles`, `users`, `user_roles`
-- `customers` — musteri_no, ad_soyad_unvan, musteri_tipi, tckn_vkn, risk_grubu, aktif
-- `accounts` — hesap_no, hesap_tipi (NAKIT/KREDI/VIOP), durum (AKTIF/DONDURULMUS/KAPALI)
+- `customers` — musteri_no, ad_soyad_unvan, musteri_tipi, tckn_vkn, risk_grubu, aktif + V31 yatırımcı alanları (yatirimci_no UNIQUE, isim/soyisim, vergi, IYS, nitelikli_yatirimci, mkk/takasbank sicil, yatirimci_durumu, …)
+- `accounts` — hesap_no, hesap_tipi (NAKIT/KREDI/VIOP), durum (AKTIF/DONDURULMUS/KAPALI) + V31: hesap_sinifi, yatirim_danismani, afk_kodu, mpf_tipi, viop/ytm_*/webmailer_ekstre, …
 - `instruments` — isin, sembol, tip, borsa, aktif
 - `account_balances` — bakiye, blokeli_bakiye
 - `audit_log` — (henüz otomatik yazılmıyor)
+
+### Bireysel yatırımcı (V31–V33)
+Müşteri altı: `customer_addresses`, `customer_contacts`, `customer_identities` (1-1), `customer_channels`, `customer_required_documents`, `customer_notes`, `customer_external_bank_accounts`, `customer_education`, `customer_references`, `customer_webmailer_prefs`, `customer_suitability_tests`, `customer_external_user_ids`.
+Hesap altı: `account_proxies`, `account_partners`, `account_commissions`, `account_contracts`, `account_channels`, `account_groups`, `account_custody`, `account_control_values`, `account_reporting_prefs`, `account_hidden_accounts`, `account_derivative_commissions`.
 
 ### Teminat
 - `collaterals` — depo_tipi SERBEST/TEMINAT; varlik_tipi; miktar
@@ -248,7 +262,8 @@ orders, special_rate_definitions, bank_integration_transactions, account_suspens
 | Nakit ödeme/tahsilat | Nakit İşlem Giriş |
 | Bakiyeleri gör | Nakit Yönetimi |
 | Görevlerim | Ana Sayfa `/workflow/gorev-listesi` |
-| Müşteri kartı | Müşteri Yönetim Sistemi |
+| Müşteri kısa kartı (tip / risk) | Müşteri Yönetim Sistemi `/core/musteriler` |
+| Yatırımcı CRM / TCKN / kimlik / adres / vekil | Bireysel Yatırımcı Bilgileri `/core/bireysel-yatirimci` |
 | Toplu SMS/e-posta | CRM / Müşteri İletişim Panosu |
 | Kredi özkaynak düzelt | Kredi İşlemleri → Günbaşı/Günüçi → Süreç Başlat |
 | Hisse grubu | Hisse Grubu Tanımlama |
