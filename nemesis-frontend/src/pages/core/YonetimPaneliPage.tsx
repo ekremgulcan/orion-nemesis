@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 function emptyForm(): UserFormDto {
   return {
@@ -240,7 +241,7 @@ export function YonetimPaneliPage() {
       </div>
 
       {/* Right column: selected user detail */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -316,7 +317,7 @@ export function YonetimPaneliPage() {
             </div>
           </div>
         )}
-      </aside>
+      </DetailAside>
 
       {/* Create / edit dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

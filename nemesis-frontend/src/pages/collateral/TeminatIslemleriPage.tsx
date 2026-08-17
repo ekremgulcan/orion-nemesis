@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 const TEMINAT_TIPI_OPTIONS = ["NAKIT_DOVIZ", "PAY_SENEDI", "BORCLANMA_ARACI", "FON"]
 const DEPO_OPTIONS = ["SERBEST", "TEMINAT"]
@@ -245,7 +246,7 @@ export function TeminatIslemleriPage() {
       </div>
 
       {/* Right column: selected holding detail */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -283,7 +284,7 @@ export function TeminatIslemleriPage() {
             </div>
           </div>
         )}
-      </aside>
+      </DetailAside>
 
       {/* New transfer request dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

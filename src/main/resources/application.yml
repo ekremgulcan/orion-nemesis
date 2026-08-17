@@ -42,3 +42,10 @@ spring:
 logging:
   level:
     com.orion: DEBUG
+
+orion:
+  assistant:
+    enabled: true
+    gemini-api-key: ${ORION_GEMINI_API_KEY:}
+    model: gemini-flash-latest
+    max-tool-rounds: 3

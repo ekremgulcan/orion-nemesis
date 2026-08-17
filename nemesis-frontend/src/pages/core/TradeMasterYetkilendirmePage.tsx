@@ -51,6 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { DetailAside } from "@/components/layout/DetailAside"
 
 const KANAL_OPTIONS = ["TRADEMASTER", "INTERNET_SUBESI", "MOBIL", "CAGRI_MERKEZI"]
 const YETKI_DURUMU_OPTIONS = ["AKTIF", "PASIF"]
@@ -305,7 +306,7 @@ export function TradeMasterYetkilendirmePage() {
       </div>
 
       {/* Right column: selected authorization detail */}
-      <aside className="hidden w-96 shrink-0 flex-col bg-surface lg:flex">
+      <DetailAside>
         {!selected && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground-faint">
@@ -369,7 +370,7 @@ export function TradeMasterYetkilendirmePage() {
             </div>
           </div>
         )}
-      </aside>
+      </DetailAside>
 
       {/* Create / edit dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
