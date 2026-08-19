@@ -22,6 +22,16 @@ public class Customer {
     @Column(name = "musteri_no", nullable = false, unique = true)
     private String musteriNo;
 
+    /**
+     * Musterinin login/kullanici adi (V41). "Musteri Bildirim Tercihleri"
+     * servis dokumaninin GET/POST uc noktalari musteriyi bununla tanimlar,
+     * musteri_no ile degil - ekranin kendisi hala "Musteri No" ile arama
+     * yapar (bkz. musteriSorgulamaKutusu.zul), musteri bulunduktan SONRA bu
+     * alan uzerinden bildirim tercihleri servisiyle konusulur.
+     */
+    @Column(name = "username", nullable = false, unique = true, length = 80)
+    private String username;
+
     @Column(name = "ad_soyad_unvan", nullable = false)
     private String adSoyadUnvan;
 

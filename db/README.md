@@ -52,6 +52,8 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V37__notification_type_partially_filled_realign.sql | V36'daki kurgusal PARTIALLY_FILLED satiri silinir (gercek kanal-sablon verisi bu tipin gereksiz oldugunu gosterdi); STATUS_CHANGED, gercek production koduna (PARTIALLY_FILLED) yeniden adlandirilir; notification_types 7 satirdan 6 satira duser |
 | V38__notif_channel_template_schema.sql | Bildirim Ayarlari modulu: notif_channel_templates (bildirim tipi x kanal bazinda sablon/parametreler/deneme ayarlari/kanal durumu). Referans/mock veri: 6 bildirim tipi x 3 kanal (PUSH/SMS/EPOSTA) = 18 satir, gercek production kanal-sablon JSON'undan alinan PUSH icerigi mock oldugu icin diger kanallarda da tekrar kullanilir |
 | V39__notif_channel_template_allowed_parametreler.sql | notif_channel_templates tablosuna allowed_parametreler (bildirim tipine gore SABIT, degistirilemez parametre listesi) eklenir - "Sablonda Kullanilabilecek Parametreler" artik template_body'den anlik turetilmez; kaydetme sirasinda bu listenin disinda bir parametre kullanan template_body reddedilir |
+| V40__notification_kategori_schema.sql | Musteri Bildirim Tercihleri ekrani KATEGORI bazina donusturulur (gercek servis dokumaniyla birebir uyum icin): yeni notification_categories tablosu (2 kategori: ORDER_STATUS, VIOP_MARGIN_CALL - hem kategori seviyesinde hem kanal (push/sms/eposta) bazinda ayri isEditable kolonlari), notification_types.category_id FK eklenir + notification_types.zorunlu kolonu kaldirilir (kategoriye tasindi), eski musteri_bildirim_tercihleri (bildirim tipi bazinda, sadece mock veri) silinir, yeni musteri_bildirim_kategori_tercihleri (musteri x kategori bazinda Push/SMS/E-Posta) eklenir |
+| V41__customer_username.sql | customers tablosuna username kolonu eklenir (servis dokumanindaki GET/POST uc noktalari musteriyi "username" ile tanimliyor, "Musteri No" ile degil) - mevcut 101 musteri icin ad_soyad_unvan + musteri_no son 3 hane bazli, garanti benzersiz mock username backfill edilir |
 
 ## Varlik Iliski Ozeti (ER)
 
@@ -98,6 +100,10 @@ accounts ---< position_snapshots >--- instruments (opsiyonel)
 
 **customers** - Musteri master data. `musteri_tipi` (BIREYSEL/KURUMSAL),
 `risk_grubu` (DUSUK/ORTA/YUKSEK) alanlari var. `tckn_vkn` unique.
+`username` (V41) - Musteri Bildirim Tercihleri servis dokumaniyla birebir
+uyum icin eklenen, `musteri_no`'dan bagimsiz gercek bir login/kullanici adi
+kolonu; mevcut musterilerde `ad_soyad_unvan` + `musteri_no` son 3 haneden
+turetilmis mock deger tasir, unique.
 
 **accounts** - Musteriye bagli hesaplar. Bir musterinin birden fazla hesabi
 olabilir (NAKIT, KREDI, VIOP gibi farkli tiplerde). `durum` alani hesabin
@@ -436,38 +442,66 @@ CREATE TABLE notification_events (
 );
 ```
 
-### Musteri Bildirim Tercihleri (V34-V35)
+### Musteri Bildirim Tercihleri (V34-V35, V40'ta kategori bazina donusturuldu)
 
 Ekran: "Musteri Bildirim Tercihleri" (Musteri Iletisim Panosu altinda,
 Bildirim Izleme'nin kardesi). Kullanici bir Musteri No girer, musterinin
-her bildirim tipi icin Push/SMS/E-Posta kanal tercihlerini gorur ve
-degistirir. `notification_types` sabit bir katalog (referans veri,
-uygulama tarafindan degistirilmez); `musteri_bildirim_tercihleri` ise
-musteri x bildirim tipi basina bir satir tutar ve satir ilk sorgulandiginda
-(henuz hic tercih girilmemisse) tum kanallar acik olacak sekilde otomatik
-olusturulur - boylece "Son Guncelleme" her zaman gercek bir tarih tasir.
-`VIOP_MARGIN_CALL` tipi `zorunlu = 1` oldugu icin ekranda kilitli/degistirilemez
-gosterilir; backend de bu tipe yonelik guncelleme isteklerini sessizce yok sayar.
+her bildirim KATEGORISI (bildirim tipi degil - bkz. V40) icin Push/SMS/
+E-Posta kanal tercihlerini gorur ve degistirir. Bu, gercek servis
+dokumaniyla (musteri_bildirim_tercihleri_servis_dokumani.docx) birebir
+uyum icin V40'ta yapilan bir donusumdur: bir kategorinin (orn.
+"Emir Durum Bildirimleri") altindaki butun bildirim tipleri (FILLED,
+GDT_FILLED, ...) artik TEK bir Push/SMS/E-Posta tercihini paylasir;
+bildirim tipleri sadece o kategorinin icerigini (rozet listesi) gosterir,
+ayri ayri tercih tutulmaz.
+
+`notification_types` sabit bir katalog (referans veri), her satir bir
+`notification_categories` satirina baglidir. `notification_categories`
+iki AYRI editable kavramini tutar: `is_editable` (kategori seviyesinde,
+UI/gorunurluk kurali - dokumandaki "mobilde gorunmez" gibi), ve
+`push_editable`/`sms_editable`/`eposta_editable` (kanal basina, guncelleme
+isteginin kabul edilip edilmeyecegi kurali - dokumandaki "mevzuatsal
+zorunlu bildirimler icin update yapilamaz" kurali). `VIOP_MARGIN_CALL`
+kategorisi hem `is_editable=0` hem 3 kanalda da editable=0'dir (mevzuatsal
+zorunlu); `ORDER_STATUS` hepsinde 1'dir.
+
+`musteri_bildirim_kategori_tercihleri` musteri x kategori basina bir satir
+tutar ve satir ilk sorgulandiginda (henuz hic tercih girilmemisse) tum
+kanallar acik olacak sekilde otomatik olusturulur - boylece "Son Guncelleme"
+her zaman gercek bir tarih tasir. Kilitli (editable=0) kategori/kanal
+kombinasyonlarina yonelik guncelleme istekleri backend tarafindan
+reddedilir (response'da o kombinasyon icin `status=FAILED` doner).
 
 ```sql
+CREATE TABLE notification_categories (
+    category_id       BIGINT IDENTITY(1,1) PRIMARY KEY,
+    kod               VARCHAR(64)   NOT NULL UNIQUE,
+    ad                NVARCHAR(200) NOT NULL,
+    sira              INT           NOT NULL,
+    is_editable       BIT           NOT NULL DEFAULT 1,
+    push_editable     BIT           NOT NULL DEFAULT 1,
+    sms_editable      BIT           NOT NULL DEFAULT 1,
+    eposta_editable   BIT           NOT NULL DEFAULT 1
+);
+
 CREATE TABLE notification_types (
     notification_type_id BIGINT IDENTITY(1,1) PRIMARY KEY,
     kod                   VARCHAR(64)   NOT NULL UNIQUE,
     ad                    NVARCHAR(200) NOT NULL,
     aciklama              NVARCHAR(500) NULL,
-    zorunlu               BIT           NOT NULL DEFAULT 0,
+    category_id           BIGINT        NOT NULL REFERENCES notification_categories(category_id),
     sira                  INT           NOT NULL
 );
 
-CREATE TABLE musteri_bildirim_tercihleri (
+CREATE TABLE musteri_bildirim_kategori_tercihleri (
     tercih_id             BIGINT IDENTITY(1,1) PRIMARY KEY,
     customer_id           BIGINT    NOT NULL REFERENCES customers(customer_id),
-    notification_type_id  BIGINT    NOT NULL REFERENCES notification_types(notification_type_id),
+    category_id           BIGINT    NOT NULL REFERENCES notification_categories(category_id),
     push_acik             BIT       NOT NULL DEFAULT 1,
     sms_acik              BIT       NOT NULL DEFAULT 1,
     eposta_acik           BIT       NOT NULL DEFAULT 1,
     son_guncelleme        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT uq_musteri_bildirim_tercih UNIQUE (customer_id, notification_type_id)
+    CONSTRAINT uq_musteri_bildirim_kategori_tercih UNIQUE (customer_id, category_id)
 );
 ```
 

@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface NotificationTypeRepository extends JpaRepository<NotificationType, Long> {
     List<NotificationType> findAllByOrderBySiraAsc();
+
+    List<NotificationType> findAllByCategoryIdOrderBySiraAsc(Long categoryId);
 }

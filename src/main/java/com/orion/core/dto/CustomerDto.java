@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class CustomerDto {
     private Long id;
     private String musteriNo;
+    private String username;
     private String adSoyadUnvan;
     private String musteriTipi;
     private String tcknVkn;

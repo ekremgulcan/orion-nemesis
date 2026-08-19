@@ -1,56 +1,94 @@
 import { apiClient } from "@/api/client"
 
 /**
- * Mirrors com.orion.notification.dto.BildirimTercihiDto field-for-field.
+ * Mirrors com.orion.notification.dto.NotifChannelStatusDto field-for-field.
+ * `isEnabled`/`isEditable` are the literal JSON keys (backend forces them
+ * via @JsonProperty - Jackson's default getter-derived name would have
+ * been "enabled"/"editable").
  */
-export interface BildirimTercihiDto {
-  notificationTypeId: number
-  kod: string
-  ad: string
-  aciklama: string | null
-  zorunlu: boolean
-  sira: number
-  pushAcik: boolean
-  smsAcik: boolean
-  epostaAcik: boolean
+export interface NotifChannelStatusDto {
+  isEnabled: boolean
+  isEditable: boolean
 }
 
 /**
- * Mirrors com.orion.notification.dto.MusteriBildirimTercihleriDto - the
- * combined GET/POST response for the "Musteri Bildirim Tercihleri" screen
- * (musteri ozet bilgisi + bildirim tipi bazinda tercih listesi in a single
- * round trip, matching the ZK ViewModel's own single-fetch approach).
+ * Mirrors com.orion.notification.dto.NotifChannelCodeDto - fixed push/sms/
+ * email keys (English, lower-case), NOT the BildirimKanali enum names
+ * (PUSH/SMS/EPOSTA) used by the separate "Bildirim Ayarlari" screen.
  */
-export interface MusteriBildirimTercihleriDto {
-  musteriNo: string
-  musteriAdi: string
-  tcknVkn: string
-  durum: string
-  sonGuncelleme: string | null
-  tercihler: BildirimTercihiDto[]
+export interface NotifChannelCodeDto {
+  push: NotifChannelStatusDto
+  sms: NotifChannelStatusDto
+  email: NotifChannelStatusDto
 }
 
-export interface BildirimTercihiGuncelleRequest {
-  notificationTypeId: number
-  pushAcik: boolean
-  smsAcik: boolean
-  epostaAcik: boolean
+/** Mirrors com.orion.notification.dto.NotifTypeSummaryDto - display-only. */
+export interface NotifTypeSummaryDto {
+  notifTypeCode: string
+  templateHeader: string
 }
 
-export async function fetchMusteriBildirimTercihleri(musteriNo: string): Promise<MusteriBildirimTercihleriDto> {
-  const { data } = await apiClient.get<MusteriBildirimTercihleriDto>(
-    `/notification/preferences/customer/${encodeURIComponent(musteriNo)}`
+/**
+ * Mirrors com.orion.notification.dto.NotifCategoryDto - one category row.
+ * The preference toggle lives at CATEGORY level (notifChannelCode), not
+ * per notification type - `notifications` is only the badge/content list.
+ */
+export interface NotifCategoryDto {
+  categoryCode: string
+  categoryName: string
+  isEditable: boolean
+  notifications: NotifTypeSummaryDto[]
+  notifChannelCode: NotifChannelCodeDto
+}
+
+/** Mirrors com.orion.notification.dto.NotifPreferencesGetAllResponse. */
+export interface NotifPreferencesGetAllResponse {
+  username: string
+  notificationCategories: NotifCategoryDto[]
+}
+
+export type NotifChannelCode = "push" | "sms" | "email"
+
+/** Mirrors com.orion.notification.dto.NotifPreferencesUpdateItem. */
+export interface NotifPreferencesUpdateItem {
+  categoryCode: string
+  notifChannelCode: NotifChannelCode
+  isEnabled: boolean
+}
+
+/**
+ * Mirrors com.orion.notification.dto.NotifPreferencesUpdateResultItem.
+ * DIKKAT: item-level status is "SUCCESS"/"FAILED", while the overall
+ * response status below uses different words ("SUCCESS"/"PARTIAL_SUCCESS"/
+ * "FAIL") - the backend documents this intentional wording split.
+ */
+export interface NotifPreferencesUpdateResultItem extends NotifPreferencesUpdateItem {
+  status: "SUCCESS" | "FAILED"
+}
+
+/** Mirrors com.orion.notification.dto.NotifPreferencesUpdateResponse. */
+export interface NotifPreferencesUpdateResponse {
+  username: string
+  status: "SUCCESS" | "PARTIAL_SUCCESS" | "FAIL"
+  updatedCount: number
+  updatedFields: NotifPreferencesUpdateResultItem[]
+}
+
+export async function fetchNotifPreferences(username: string): Promise<NotifPreferencesGetAllResponse> {
+  const { data } = await apiClient.get<NotifPreferencesGetAllResponse>(
+    "/notification/notifPreferences/getAll",
+    { params: { username } }
   )
   return data
 }
 
-export async function updateMusteriBildirimTercihleri(
-  musteriNo: string,
-  updates: BildirimTercihiGuncelleRequest[]
-): Promise<MusteriBildirimTercihleriDto> {
-  const { data } = await apiClient.post<MusteriBildirimTercihleriDto>(
-    `/notification/preferences/customer/${encodeURIComponent(musteriNo)}`,
-    updates
+export async function updateNotifPreferences(
+  username: string,
+  updates: NotifPreferencesUpdateItem[]
+): Promise<NotifPreferencesUpdateResponse> {
+  const { data } = await apiClient.post<NotifPreferencesUpdateResponse>(
+    "/notification/notifPreferences/update",
+    { username, updates }
   )
   return data
 }

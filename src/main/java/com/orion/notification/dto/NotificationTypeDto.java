@@ -12,7 +12,6 @@ public class NotificationTypeDto {
     private String kod;
     private String ad;
     private String aciklama;
-    private boolean zorunlu;
     private int sira;
     private boolean active;
     private String createdBy;

@@ -1,61 +1,44 @@
 package com.orion.notification.controller;
 
-import com.orion.core.domain.Customer;
-import com.orion.notification.domain.MusteriBildirimTercihi;
-import com.orion.notification.dto.BildirimTercihiGuncelleRequest;
-import com.orion.notification.dto.BildirimTercihiMapper;
-import com.orion.notification.dto.MusteriBildirimTercihleriDto;
+import com.orion.notification.dto.NotifPreferencesGetAllResponse;
+import com.orion.notification.dto.NotifPreferencesUpdateRequest;
+import com.orion.notification.dto.NotifPreferencesUpdateResponse;
 import com.orion.notification.service.MusteriBildirimTercihleriService;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * "Musteri Bildirim Tercihleri" ekrani (notification/musteri-bildirim-tercihleri.zul
  * / MusteriBildirimTercihleriViewModel) icin REST API karsiligi -
  * nemesis-frontend tarafindan tuketilir. Ayni MusteriBildirimTercihleriService'i
  * ZK ViewModel ile birebir paylasir, is mantigina dokunulmaz.
+ *
+ * Uc nokta yolu/govde sekli, servis dokumaninin (musteri_bildirim_tercihleri_servis_dokumani.docx)
+ * GET /notifPreferences/getAll ve POST /notifPreferences/update
+ * sozlesmesiyle BIREBIR ayni (username/categoryCode/notifChannelCode/
+ * isEnabled/isEditable, per-eleman updatedFields[].status) - sadece
+ * bu modulun paylasilan `/api/v1/notification` on-ekinin altina
+ * yerlestirildi (kardes controller'lar - NotificationEventController,
+ * BildirimAyarlariController - da ayni on-eki kullaniyor; dokumanin
+ * ciplak `/notifPreferences/...` yolunu birebir kullanmak bu modulun
+ * kendi ic tutarliligini bozardi).
  */
 @RestController
-@RequestMapping("/api/v1/notification/preferences")
+@RequestMapping("/api/v1/notification/notifPreferences")
 public class MusteriBildirimTercihleriController {
 
     private final MusteriBildirimTercihleriService service;
-    private final BildirimTercihiMapper mapper;
 
-    public MusteriBildirimTercihleriController(MusteriBildirimTercihleriService service,
-                                                BildirimTercihiMapper mapper) {
+    public MusteriBildirimTercihleriController(MusteriBildirimTercihleriService service) {
         this.service = service;
-        this.mapper = mapper;
     }
 
-    @GetMapping("/customer/{musteriNo}")
-    public MusteriBildirimTercihleriDto getir(@PathVariable String musteriNo) {
-        Customer customer = service.musteriBul(musteriNo);
-        List<MusteriBildirimTercihi> tercihler = service.tercihleriGetir(customer.getId());
-        return toDto(customer, tercihler);
+    @GetMapping("/getAll")
+    public NotifPreferencesGetAllResponse getAll(@RequestParam String username) {
+        return service.getAllForUsername(username);
     }
 
-    @PostMapping("/customer/{musteriNo}")
-    public MusteriBildirimTercihleriDto guncelle(@PathVariable String musteriNo,
-                                                  @RequestBody List<BildirimTercihiGuncelleRequest> guncellemeler) {
-        Customer customer = service.musteriBul(musteriNo);
-        List<MusteriBildirimTercihi> tercihler = service.tercihleriKaydet(customer.getId(), guncellemeler);
-        return toDto(customer, tercihler);
-    }
-
-    private MusteriBildirimTercihleriDto toDto(Customer customer, List<MusteriBildirimTercihi> tercihler) {
-        MusteriBildirimTercihleriDto dto = new MusteriBildirimTercihleriDto();
-        dto.setMusteriNo(customer.getMusteriNo());
-        dto.setMusteriAdi(customer.getAdSoyadUnvan());
-        dto.setTcknVkn(customer.getTcknVkn());
-        dto.setDurum(customer.isAktif() ? "Aktif" : "Pasif");
-        dto.setSonGuncelleme(tercihler.stream()
-                .map(MusteriBildirimTercihi::getSonGuncelleme)
-                .max(LocalDateTime::compareTo)
-                .orElse(null));
-        dto.setTercihler(mapper.toDtoList(tercihler));
-        return dto;
+    @PostMapping("/update")
+    public NotifPreferencesUpdateResponse update(@RequestBody NotifPreferencesUpdateRequest request) {
+        return service.updateForUsername(request.getUsername(), request.getUpdates());
     }
 }

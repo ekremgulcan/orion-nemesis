@@ -2,17 +2,21 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Info, Lock, Pencil, Send } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, Send } from "lucide-react";
 
 import {
-  fetchMusteriBildirimTercihleri,
-  updateMusteriBildirimTercihleri,
-  type BildirimTercihiDto,
+  fetchNotifPreferences,
+  updateNotifPreferences,
+  type NotifChannelCode,
+  type NotifCategoryDto,
+  type NotifPreferencesUpdateItem,
 } from "@/api/notificationPreferences";
+import { fetchCustomerByMusteriNo } from "@/api/customers";
 import { extractErrorMessage } from "@/api/client";
 import type { PageTitleContext } from "@/components/shell/AppShell";
 import { CustomerLookupCard } from "@/components/customer/CustomerLookupCard";
 import { CustomerSummaryCard } from "@/components/customer/CustomerSummaryCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -24,26 +28,57 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-function formatSonGuncelleme(value: string | null): string {
-  if (!value) return "-";
-  return new Date(value).toLocaleString("tr-TR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+/**
+ * "Musteri Bildirim Tercihleri" ekraninin tablo satiri - wire DTO'sunun
+ * (NotifCategoryDto/NotifChannelCodeDto) sayfa state'i icin duzlestirilmis
+ * hali. ZK tarafindaki KategoriSatiri ile ayni fikir/alan adlari (bkz.
+ * MusteriBildirimTercihleriViewModel/KategoriSatiri javadoc).
+ */
+interface KategoriSatiri {
+  categoryCode: string;
+  categoryName: string;
+  notifications: { notifTypeCode: string; templateHeader: string }[];
+  /** Varsayilan genisletilmis (mockup'taki gibi) - ZK ile ayni davranis. */
+  expanded: boolean;
+  pushAcik: boolean;
+  pushEditable: boolean;
+  smsAcik: boolean;
+  smsEditable: boolean;
+  epostaAcik: boolean;
+  epostaEditable: boolean;
+}
+
+function toSatir(kategori: NotifCategoryDto, previous?: KategoriSatiri): KategoriSatiri {
+  return {
+    categoryCode: kategori.categoryCode,
+    categoryName: kategori.categoryName,
+    notifications: kategori.notifications ?? [],
+    expanded: previous ? previous.expanded : true,
+    pushAcik: kategori.notifChannelCode.push.isEnabled,
+    pushEditable: kategori.notifChannelCode.push.isEditable,
+    smsAcik: kategori.notifChannelCode.sms.isEnabled,
+    smsEditable: kategori.notifChannelCode.sms.isEditable,
+    epostaAcik: kategori.notifChannelCode.email.isEnabled,
+    epostaEditable: kategori.notifChannelCode.email.isEditable,
+  };
 }
 
 /**
  * "Musteri Bildirim Tercihleri Ekrani" (notification/musteri-bildirim-tercihleri.zul
  * / MusteriBildirimTercihleriViewModel). Musteri Sorgulama ve Musteri
  * Bilgileri bolumleri kasitli olarak paylasilan/reusable bilesenlerdir
- * (components/customer/*) - bu sayfa yalnizca hangi ucnoktayi cagiracagini
- * ve tercih tablosunun kendi mantigini saglar. Arama yapilmadan once sadece
- * Musteri Sorgulama kutusu gorunur; musteri bulunamazsa hata mesaji
- * kutunun altinda gosterilir ve diger bolumler gizli kalir.
+ * (components/customer/*).
+ *
+ * V40'tan itibaren ekran KATEGORI bazinda calisir (bkz. backend javadoc'lari) -
+ * musteri arama hala "Musteri No" ile yapilir (fetchCustomerByMusteriNo,
+ * degismedi), ama musteri bulunduktan SONRA bildirim tercihleri servis
+ * dokumaniyla birebir uyumlu REST sozlesmesi (notifPreferences/getAll+update)
+ * customer.username ile cagrilir - ZK ViewModel ile BIREBIR ayni servis
+ * metotlarini (MusteriBildirimTercihleriService) kullanir. "Son Guncelleme"
+ * alani kasitli olarak YOK - strict-parity response'da boyle bir alan
+ * bulunmuyor (ZK tarafi bunu ayri bir dahili Java cagrisiyla gosteriyor,
+ * React icin yeni bir REST ucnoktasi acmak kozmetik bir alan icin
+ * gereksiz kapsam olustururdu).
  */
 export function MusteriBildirimTercihleriPage() {
   const { setTitle } = useOutletContext<PageTitleContext>();
@@ -56,41 +91,55 @@ export function MusteriBildirimTercihleriPage() {
   const [searchedMusteriNo, setSearchedMusteriNo] = useState<string | null>(
     null,
   );
-  const [rows, setRows] = useState<BildirimTercihiDto[]>([]);
+  const [rows, setRows] = useState<KategoriSatiri[]>([]);
 
-  const query = useQuery({
-    queryKey: ["musteri-bildirim-tercihleri", searchedMusteriNo],
-    queryFn: () => fetchMusteriBildirimTercihleri(searchedMusteriNo as string),
+  const customerQuery = useQuery({
+    queryKey: ["musteri-bildirim-tercihleri-customer", searchedMusteriNo],
+    queryFn: () => fetchCustomerByMusteriNo(searchedMusteriNo as string),
     enabled: !!searchedMusteriNo,
     retry: false,
   });
 
+  const username = customerQuery.data?.username ?? null;
+
+  const preferencesQuery = useQuery({
+    queryKey: ["musteri-bildirim-tercihleri", username],
+    queryFn: () => fetchNotifPreferences(username as string),
+    enabled: !!username,
+  });
+
   useEffect(() => {
-    if (query.data) {
-      setRows(query.data.tercihler);
+    if (preferencesQuery.data) {
+      setRows((prev) =>
+        preferencesQuery.data.notificationCategories.map((kategori) =>
+          toSatir(
+            kategori,
+            prev.find((row) => row.categoryCode === kategori.categoryCode),
+          ),
+        ),
+      );
     }
-  }, [query.data]);
+  }, [preferencesQuery.data]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      updateMusteriBildirimTercihleri(
-        searchedMusteriNo as string,
-        rows
-          .filter((row) => !row.zorunlu)
-          .map((row) => ({
-            notificationTypeId: row.notificationTypeId,
-            pushAcik: row.pushAcik,
-            smsAcik: row.smsAcik,
-            epostaAcik: row.epostaAcik,
-          })),
-      ),
+    mutationFn: () => {
+      const updates: NotifPreferencesUpdateItem[] = [];
+      for (const row of rows) {
+        ekleGuncellemeyeUygunsa(updates, row.categoryCode, "push", row.pushEditable, row.pushAcik);
+        ekleGuncellemeyeUygunsa(updates, row.categoryCode, "sms", row.smsEditable, row.smsAcik);
+        ekleGuncellemeyeUygunsa(updates, row.categoryCode, "email", row.epostaEditable, row.epostaAcik);
+      }
+      return updateNotifPreferences(username as string, updates);
+    },
     onSuccess: (data) => {
-      setRows(data.tercihler);
-      queryClient.setQueryData(
-        ["musteri-bildirim-tercihleri", searchedMusteriNo],
-        data,
-      );
-      toast.success("Bildirim tercihleri kaydedildi.");
+      queryClient.invalidateQueries({ queryKey: ["musteri-bildirim-tercihleri", username] });
+      if (data.status === "FAIL") {
+        toast.error("Bildirim tercihleri kaydedilemedi.");
+      } else if (data.status === "PARTIAL_SUCCESS") {
+        toast.warning(`Bildirim tercihleri kismen kaydedildi (${data.updatedCount} basarili).`);
+      } else {
+        toast.success("Bildirim tercihleri kaydedildi.");
+      }
     },
     onError: (error) => {
       toast.error(
@@ -106,22 +155,27 @@ export function MusteriBildirimTercihleriPage() {
     setSearchedMusteriNo(musteriNoInput.trim() || null);
   }
 
-  function updateRow(
-    notificationTypeId: number,
-    patch: Partial<BildirimTercihiDto>,
-  ) {
+  function updateRow(categoryCode: string, patch: Partial<KategoriSatiri>) {
     setRows((prev) =>
       prev.map((row) =>
-        row.notificationTypeId === notificationTypeId
-          ? { ...row, ...patch }
+        row.categoryCode === categoryCode ? { ...row, ...patch } : row,
+      ),
+    );
+  }
+
+  function toggleExpanded(categoryCode: string) {
+    setRows((prev) =>
+      prev.map((row) =>
+        row.categoryCode === categoryCode
+          ? { ...row, expanded: !row.expanded }
           : row,
       ),
     );
   }
 
-  const found = !!query.data;
-  const searchError = query.isError
-    ? extractErrorMessage(query.error, "Musteri bulunamadi")
+  const found = !!customerQuery.data;
+  const searchError = customerQuery.isError
+    ? extractErrorMessage(customerQuery.error, "Musteri bulunamadi")
     : null;
 
   return (
@@ -131,7 +185,7 @@ export function MusteriBildirimTercihleriPage() {
           Musteri Bildirim Tercihleri Ekrani
         </p>
         <p className="text-xs text-foreground-faint">
-          Musteri No girerek bir musterinin bildirim tipi bazinda kanal
+          Musteri No girerek bir musterinin bildirim kategorisi bazinda kanal
           tercihlerini goruntuleyin ve guncelleyin.
         </p>
       </div>
@@ -150,49 +204,40 @@ export function MusteriBildirimTercihleriPage() {
                 musteriNo={musteriNoInput}
                 onMusteriNoChange={setMusteriNoInput}
                 onSearch={handleSearch}
-                loading={query.isFetching}
+                loading={customerQuery.isFetching}
                 error={searchError}
               />
             </div>
 
-            {found && query.data && (
+            {found && customerQuery.data && (
               <div className="flex-1">
                 <CustomerSummaryCard
-                  musteriAdi={query.data.musteriAdi}
-                  tcknVkn={query.data.tcknVkn}
-                  durum={query.data.durum}
-                  extra={[
-                    {
-                      label: "Son Guncelleme",
-                      value: formatSonGuncelleme(query.data.sonGuncelleme),
-                    },
-                  ]}
+                  musteriAdi={customerQuery.data.adSoyadUnvan}
+                  tcknVkn={customerQuery.data.tcknVkn}
+                  durum={customerQuery.data.aktif ? "Aktif" : "Pasif"}
                 />
               </div>
             )}
           </div>
 
-          {found && query.data && (
+          {found && preferencesQuery.data && (
             <div className="rounded-lg border border-border bg-surface">
-              <div className="border-b border-border px-4 py-3">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <h3 className="text-sm font-semibold">
-                  Bildirim Tercihleri (Bildirim Tipi Bazinda)
+                  Bildirim Tercihleri (Kategori Bazinda)
                 </h3>
-              </div>
-              <div className="p-4">
-                <div className="mb-3 flex justify-end gap-4 text-xs text-foreground-muted">
+                <div className="flex gap-4 text-xs text-foreground-muted">
                   <span className="flex items-center gap-1">
                     <Lock className="size-3.5" /> Zorunlu (Duzenlenemez)
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Pencil className="size-3.5" /> Duzenlenebilir
-                  </span>
                 </div>
-
+              </div>
+              <div className="p-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Bildirim Tipi</TableHead>
+                      <TableHead>Kategori Adi</TableHead>
+                      <TableHead>Kategori Icerigi</TableHead>
                       <TableHead className="text-center">
                         Push Bildirim
                       </TableHead>
@@ -202,42 +247,56 @@ export function MusteriBildirimTercihleriPage() {
                   </TableHeader>
                   <TableBody>
                     {rows.map((row) => (
-                      <TableRow key={row.notificationTypeId}>
-                        <TableCell>
-                          <span className="flex items-center gap-1.5">
-                            {row.ad}
-                            {row.aciklama && (
-                              <span title={row.aciklama}>
-                                <Info className="size-3.5 shrink-0 text-foreground-muted" />
-                              </span>
+                      <TableRow key={row.categoryCode}>
+                        <TableCell className="align-top">
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(row.categoryCode)}
+                            className="flex items-start gap-1.5 text-left font-medium"
+                          >
+                            {row.expanded ? (
+                              <ChevronDown className="mt-0.5 size-3.5 shrink-0 text-foreground-muted" />
+                            ) : (
+                              <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-foreground-muted" />
                             )}
-                          </span>
+                            {row.categoryName}
+                          </button>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="secondary">
+                              {row.notifications.length} bildirim
+                            </Badge>
+                            {row.expanded &&
+                              row.notifications.map((notification) => (
+                                <Badge
+                                  key={notification.notifTypeCode}
+                                  variant="outline"
+                                >
+                                  {notification.templateHeader}
+                                </Badge>
+                              ))}
+                          </div>
                         </TableCell>
                         <ToggleCell
-                          row={row}
-                          field="pushAcik"
+                          acik={row.pushAcik}
+                          editable={row.pushEditable}
                           onChange={(checked) =>
-                            updateRow(row.notificationTypeId, {
-                              pushAcik: checked,
-                            })
+                            updateRow(row.categoryCode, { pushAcik: checked })
                           }
                         />
                         <ToggleCell
-                          row={row}
-                          field="smsAcik"
+                          acik={row.smsAcik}
+                          editable={row.smsEditable}
                           onChange={(checked) =>
-                            updateRow(row.notificationTypeId, {
-                              smsAcik: checked,
-                            })
+                            updateRow(row.categoryCode, { smsAcik: checked })
                           }
                         />
                         <ToggleCell
-                          row={row}
-                          field="epostaAcik"
+                          acik={row.epostaAcik}
+                          editable={row.epostaEditable}
                           onChange={(checked) =>
-                            updateRow(row.notificationTypeId, {
-                              epostaAcik: checked,
-                            })
+                            updateRow(row.categoryCode, { epostaAcik: checked })
                           }
                         />
                       </TableRow>
@@ -266,28 +325,41 @@ export function MusteriBildirimTercihleriPage() {
 }
 
 function ToggleCell({
-  row,
-  field,
+  acik,
+  editable,
   onChange,
 }: {
-  row: BildirimTercihiDto;
-  field: "pushAcik" | "smsAcik" | "epostaAcik";
+  acik: boolean;
+  editable: boolean;
   onChange: (checked: boolean) => void;
 }) {
-  const checked = row[field];
   return (
-    <TableCell>
+    <TableCell className="align-top">
       <div className="flex items-center justify-center gap-2">
-        {row.zorunlu && <Lock className="size-3.5 text-foreground-muted" />}
-        <Switch
-          checked={checked}
-          onCheckedChange={onChange}
-          disabled={row.zorunlu}
-        />
+        {!editable && <Lock className="size-3.5 text-foreground-muted" />}
+        <Switch checked={acik} onCheckedChange={onChange} disabled={!editable} />
         <span className="text-xs text-foreground-muted">
-          {checked ? "Acik" : "Kapali"}
+          {acik ? "Acik" : "Kapali"}
         </span>
       </div>
     </TableCell>
   );
+}
+
+/**
+ * Kilitli (editable=false) kanallar zaten ekranda disabled - onlar icin
+ * update elemani hic gonderilmez (ZK ViewModel'in
+ * ekleGuncellemeyeUygunsa'siyla birebir ayni kural, bkz. o javadoc'u).
+ */
+function ekleGuncellemeyeUygunsa(
+  updates: NotifPreferencesUpdateItem[],
+  categoryCode: string,
+  notifChannelCode: NotifChannelCode,
+  editable: boolean,
+  enabled: boolean,
+) {
+  if (!editable) {
+    return;
+  }
+  updates.push({ categoryCode, notifChannelCode, isEnabled: enabled });
 }

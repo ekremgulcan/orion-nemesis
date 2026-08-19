@@ -44,6 +44,14 @@
                 opacity: 0.55;
                 cursor: not-allowed;
             }
+            .kategori-genislet-oku {
+                cursor: pointer;
+                color: #8a97a3;
+                display: inline-block;
+                margin-top: 2px;
+                font-size: 0.75em;
+                user-select: none;
+            }
         </style>
 
         <label value="Musteri Bildirim Tercihleri Ekrani"
@@ -55,7 +63,7 @@
             <musteriBilgiPaneli/>
 
             <groupbox closable="false" style="margin-top:10px">
-                <caption label="Bildirim Tercihleri (Bildirim Tipi Bazinda)"/>
+                <caption label="Bildirim Tercihleri (Kategori Bazinda)"/>
                 <n:div style="padding:0 16px;display:flex;justify-content:flex-end;gap:20px;margin-bottom:4px;font-size:0.85em;color:#8a97a3">
                     <n:span style="display:flex;align-items:center;gap:4px">
                         <n:span>&#128274;</n:span>Zorunlu (Duzenlenemez)
@@ -67,41 +75,49 @@
 
                 <listbox model="@load(vm.tercihler)" emptyMessage="Kayit yok">
                     <listhead>
-                        <listheader label="Bildirim Tipi" width="300px"/>
-                        <listheader label="Push Bildirim" style="text-align:center"/>
-                        <listheader label="SMS" style="text-align:center"/>
-                        <listheader label="E-Posta" style="text-align:center"/>
+                        <listheader label="Kategori Adi" width="220px"/>
+                        <listheader label="Kategori Icerigi"/>
+                        <listheader label="Push Bildirim" width="150px" style="text-align:center"/>
+                        <listheader label="SMS" width="120px" style="text-align:center"/>
+                        <listheader label="E-Posta" width="120px" style="text-align:center"/>
                     </listhead>
                     <template name="model">
                         <listitem>
-                            <listcell style="padding:5px 10px">
-                                <n:div style="display:flex;align-items:center;gap:6px">
-                                    <label value="@load(each.notificationType.ad)" style="font-weight:500"/>
-                                    <label value="&#8505;" style="color:#8a97a3;cursor:help"
-                                           tooltiptext="@load(each.notificationType.aciklama)"/>
+                            <listcell style="padding:8px 10px;vertical-align:top">
+                                <n:div style="display:flex;align-items:flex-start;gap:6px">
+                                    <a onClick="@command('kategoriGenisletDaralt', kategori=each)">
+                                        <label value="@load(each.expanded ? '&#9660;' : '&#9654;')" sclass="kategori-genislet-oku"/>
+                                    </a>
+                                    <label value="@load(each.categoryName)" style="font-weight:500"/>
                                 </n:div>
                             </listcell>
-                            <listcell style="text-align:center;padding:5px 10px">
+                            <listcell style="padding:8px 10px;vertical-align:top">
+                                <n:div style="display:flex;flex-wrap:wrap;align-items:center">
+                                    <html content="@load(each.countBadgeHtml)"/>
+                                    <span visible="@load(each.expanded)"><html content="@load(each.detailBadgeHtml)"/></span>
+                                </n:div>
+                            </listcell>
+                            <listcell style="text-align:center;padding:8px 10px;vertical-align:top">
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <label value="&#128274;" visible="@load(not each.pushEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.pushAcik)"
-                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                              disabled="@load(not each.pushEditable)"/>
                                     <label value="@load(each.pushAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>
-                            <listcell style="text-align:center;padding:5px 10px">
+                            <listcell style="text-align:center;padding:8px 10px;vertical-align:top">
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <label value="&#128274;" visible="@load(not each.smsEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.smsAcik)"
-                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                              disabled="@load(not each.smsEditable)"/>
                                     <label value="@load(each.smsAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>
-                            <listcell style="text-align:center;padding:5px 10px">
+                            <listcell style="text-align:center;padding:8px 10px;vertical-align:top">
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
-                                    <label value="&#128274;" visible="@load(each.notificationType.zorunlu)"/>
+                                    <label value="&#128274;" visible="@load(not each.epostaEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.epostaAcik)"
-                                              disabled="@load(each.notificationType.zorunlu)"/>
+                                              disabled="@load(not each.epostaEditable)"/>
                                     <label value="@load(each.epostaAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>

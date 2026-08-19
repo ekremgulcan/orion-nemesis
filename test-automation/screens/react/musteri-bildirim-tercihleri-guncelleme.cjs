@@ -2,15 +2,16 @@
  * Senaryo: Musteri Bildirim Tercihleri (React: /crm/musteri-bildirim-tercihleri,
  * MusteriBildirimTercihleriPage.tsx) ekraninda kapsamli fonksiyonel test -
  * ZK karsiligi (screens/zk/musteri-bildirim-tercihleri-guncelleme.cjs) ile
- * ayni senaryo/DB tablosu:
+ * ayni senaryo/DB tablosu, V40 kategori-bazli rework sonrasi:
  *   1. Var olmayan bir Musteri No aranir -> hata mesaji gorunur, tercih
  *      paneli gizli kalir.
- *   2. Var olan bir Musteri No aranir -> Musteri Bilgileri karti ve 6
- *      satirlik bildirim tercihi tablosu gorunur.
+ *   2. Var olan bir Musteri No aranir -> Musteri Bilgileri karti ve 2
+ *      satirlik (ORDER_STATUS, VIOP_MARGIN_CALL) kategori tercihi tablosu
+ *      gorunur.
  *   3. VIOP Margin Call satirinin 3 kanalinin da (Push/SMS/E-Posta)
  *      kilitli/disabled oldugu dogrulanir.
- *   4. Duzenlenebilir bir satirin (Emrinizin Tamami Gerceklesti) Push ve
- *      SMS tercihleri kapatilir, "Onaya Gonder" ile kaydedilir -> toast +
+ *   4. Duzenlenebilir ORDER_STATUS satirinin Push ve SMS tercihleri
+ *      kapatilir, "Onaya Gonder" ile kaydedilir -> toast +
  *      veritabaninda push_acik=0/sms_acik=0 dogrulanir.
  *   5. Sayfa yeniden yuklenip ayni musteri tekrar aranir -> degisikligin
  *      kalici oldugu dogrulanir (ayri bir onay ekrani yok).
@@ -68,7 +69,7 @@ async function run() {
     } else {
       report.fail("Olmayan musteri icin beklenen hata mesaji goruntenmedi", notFoundBody.slice(0, 300), { screenshot: notFoundScreenshot, diagnostics: diagnostics.getLogs() });
     }
-    const panelVisibleOnError = notFoundBody.includes("Bildirim Tercihleri (Bildirim Tipi Bazinda)");
+    const panelVisibleOnError = notFoundBody.includes("Bildirim Tercihleri (Kategori Bazinda)");
     if (!panelVisibleOnError) {
       report.pass("Hata durumunda tercih paneli gizli", "Panel DOM'da gorunmuyor");
     } else {
@@ -80,27 +81,28 @@ async function run() {
     await new Promise((r) => setTimeout(r, 1000));
     const foundBody = await page.evaluate(() => document.body.innerText);
     const foundScreenshot = await page.screenshot();
-    if (foundBody.includes("Bildirim Tercihleri (Bildirim Tipi Bazinda)") && foundBody.includes("VIOP Margin Call")) {
+    if (foundBody.includes("Bildirim Tercihleri (Kategori Bazinda)") && foundBody.includes("VIOP Margin Call")) {
       report.pass("Musteri bulundu, tercih tablosu goruntulendi", `Musteri No: ${MEVCUT_MUSTERI_NO}`, { screenshot: foundScreenshot });
     } else {
       report.fail("Musteri bulunduktan sonra tercih tablosu goruntulenmedi", foundBody.slice(0, 300), { screenshot: foundScreenshot, diagnostics: diagnostics.getLogs() });
     }
 
     // --- Adim 4: VIOP Margin Call satirinin kilitli oldugunu dogrula ---
-    // DOM sirasi: 6 satir x 3 switch (Push, SMS, E-Posta) = 18 switch; son
-    // 3 tane (index 15-17) VIOP Margin Call satirina ait.
+    // DOM sirasi: 2 kategori satiri (ORDER_STATUS, VIOP_MARGIN_CALL, sira
+    // kolonuna gore) x 3 switch (Push, SMS, E-Posta) = 6 switch; son 3
+    // tane (index 3-5) VIOP_MARGIN_CALL satirina ait.
     const statesBefore = await getSwitchStates(page);
-    if (statesBefore.length === 18 && statesBefore.slice(15, 18).every((s) => s.disabled)) {
-      report.pass("VIOP Margin Call satiri kilitli (disabled)", "index 15-17 tumu disabled=true");
+    if (statesBefore.length === 6 && statesBefore.slice(3, 6).every((s) => s.disabled)) {
+      report.pass("VIOP Margin Call satiri kilitli (disabled)", "index 3-5 tumu disabled=true");
     } else {
       report.fail("VIOP Margin Call satiri kilitli degil veya switch sayisi beklenenden farkli", JSON.stringify(statesBefore));
     }
 
-    // --- Adim 5: Duzenlenebilir ilk satirin Push/SMS tercihini kapat ---
+    // --- Adim 5: Duzenlenebilir ORDER_STATUS satirinin Push/SMS tercihini kapat ---
     await setSwitchByIndex(page, 0, false);
     await setSwitchByIndex(page, 1, false);
     const toggledScreenshot = await page.screenshot();
-    report.pass("Ilk satirin Push ve SMS tercihi kapatildi", "Emrinizin Tamami Gerceklesti: Push=Kapali, SMS=Kapali", { screenshot: toggledScreenshot });
+    report.pass("ORDER_STATUS satirinin Push ve SMS tercihi kapatildi", "Emir Durum Bildirimleri: Push=Kapali, SMS=Kapali", { screenshot: toggledScreenshot });
 
     // "Onaya Gonder" - tek eslesen buton, DOM sirasi/text ile bulunur
     const sendButtons = await page.$$("button");
@@ -124,9 +126,9 @@ async function run() {
 
     // --- Adim 6: Veritabaninda dogrula ---
     const dbQuery =
-      "SELECT c.musteri_no, nt.kod, t.push_acik, t.sms_acik, t.eposta_acik FROM musteri_bildirim_tercihleri t " +
-      "JOIN customers c ON c.customer_id = t.customer_id JOIN notification_types nt ON nt.notification_type_id = t.notification_type_id " +
-      `WHERE c.musteri_no = '${MEVCUT_MUSTERI_NO}' AND nt.kod = 'FILLED';`;
+      "SELECT c.musteri_no, nc.kod, t.push_acik, t.sms_acik, t.eposta_acik FROM musteri_bildirim_kategori_tercihleri t " +
+      "JOIN customers c ON c.customer_id = t.customer_id JOIN notification_categories nc ON nc.category_id = t.category_id " +
+      `WHERE c.musteri_no = '${MEVCUT_MUSTERI_NO}' AND nc.kod = 'ORDER_STATUS';`;
     const rows = await runQuery(dbQuery);
     report.sql("Veritabani sorgusu calistirildi", dbQuery, rows);
     if (rows.length === 1 && rows[0].push_acik === "0" && rows[0].sms_acik === "0" && rows[0].eposta_acik === "1") {
@@ -164,7 +166,7 @@ async function run() {
 
     const teardownRows = await runQuery(dbQuery);
     if (teardownRows.length === 1 && teardownRows[0].push_acik === "1" && teardownRows[0].sms_acik === "1") {
-      report.pass("Teardown: tercih varsayilan (hepsi acik) durumuna geri alindi", `${MEVCUT_MUSTERI_NO} / EMIR_TAMAMI_GERCEKLESTI`);
+      report.pass("Teardown: tercih varsayilan (hepsi acik) durumuna geri alindi", `${MEVCUT_MUSTERI_NO} / ORDER_STATUS`);
     } else {
       report.fail("Teardown basarisiz: tercih varsayilan duruma donmedi", JSON.stringify(teardownRows));
     }

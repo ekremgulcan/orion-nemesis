@@ -9,6 +9,8 @@ import java.util.List;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Customer findByMusteriNo(String musteriNo);
 
+    Customer findByUsername(String username);
+
     @Query("select c from Customer c where lower(c.musteriNo) like lower(concat('%', :q, '%')) " +
             "or lower(c.adSoyadUnvan) like lower(concat('%', :q, '%')) " +
             "or lower(c.tcknVkn) like lower(concat('%', :q, '%')) " +

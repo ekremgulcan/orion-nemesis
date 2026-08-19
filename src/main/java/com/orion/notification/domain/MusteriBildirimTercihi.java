@@ -8,14 +8,15 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * Bir musterinin bir bildirim tipi icin Push/SMS/E-Posta kanal tercihi.
- * Musteri x NotificationType basina en fazla bir satir bulunur (bkz.
- * V34 migration'daki unique kisitlama); satir ilk sorgulandiginda yoksa
- * varsayilan (hepsi acik) olarak otomatik olusturulur - bkz.
- * MusteriBildirimTercihleriService.tercihleriGetir.
+ * Bir musterinin bir bildirim KATEGORISI icin Push/SMS/E-Posta kanal
+ * tercihi (V40'tan itibaren - oncesinde NotificationType basinaydi, bkz.
+ * NotificationCategory javadoc). Musteri x NotificationCategory basina en
+ * fazla bir satir bulunur (bkz. V40 migration'daki unique kisitlama);
+ * satir ilk sorgulandiginda yoksa varsayilan (hepsi acik) olarak otomatik
+ * olusturulur - bkz. MusteriBildirimTercihleriService.tercihleriGetir.
  */
 @Entity
-@Table(name = "musteri_bildirim_tercihleri")
+@Table(name = "musteri_bildirim_kategori_tercihleri")
 @Getter
 @Setter
 public class MusteriBildirimTercihi {
@@ -30,8 +31,8 @@ public class MusteriBildirimTercihi {
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "notification_type_id", nullable = false)
-    private NotificationType notificationType;
+    @JoinColumn(name = "category_id", nullable = false)
+    private NotificationCategory category;
 
     @Column(name = "push_acik", nullable = false)
     private boolean pushAcik = true;

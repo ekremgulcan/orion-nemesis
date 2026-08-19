@@ -6,6 +6,7 @@ import { apiClient } from "@/api/client"
 export interface CustomerDto {
   id: number
   musteriNo: string
+  username: string
   adSoyadUnvan: string
   musteriTipi: string
   tcknVkn: string

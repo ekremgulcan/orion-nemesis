@@ -49,6 +49,24 @@ public class CustomerService {
         return customer;
     }
 
+    /**
+     * Username'e gore tek bir musteri bulur. "Musteri Bildirim
+     * Tercihleri" servis dokumaninin GET/POST uc noktalari musteriyi
+     * bununla tanimlar (bkz. Customer.username javadoc) - ekranin
+     * kendisi hala "Musteri No" ile arar, bu metot musteri bulunduktan
+     * SONRA bildirim tercihleri servisiyle konusmak icin kullanilir.
+     */
+    public Customer bulByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Username bos birakilamaz");
+        }
+        Customer customer = repository.findByUsername(username.trim());
+        if (customer == null) {
+            throw new IllegalArgumentException("Musteri bulunamadi: " + username.trim());
+        }
+        return customer;
+    }
+
     @Transactional
     public Customer kaydet(Long id, String musteriNo, String adSoyadUnvan, String musteriTipi,
                             String tcknVkn, String riskGrubu, String telefon, String email, boolean aktif) {
@@ -78,6 +96,13 @@ public class CustomerService {
         customer.setAktif(aktif);
         if (yeni) {
             customer.setOlusturmaTarihi(LocalDateTime.now());
+            // Bu ekranin (Musteri Yonetim Sistemi) kendi bir "username"
+            // alani yok - username, "Musteri Bildirim Tercihleri" servis
+            // dokumaniyla uyum icin V41'de eklendi ve NOT NULL/UNIQUE.
+            // Yeni musteri olustururken, V41'in mevcut 101 musteriye
+            // uyguladigi ayni formulle (ad_soyad_unvan + musteri_no son 3
+            // hane) otomatik uretilir - kullaniciya ayrica sorulmaz.
+            customer.setUsername(uretUsername(adSoyadUnvan, musteriNo));
         }
         try {
             return repository.save(customer);
@@ -86,6 +111,19 @@ public class CustomerService {
                     "Kayit sirasinda hata olustu (Musteri No / TCKN-VKN benzersiz olmali): "
                             + ex.getMostSpecificCause().getMessage());
         }
+    }
+
+    /**
+     * V41 migration'in mevcut musterilere uyguladigi ayni backfill
+     * formulu: ad_soyad_unvan kucuk harfe cevrilip bosluklar nokta ile
+     * degistirilir, sonuna musteri_no'nun son 3 hanesi eklenir (orn.
+     * "Ahmet Yilmaz" + "M000102" -> "ahmet.yilmaz.102"). musteri_no zaten
+     * unique oldugu icin sonuc da garanti unique olur.
+     */
+    private static String uretUsername(String adSoyadUnvan, String musteriNo) {
+        String taban = adSoyadUnvan.trim().toLowerCase(java.util.Locale.ROOT).replace(' ', '.');
+        String son3Hane = musteriNo.length() >= 3 ? musteriNo.substring(musteriNo.length() - 3) : musteriNo;
+        return taban + "." + son3Hane;
     }
 
     @Transactional

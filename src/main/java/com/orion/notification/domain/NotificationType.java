@@ -7,11 +7,17 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * Bildirim tipi katalogu. "Musteri Bildirim Tercihleri" ekraninda her satir
- * bir NotificationType'a karsilik gelir. `zorunlu = true` olan tip (VIOP
- * Margin Call) kullanici tarafindan kapatilamaz. `active` alani "Bildirim
- * Ayarlari" ekranindaki kanallardan bagimsiz genel durumu tutar - bu tek
- * alan haric, satirlar referans veridir ve uygulama tarafindan degistirilmez.
+ * Bildirim tipi katalogu. "Bildirim Ayarlari" ekraninda her satir bir
+ * NotificationType'a karsilik gelir (kanal sablonu bu tip x kanal bazinda
+ * yonetilir, bkz. NotifChannelTemplate). "Musteri Bildirim Tercihleri"
+ * ekraninda ise artik NotificationType degil, {@link #category} (bkz.
+ * NotificationCategory) satir birimidir - bir kategorinin altindaki butun
+ * NotificationType'lar TEK bir Push/SMS/E-Posta tercihini paylasir; bu tip
+ * satirlari o ekranda sadece kategorinin icerigini (rozet listesi) gosterir
+ * (V40 oncesi burada bir `zorunlu` alani vardi, artik kategoriye tasindi -
+ * bkz. NotificationCategory javadoc). `active` alani "Bildirim Ayarlari"
+ * ekranindaki kanallardan bagimsiz genel durumu tutar - bu tek alan haric,
+ * satirlar referans veridir ve uygulama tarafindan degistirilmez.
  */
 @Entity
 @Table(name = "notification_types")
@@ -33,8 +39,9 @@ public class NotificationType {
     @Column(name = "aciklama")
     private String aciklama;
 
-    @Column(name = "zorunlu", nullable = false)
-    private boolean zorunlu;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private NotificationCategory category;
 
     @Column(name = "sira", nullable = false)
     private int sira;
