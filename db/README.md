@@ -55,9 +55,9 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V40__notification_kategori_schema.sql | Musteri Bildirim Tercihleri ekrani KATEGORI bazina donusturulur (gercek servis dokumaniyla birebir uyum icin): yeni notification_categories tablosu (2 kategori: ORDER_STATUS, VIOP_MARGIN_CALL - hem kategori seviyesinde hem kanal (push/sms/eposta) bazinda ayri isEditable kolonlari), notification_types.category_id FK eklenir + notification_types.zorunlu kolonu kaldirilir (kategoriye tasindi), eski musteri_bildirim_tercihleri (bildirim tipi bazinda, sadece mock veri) silinir, yeni musteri_bildirim_kategori_tercihleri (musteri x kategori bazinda Push/SMS/E-Posta) eklenir |
 | V41__customer_username.sql | customers tablosuna username kolonu eklenir (servis dokumanindaki GET/POST uc noktalari musteriyi "username" ile tanimliyor, "Musteri No" ile degil) - mevcut 101 musteri icin ad_soyad_unvan + musteri_no son 3 hane bazli, garanti benzersiz mock username backfill edilir |
 | V30__credit_optimization_result_uygulandi.sql | credit_optimization_results: uygulandi / uygulama_tarihi |
-| V31__investor_schema.sql | Bireysel Yatirimci Bilgileri: customers/accounts genisletme + yatirimci alt tablolari |
-| V32__seed_investor.sql | Mock veri: yatirimci alanlari, 1. musteri icin dolu alt sekmeler |
-| V33__seed_investor_fill.sql | Tum musteriler icin yatirimci master + alt sekme verisi doldurma |
+| V42__investor_schema.sql | Bireysel Yatirimci Bilgileri: customers/accounts genisletme + yatirimci alt tablolari |
+| V43__seed_investor.sql | Mock veri: yatirimci alanlari, 1. musteri icin dolu alt sekmeler |
+| V44__seed_investor_fill.sql | Tum musteriler icin yatirimci master + alt sekme verisi doldurma |
 
 ## Varlik Iliski Ozeti (ER)
 

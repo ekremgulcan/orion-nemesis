@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Customer findByMusteriNo(String musteriNo);
+    Customer findByUsername(String username);
 
     @Query("select max(c.yatirimciNo) from Customer c")
     Long findMaxYatirimciNo();
