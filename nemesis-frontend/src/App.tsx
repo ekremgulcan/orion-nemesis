@@ -9,6 +9,7 @@ import { NakitIslemGirisPage } from "@/pages/cash/NakitIslemGirisPage"
 import { NakitYonetimiPage } from "@/pages/cash/NakitYonetimiPage"
 import { YonetimPaneliPage } from "@/pages/core/YonetimPaneliPage"
 import { MusteriYonetimPage } from "@/pages/core/MusteriYonetimPage"
+import { BireyselYatirimciPage } from "@/pages/core/BireyselYatirimciPage"
 import { TradeMasterYetkilendirmePage } from "@/pages/core/TradeMasterYetkilendirmePage"
 import { ViopKotasyonPage } from "@/pages/core/ViopKotasyonPage"
 import { HisseKotasyonPage } from "@/pages/core/HisseKotasyonPage"
@@ -52,6 +53,7 @@ function App() {
               <Route path="/collateral/islemleri" element={<TeminatIslemleriPage />} />
               <Route path="/core/yonetim-paneli" element={<YonetimPaneliPage />} />
               <Route path="/core/musteriler" element={<MusteriYonetimPage />} />
+              <Route path="/core/bireysel-yatirimci" element={<BireyselYatirimciPage />} />
               <Route path="/core/trademaster-yetkilendirme" element={<TradeMasterYetkilendirmePage />} />
               <Route path="/core/viop-kotasyon" element={<ViopKotasyonPage />} />
               <Route path="/core/hisse-kotasyon" element={<HisseKotasyonPage />} />

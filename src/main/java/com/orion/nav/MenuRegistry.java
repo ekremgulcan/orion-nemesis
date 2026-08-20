@@ -19,6 +19,7 @@ public class MenuRegistry {
         items.add(new MenuItem("Halka Arz Islemleri", null));
         items.add(new MenuItem("VIOP Kotasyon Izleme", "/core/viop-kotasyon.zul"));
         items.add(new MenuItem("Musteri Yonetim Sistemi", "/core/musteriler.zul"));
+        items.add(new MenuItem("Bireysel Yatirimci Bilgileri", "/core/bireysel-yatirimci.zul"));
         items.add(new MenuItem("TradeMaster Yetkilendirme", "/core/trademaster-yetkilendirme.zul"));
         items.add(new MenuItem("VIOP Risk Profili Tanim", "/core/viop-risk-profili.zul"));
         items.add(new MenuItem("Musteri Iletisim Panosu", "/crm/toplu-mesaj-gonder.zul",

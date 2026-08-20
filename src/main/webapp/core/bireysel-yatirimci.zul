@@ -1,0 +1,1017 @@
+<?page title="Bireysel Yatirimci Bilgileri"?>
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.core.vm.BireyselYatirimciViewModel')"
+            style="padding:12px">
+
+        <div style="background:#2f6fad;color:white;padding:8px 12px;font-weight:bold;font-size:15px">
+            Musteri Bilgileri
+        </div>
+        <hbox spacing="10px" align="center" style="margin:8px 0 12px 0">
+            <label value="Hesap:"/>
+            <combobox model="@load(vm.hesapSecenekleri)" selectedItem="@bind(vm.seciliHesap)" width="320px">
+                <template name="model">
+                    <comboitem label="@load(each.hesapNo.concat(' - ').concat(each.customer.adSoyadUnvan))"/>
+                </template>
+            </combobox>
+            <button label="Getir" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('getir')"/>
+            <label value="Secilen Musteri:" style="margin-left:20px"/>
+            <label value="@load(vm.secilenMusteriOzet)" style="font-weight:bold"/>
+            <div hflex="1"/>
+            <button label="Yeni Yatirimci" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('yeniYatirimci')"/>
+        </hbox>
+
+        <hbox spacing="8px" style="margin-bottom:8px">
+            <button label="Sistemleri Kontrol Et" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('sistemleriKontrolEt')"/>
+            <button label="Yatirimci Dokumanlari" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('yatirimciDokumanlari')"/>
+            <button label="Segmentasyon Formu" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                    onClick="@command('segmentasyonFormu')"/>
+        </hbox>
+
+        <grid>
+            <columns>
+                <column width="170px"/>
+                <column/>
+                <column width="190px"/>
+                <column/>
+                <column width="200px"/>
+                <column/>
+            </columns>
+            <rows>
+                <row>
+                    <label value="TCKN / YKN"/>
+                    <textbox value="@bind(vm.yatirimci.tcknVkn)" width="180px"/>
+                    <label value="Soyisim"/>
+                    <textbox value="@bind(vm.yatirimci.soyisim)" width="180px"/>
+                    <label value="Yatirimci No"/>
+                    <textbox value="@load(vm.yatirimci.yatirimciNo)" width="120px" readonly="true"/>
+                </row>
+                <row>
+                    <label value="Isim"/>
+                    <textbox value="@bind(vm.yatirimci.isim)" width="180px"/>
+                    <label value="Uyruk"/>
+                    <combobox value="@bind(vm.yatirimci.uyruk)" width="180px">
+                        <comboitem label="TURKIYE"/>
+                        <comboitem label="ALMANYA"/>
+                        <comboitem label="ABD"/>
+                    </combobox>
+                    <label value="Nitelikli Yatirimci (Dusuk Tutar)"/>
+                    <checkbox checked="@bind(vm.yatirimci.nitelikliYatirimciDusukTutar)"/>
+                </row>
+                <row>
+                    <label value="Baba Adi"/>
+                    <textbox value="@bind(vm.yatirimci.babaAdi)" width="180px"/>
+                    <label value="Sube"/>
+                    <combobox value="@bind(vm.yatirimci.sube)" width="180px">
+                        <comboitem label="Genel Mudurluk"/>
+                        <comboitem label="Atasehir Subesi"/>
+                        <comboitem label="Levent Subesi"/>
+                    </combobox>
+                    <label value="Yatirimci Profili"/>
+                    <combobox value="@bind(vm.yatirimci.yatirimciProfili)" width="160px">
+                        <comboitem label="Dusuk"/>
+                        <comboitem label="Orta"/>
+                        <comboitem label="Yuksek"/>
+                    </combobox>
+                </row>
+                <row>
+                    <label value="Cinsiyet"/>
+                    <combobox value="@bind(vm.yatirimci.cinsiyet)" width="180px">
+                        <comboitem label="Kadin"/>
+                        <comboitem label="Erkek"/>
+                    </combobox>
+                    <label value="Dogum Tarihi"/>
+                    <datebox value="@bind(vm.dogumTarihi)" width="160px" format="dd.MM.yyyy"/>
+                    <label value="IYS E-Posta Izni"/>
+                    <combobox value="@bind(vm.yatirimci.iysEpostaIzni)" width="160px">
+                        <comboitem label="Onaysiz"/>
+                        <comboitem label="Onayli"/>
+                    </combobox>
+                </row>
+                <row>
+                    <label value="Dogum Yeri"/>
+                    <textbox value="@bind(vm.yatirimci.dogumYeri)" width="180px"/>
+                    <label value="MKK Sicil No"/>
+                    <textbox value="@bind(vm.yatirimci.mkkSicilNo)" width="180px"/>
+                    <label value="Interaktif Kullanici"/>
+                    <checkbox checked="@bind(vm.yatirimci.interaktifKullanici)"/>
+                </row>
+                <row>
+                    <label value="Yatirimci Lokasyon Tipi"/>
+                    <combobox value="@bind(vm.yatirimci.yatirimciLokasyonTipi)" width="180px">
+                        <comboitem label="Yurtici Yerlesik"/>
+                        <comboitem label="Yurtdisi Yerlesik"/>
+                    </combobox>
+                    <label value="Takasbank Sicil No"/>
+                    <textbox value="@bind(vm.yatirimci.takasbankSicilNo)" width="180px"/>
+                    <label value="Yatirimci Segmenti"/>
+                    <combobox value="@bind(vm.yatirimci.yatirimciSegmenti)" width="160px">
+                        <comboitem label="Perakende"/>
+                        <comboitem label="Ozel"/>
+                        <comboitem label="VIP"/>
+                    </combobox>
+                </row>
+                <row>
+                    <label value="Vergi Mukellefiyeti"/>
+                    <combobox value="@bind(vm.yatirimci.vergiMukellefiyeti)" width="180px">
+                        <comboitem label="Tam Mukellef"/>
+                        <comboitem label="Dar Mukellef"/>
+                    </combobox>
+                    <label value="Yatirimci Tipi"/>
+                    <combobox value="@bind(vm.yatirimci.yatirimciTipi)" width="220px">
+                        <comboitem label="Resit ve mumeyyiz gercek kisiler"/>
+                        <comboitem label="Tuzel kisi"/>
+                    </combobox>
+                    <label value="IYS SMS Izni"/>
+                    <combobox value="@bind(vm.yatirimci.iysSmsIzni)" width="160px">
+                        <comboitem label="Onaysiz"/>
+                        <comboitem label="Onayli"/>
+                    </combobox>
+                </row>
+                <row>
+                    <label value="Vergi Numarasi"/>
+                    <textbox value="@bind(vm.yatirimci.vergiNumarasi)" width="180px"/>
+                    <label value="Yatirimci Durumu"/>
+                    <combobox value="@bind(vm.yatirimci.yatirimciDurumu)" width="180px">
+                        <comboitem label="Aktif"/>
+                        <comboitem label="Pasif"/>
+                    </combobox>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Vergi Dairesi"/>
+                    <textbox value="@bind(vm.yatirimci.vergiDairesi)" width="180px"/>
+                    <label value="Ikinci Vatandaslik Ulkesi"/>
+                    <textbox value="@bind(vm.yatirimci.ikinciVatandaslikUlkesi)" width="180px"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Yurtdisi Vergi Numarasi"/>
+                    <textbox value="@bind(vm.yatirimci.yurtdisiVergiNumarasi)" width="180px"/>
+                    <label value="Dogum Ulkesi"/>
+                    <textbox value="@bind(vm.yatirimci.dogumUlkesi)" width="180px"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Yabanci Vergi Ulkesi"/>
+                    <textbox value="@bind(vm.yatirimci.yabanciVergiUlkesi)" width="180px"/>
+                    <label value="ABD Vergi Mukellefi"/>
+                    <checkbox checked="@bind(vm.yatirimci.abdVergiMukellefi)"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Musteri Siniflandirmasi"/>
+                    <combobox value="@bind(vm.yatirimci.musteriSiniflandirmasi)" width="180px">
+                        <comboitem label="Perakende Musteri"/>
+                        <comboitem label="Profesyonel Musteri"/>
+                    </combobox>
+                    <label value="Ikinci Yurtdisi Vergi No"/>
+                    <textbox value="@bind(vm.yatirimci.ikinciYurtdisiVergiNumarasi)" width="180px"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Green Card"/>
+                    <checkbox checked="@bind(vm.yatirimci.greenCard)"/>
+                    <label value="Yabanci VKN Zorunlu Degil"/>
+                    <checkbox checked="@bind(vm.yatirimci.yabanciVknZorunluDegil)"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Ucuncu Yabanci Vergi Ulkesi"/>
+                    <textbox value="@bind(vm.yatirimci.ucuncuYabanciVergiUlkesi)" width="180px"/>
+                    <label value="Ucuncu Yurtdisi Vergi No"/>
+                    <textbox value="@bind(vm.yatirimci.ucuncuYurtdisiVergiNumarasi)" width="180px"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Ikinci VKN Zorunlu Degil"/>
+                    <checkbox checked="@bind(vm.yatirimci.ikinciVknZorunluDegil)"/>
+                    <label value="Ucuncu VKN Zorunlu Degil"/>
+                    <checkbox checked="@bind(vm.yatirimci.ucuncuVknZorunluDegil)"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Web Mailer Raporlari"/>
+                    <checkbox checked="@bind(vm.yatirimci.webMailerRaporlari)"/>
+                    <label value="Nitelikli Yatirimci"/>
+                    <checkbox checked="@bind(vm.yatirimci.nitelikliYatirimci)"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Hesaplanan YP"/>
+                    <textbox value="@bind(vm.yatirimci.hesaplananYp)" width="180px"/>
+                    <label value="Atanan YP"/>
+                    <textbox value="@bind(vm.yatirimci.atananYp)" width="180px"/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Kisinin Meslegi"/>
+                    <combobox value="@bind(vm.yatirimci.kisininMeslegi)" width="180px">
+                        <comboitem label="Aktor / Aktris"/>
+                        <comboitem label="Muhendis"/>
+                        <comboitem label="Avukat"/>
+                        <comboitem label="Ozel Sektor"/>
+                        <comboitem label="Emekli"/>
+                    </combobox>
+                    <label value="IYS Arama Izni"/>
+                    <combobox value="@bind(vm.yatirimci.iysAramaIzni)" width="180px">
+                        <comboitem label="Onaysiz"/>
+                        <comboitem label="Onayli"/>
+                    </combobox>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+                <row>
+                    <label value="Musteri Tanimi Tipi"/>
+                    <combobox value="@bind(vm.yatirimci.musteriTanimiTipi)" width="180px">
+                        <comboitem label="Yuzyuze Gorusme"/>
+                        <comboitem label="Uzaktan"/>
+                    </combobox>
+                    <label value=""/>
+                    <label value=""/>
+                    <label value=""/>
+                    <label value=""/>
+                </row>
+            </rows>
+        </grid>
+
+        <tabbox style="margin-top:12px">
+            <tabs>
+                <tab label="Hesaplar"/>
+                <tab label="Adresler"/>
+                <tab label="Iletisim Bilgileri"/>
+                <tab label="Kimlik Bilgileri"/>
+                <tab label="Islem Kanallari"/>
+                <tab label="Gerekli Belgeler"/>
+                <tab label="Notlar"/>
+                <tab label="Dis Kurum / Banka Hesaplari"/>
+                <tab label="Egitim Bilgileri"/>
+                <tab label="Referanslar"/>
+                <tab label="Web Mailer Raporlari"/>
+                <tab label="Yerindelik ve Uygunluk Testi"/>
+                <tab label="Dis Sistem Kullanici ID leri"/>
+            </tabs>
+            <tabpanels>
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">
+                        Hesap Listesi
+                        <button label="+" style="float:right;background:#1e4e7a !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('hesapEkle')"/>
+                    </div>
+                    <listbox model="@load(vm.hesaplar)" emptyMessage="No Rows To Show" height="180px">
+                        <listhead>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Hesap Tipi" width="110px"/>
+                            <listheader label="Hesap Acilis Tarihi" width="150px"/>
+                            <listheader label="Hesap Durumu" width="110px"/>
+                            <listheader label="Yatirim Danismani"/>
+                            <listheader label="Profil Tanimi"/>
+                            <listheader label="" width="80px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.hesapNo)"/>
+                                <listcell label="@load(each.hesapSinifi)"/>
+                                <listcell label="@load(each.acilisTarihi)"/>
+                                <listcell label="@load(each.durum)"/>
+                                <listcell label="@load(each.yatirimDanismani)"/>
+                                <listcell label="@load(each.profilTanimi)"/>
+                                <listcell>
+                                    <button label="Duzenle" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                            onClick="@command('hesapDuzenle', item=each)"/>
+                                </listcell>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Adres Listesi</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <label value="Adres Tipi"/>
+                        <combobox value="@bind(vm.yeniAdresTipi)" width="140px">
+                            <comboitem label="Ikametgah"/>
+                            <comboitem label="Is"/>
+                            <comboitem label="Yazisma"/>
+                        </combobox>
+                        <label value="Il"/>
+                        <textbox value="@bind(vm.yeniAdresIl)" width="120px"/>
+                        <label value="Ilce"/>
+                        <textbox value="@bind(vm.yeniAdresIlce)" width="120px"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('adresEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.adresler)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Adres Tipi" width="110px"/>
+                            <listheader label="Ulke" width="90px"/>
+                            <listheader label="Il" width="110px"/>
+                            <listheader label="Ilce" width="110px"/>
+                            <listheader label="Mahalle"/>
+                            <listheader label="Cadde/Sokak"/>
+                            <listheader label="" width="70px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.adresTipi)"/>
+                                <listcell label="@load(each.ulke)"/>
+                                <listcell label="@load(each.il)"/>
+                                <listcell label="@load(each.ilce)"/>
+                                <listcell label="@load(each.mahalle)"/>
+                                <listcell label="@load(each.caddeSokak)"/>
+                                <listcell>
+                                    <button label="Sil" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                            onClick="@command('adresSil', item=each)"/>
+                                </listcell>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Iletisim Bilgileri</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <label value="Tip"/>
+                        <combobox value="@bind(vm.yeniIletisimTipi)" width="120px">
+                            <comboitem label="Cep"/>
+                            <comboitem label="E-Posta"/>
+                            <comboitem label="Is Telefonu"/>
+                            <comboitem label="Ev"/>
+                        </combobox>
+                        <textbox value="@bind(vm.yeniIletisimDeger)" width="220px"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('iletisimEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.iletisimler)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Iletisim Tipi" width="140px"/>
+                            <listheader label="Deger"/>
+                            <listheader label="Varsayilan" width="90px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.iletisimTipi)"/>
+                                <listcell label="@load(each.deger)"/>
+                                <listcell label="@load(each.varsayilan ? 'Evet' : 'Hayir')"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <groupbox>
+                        <caption label="Nufus Bilgileri"/>
+                        <grid>
+                            <columns>
+                                <column width="160px"/><column/>
+                                <column width="160px"/><column/>
+                                <column width="160px"/><column/>
+                            </columns>
+                            <rows>
+                                <row>
+                                    <label value="Seri No"/><textbox value="@bind(vm.kimlik.seriNo)" width="140px"/>
+                                    <label value="Medeni Hali"/>
+                                    <combobox value="@bind(vm.kimlik.medeniHali)" width="140px">
+                                        <comboitem label="Evli"/><comboitem label="Bekar"/><comboitem label="Dul"/>
+                                    </combobox>
+                                    <label value="Anne Adi"/><textbox value="@bind(vm.kimlik.anneAdi)" width="140px"/>
+                                </row>
+                                <row>
+                                    <label value="Verildigi Yer"/><textbox value="@bind(vm.kimlik.verildigiYer)" width="140px"/>
+                                    <label value="Verildigi Tarih"/><datebox value="@bind(vm.verildigiTarih)" width="140px" format="dd.MM.yyyy"/>
+                                    <label value=""/><label value=""/>
+                                </row>
+                                <row>
+                                    <label value="Il"/><textbox value="@bind(vm.kimlik.il)" width="140px"/>
+                                    <label value="Ilce"/><textbox value="@bind(vm.kimlik.ilce)" width="140px"/>
+                                    <label value="Mahalle / Koy"/><textbox value="@bind(vm.kimlik.mahalleKoy)" width="140px"/>
+                                </row>
+                                <row>
+                                    <label value="Cilt No"/><textbox value="@bind(vm.kimlik.ciltNo)" width="140px"/>
+                                    <label value="Aile Sira No"/><textbox value="@bind(vm.kimlik.aileSiraNo)" width="140px"/>
+                                    <label value="Sira No"/><textbox value="@bind(vm.kimlik.siraNo)" width="140px"/>
+                                </row>
+                                <row>
+                                    <label value="Son Gecerlilik"/><datebox value="@bind(vm.sonGecerlilik)" width="140px" format="dd.MM.yyyy"/>
+                                    <label value="Es TCKN"/><textbox value="@bind(vm.kimlik.esTckn)" width="140px"/>
+                                    <label value=""/><label value=""/>
+                                </row>
+                            </rows>
+                        </grid>
+                    </groupbox>
+                    <groupbox open="false" style="margin-top:8px">
+                        <caption label="Surucu Belgesi Detaylari"/>
+                        <hbox spacing="8px">
+                            <label value="Belge No"/><textbox value="@bind(vm.kimlik.surucuBelgeNo)" width="120px"/>
+                            <label value="Sinif"/><textbox value="@bind(vm.kimlik.surucuSinif)" width="80px"/>
+                            <label value="Verilis"/><datebox value="@bind(vm.surucuVerilisTarih)" width="130px" format="dd.MM.yyyy"/>
+                            <label value="Gecerlilik"/><datebox value="@bind(vm.surucuGecerlilik)" width="130px" format="dd.MM.yyyy"/>
+                        </hbox>
+                    </groupbox>
+                    <groupbox open="false" style="margin-top:8px">
+                        <caption label="Pasaport Detaylari"/>
+                        <hbox spacing="8px">
+                            <label value="Pasaport No"/><textbox value="@bind(vm.kimlik.pasaportNo)" width="140px"/>
+                            <label value="Yer"/><textbox value="@bind(vm.kimlik.pasaportYeri)" width="140px"/>
+                            <label value="Verilis"/><datebox value="@bind(vm.pasaportVerilis)" width="130px" format="dd.MM.yyyy"/>
+                            <label value="Gecerlilik"/><datebox value="@bind(vm.pasaportGecerlilik)" width="130px" format="dd.MM.yyyy"/>
+                        </hbox>
+                    </groupbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Islem Kanallari</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <combobox value="@bind(vm.yeniKanal)" width="180px">
+                            <comboitem label="Sube"/><comboitem label="Internet Subesi"/>
+                            <comboitem label="TradeMaster"/><comboitem label="Mobil"/><comboitem label="Cagri Merkezi"/>
+                        </combobox>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('kanalEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.kanallar)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Kanal"/>
+                            <listheader label="Yetkili" width="90px"/>
+                            <listheader label="Durum" width="90px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.kanal)"/>
+                                <listcell label="@load(each.yetkili ? 'Evet' : 'Hayir')"/>
+                                <listcell label="@load(each.durum)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Gerekli Belgeler</div>
+                    <listbox model="@load(vm.belgeler)" emptyMessage="No Rows To Show" height="220px">
+                        <listhead>
+                            <listheader label="" width="40px"/>
+                            <listheader label="Dokuman Tipi"/>
+                            <listheader label="Getirilis Tarihi" width="130px"/>
+                            <listheader label="Gecerlilik Tarihi" width="130px"/>
+                            <listheader label="Versiyon" width="80px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell><checkbox checked="@bind(each.secili)"/></listcell>
+                                <listcell label="@load(each.dokumanTipi)"/>
+                                <listcell label="@load(each.getirilisTarihi)"/>
+                                <listcell label="@load(each.gecerlilikTarihi)"/>
+                                <listcell label="@load(each.versiyon)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                    <button label="Belgeleri Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important;margin-top:6px"
+                            onClick="@command('belgelerKaydet')"/>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Notlar</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <combobox value="@bind(vm.yeniNotTipi)" width="120px">
+                            <comboitem label="Bilgi"/><comboitem label="Operasyon"/><comboitem label="Uyari"/>
+                        </combobox>
+                        <textbox value="@bind(vm.yeniNotMetni)" width="360px"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('notEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.notlar)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Not Tipi" width="110px"/>
+                            <listheader label="Not"/>
+                            <listheader label="Guncellenme Tarihi" width="170px"/>
+                            <listheader label="" width="70px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.notTipi)"/>
+                                <listcell label="@load(each.notMetni)"/>
+                                <listcell label="@load(each.guncellemeTarihi)"/>
+                                <listcell>
+                                    <button label="Sil" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                            onClick="@command('notSil', item=each)"/>
+                                </listcell>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Dis Kurumlardaki Hesaplar</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <textbox value="@bind(vm.yeniDisKurum)" width="160px" placeholder="Referans Kurum"/>
+                        <textbox value="@bind(vm.yeniDisHesapNo)" width="120px" placeholder="Hesap No"/>
+                        <textbox value="@bind(vm.yeniIban)" width="240px" placeholder="IBAN"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('disHesapEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.disHesaplar)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Referans Kurum"/>
+                            <listheader label="Sube Adi" width="110px"/>
+                            <listheader label="Hesap No" width="100px"/>
+                            <listheader label="IBAN"/>
+                            <listheader label="Para Birimi" width="80px"/>
+                            <listheader label="GVT" width="60px"/>
+                            <listheader label="Hesap Sahibi"/>
+                            <listheader label="Hesap Tipi" width="90px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.referansKurum)"/>
+                                <listcell label="@load(each.subeAdi)"/>
+                                <listcell label="@load(each.hesapNo)"/>
+                                <listcell label="@load(each.iban)"/>
+                                <listcell label="@load(each.paraBirimi)"/>
+                                <listcell label="@load(each.gvtVar ? 'Evet' : 'Hayir')"/>
+                                <listcell label="@load(each.hesapSahibi)"/>
+                                <listcell label="@load(each.hesapTipi)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Egitim Bilgileri</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <combobox value="@bind(vm.yeniEgitimDerecesi)" width="130px">
+                            <comboitem label="Lise"/><comboitem label="Lisans"/><comboitem label="Yuksek Lisans"/><comboitem label="Doktora"/>
+                        </combobox>
+                        <textbox value="@bind(vm.yeniOkul)" width="200px" placeholder="Okul"/>
+                        <textbox value="@bind(vm.yeniBolum)" width="160px" placeholder="Bolum"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('egitimEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.egitimler)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Egitim Derecesi" width="130px"/>
+                            <listheader label="Okul"/>
+                            <listheader label="Fakulte"/>
+                            <listheader label="Bolum"/>
+                            <listheader label="Mezuniyet Tarihi" width="130px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.egitimDerecesi)"/>
+                                <listcell label="@load(each.okul)"/>
+                                <listcell label="@load(each.fakulte)"/>
+                                <listcell label="@load(each.bolum)"/>
+                                <listcell label="@load(each.mezuniyetTarihi)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Referanslar</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <textbox value="@bind(vm.yeniReferansAdi)" width="180px" placeholder="Referans Adi"/>
+                        <textbox value="@bind(vm.yeniReferansTelefon)" width="140px" placeholder="Telefon"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('referansEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.referanslar)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Referans Adi"/>
+                            <listheader label="Telefon" width="120px"/>
+                            <listheader label="Kurum"/>
+                            <listheader label="Aciklama"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.referansAdi)"/>
+                                <listcell label="@load(each.referansTelefon)"/>
+                                <listcell label="@load(each.referansKurum)"/>
+                                <listcell label="@load(each.aciklama)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Yatirimci WebMailer Rapor Tercihleri</div>
+                    <listbox model="@load(vm.webmailer)" emptyMessage="No Rows To Show" height="220px">
+                        <listhead>
+                            <listheader label="" width="40px"/>
+                            <listheader label="Uye Id" width="100px"/>
+                            <listheader label="Rapor Aciklamasi"/>
+                            <listheader label="E-Posta" width="220px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell><checkbox checked="@bind(each.secili)"/></listcell>
+                                <listcell label="@load(each.uyeId)"/>
+                                <listcell label="@load(each.raporAciklamasi)"/>
+                                <listcell label="@load(each.eposta)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                    <button label="Tercihleri Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important;margin-top:6px"
+                            onClick="@command('webmailerKaydet')"/>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Yerindelik ve Uygunluk Testi (Elektronik)</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <combobox value="@bind(vm.yeniTestTipi)" width="180px">
+                            <comboitem label="Yerindelik Testi"/><comboitem label="Uygunluk Testi"/>
+                        </combobox>
+                        <textbox value="@bind(vm.yeniTestSonucu)" width="160px" placeholder="Test Sonucu"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('testEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.testler)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Test Tipi"/>
+                            <listheader label="Test Tarihi" width="130px"/>
+                            <listheader label="Test Sonucu"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.testTipi)"/>
+                                <listcell label="@load(each.testTarihi)"/>
+                                <listcell label="@load(each.testSonucu)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <tabpanel>
+                    <div style="background:#2f6fad;color:white;padding:6px 10px;font-weight:bold">Dis Sistem Kullanici Numaralari</div>
+                    <hbox spacing="8px" align="center" style="margin:8px 0">
+                        <textbox value="@bind(vm.yeniDisSistem)" width="160px" placeholder="Dis Sistem"/>
+                        <textbox value="@bind(vm.yeniDisKullaniciKodu)" width="160px" placeholder="Kullanici Kodu"/>
+                        <button label="+" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('disKullaniciEkle')"/>
+                    </hbox>
+                    <listbox model="@load(vm.disKullanicilar)" emptyMessage="No Rows To Show" height="160px">
+                        <listhead>
+                            <listheader label="Dis Sistem"/>
+                            <listheader label="Kullanici Kodu"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.disSistem)"/>
+                                <listcell label="@load(each.kullaniciKodu)"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+
+        <div style="text-align:right;margin-top:10px">
+            <button label="Kaydet!" style="background:#4caf50 !important;color:white !important;text-shadow:none !important;padding:6px 18px"
+                    onClick="@command('kaydet')"/>
+        </div>
+
+        <window title="Hesap Duzenle" border="normal" width="1100px" mode="overlapped" closable="true"
+                visible="@bind(vm.hesapModalAcik)" onClose="@command('hesapModalKapat')"
+                style="padding:8px">
+            <groupbox>
+                <caption label="Hesap Bilgileri"/>
+                <grid>
+                    <columns>
+                        <column width="150px"/><column/>
+                        <column width="150px"/><column/>
+                        <column width="140px"/><column/>
+                    </columns>
+                    <rows>
+                        <row>
+                            <label value="Hesap Tipi"/>
+                            <combobox value="@bind(vm.duzenlenenHesap.hesapSinifi)" width="180px">
+                                <comboitem label="Genel"/><comboitem label="VIOP"/><comboitem label="Kredi"/>
+                            </combobox>
+                            <label value="Yatirim Danismani"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.yatirimDanismani)" width="180px"/>
+                            <label value="AFK Kodu"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.afkKodu)" width="100px"/>
+                        </row>
+                        <row>
+                            <label value="MPF Tipi"/>
+                            <combobox value="@bind(vm.duzenlenenHesap.mpfTipi)" width="80px">
+                                <comboitem label="M"/><comboitem label="P"/><comboitem label="F"/>
+                            </combobox>
+                            <label value="Alt Sube"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.altSube)" width="180px"/>
+                            <label value="Profil Tanimi"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.profilTanimi)" width="180px"/>
+                        </row>
+                        <row>
+                            <label value="Tipi"/>
+                            <combobox value="@bind(vm.duzenlenenHesap.hesapMusteriTipi)" width="140px">
+                                <comboitem label="Musteri"/><comboitem label="Portfoy"/>
+                            </combobox>
+                            <label value="Acenta"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.acenta)" width="180px"/>
+                            <label value="Hesap Durumu"/>
+                            <combobox value="@bind(vm.duzenlenenHesap.durum)" width="140px">
+                                <comboitem label="AKTIF"/><comboitem label="DONDURULMUS"/><comboitem label="KAPALI"/>
+                            </combobox>
+                        </row>
+                        <row>
+                            <label value="Sube"/>
+                            <textbox value="@bind(vm.duzenlenenHesap.hesapSube)" width="180px"/>
+                            <label value="Sik Kullanilan"/>
+                            <checkbox checked="@bind(vm.duzenlenenHesap.sikKullanilan)"/>
+                            <label value="Ozel Sozlesme"/>
+                            <checkbox checked="@bind(vm.duzenlenenHesap.ozelSozlesme)"/>
+                        </row>
+                        <row>
+                            <label value="Portfoy Hesabi"/>
+                            <checkbox checked="@bind(vm.duzenlenenHesap.portfoyHesabi)"/>
+                            <label value="Kolokasyon Hesabi"/>
+                            <checkbox checked="@bind(vm.duzenlenenHesap.kolokasyonHesabi)"/>
+                            <label value=""/><label value=""/>
+                        </row>
+                    </rows>
+                </grid>
+            </groupbox>
+            <groupbox open="false" style="margin-top:6px">
+                <caption label="Kurulum Dokumanlari"/>
+                <label value="Kurulum dokumanlari hesap kaydindan sonra Gerekli Belgeler sekmesinden yonetilir."/>
+            </groupbox>
+            <groupbox style="margin-top:6px">
+                <caption label="Dis Sistemler"/>
+                <hbox>
+                    <div hflex="1">
+                        <hbox spacing="16px">
+                            <checkbox label="Viop" checked="@bind(vm.duzenlenenHesap.viop)"/>
+                            <checkbox label="WebMailer - Ekstre" checked="@bind(vm.duzenlenenHesap.webmailerEkstre)"/>
+                            <checkbox label="LME" checked="@bind(vm.duzenlenenHesap.lme)"/>
+                        </hbox>
+                        <hbox spacing="16px" style="margin-top:6px">
+                            <checkbox label="YTM - Hisse" checked="@bind(vm.duzenlenenHesap.ytmHisse)"/>
+                            <checkbox label="YTM - Fon" checked="@bind(vm.duzenlenenHesap.ytmFon)"/>
+                            <checkbox label="YTM - Viop" checked="@bind(vm.duzenlenenHesap.ytmViop)"/>
+                        </hbox>
+                    </div>
+                    <button label="Risk Tercihlerini Ac" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                            onClick="@command('riskTercihleriniAc')"/>
+                </hbox>
+            </groupbox>
+
+            <tabbox style="margin-top:8px">
+                <tabs>
+                    <tab label="Vekil / Vasi / Veli"/>
+                    <tab label="Ortaklar"/>
+                    <tab label="Komisyonlar"/>
+                    <tab label="Hizmet ve Sozlesmeler"/>
+                    <tab label="Islem Kanallari"/>
+                    <tab label="Gruplar"/>
+                    <tab label="Saklama Hesabi"/>
+                    <tab label="Kontrol Degerleri"/>
+                    <tab label="Raporlama Tercihleri"/>
+                    <tab label="Gizli Hesaplar"/>
+                    <tab label="Turev Komisyonlari"/>
+                </tabs>
+                <tabpanels>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniVekilKimlik)" width="120px" placeholder="Kimlik No"/>
+                            <textbox value="@bind(vm.yeniVekilIsim)" width="120px" placeholder="Isim"/>
+                            <textbox value="@bind(vm.yeniVekilSoyisim)" width="120px" placeholder="Soyisim"/>
+                            <combobox value="@bind(vm.yeniVekilTipi)" width="100px">
+                                <comboitem label="Vekil"/><comboitem label="Vasi"/><comboitem label="Veli"/>
+                            </combobox>
+                            <button label="+" onClick="@command('vekilEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.vekiller)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Kimlik Numarasi"/><listheader label="Isim"/><listheader label="Soyisim"/>
+                                <listheader label="Baba Adi"/><listheader label="Uyruk"/><listheader label="Vergi Mukellefiyeti"/>
+                                <listheader label="Cinsiyet"/><listheader label="Vekil Tipi"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.kimlikNo)"/><listcell label="@load(each.isim)"/>
+                                    <listcell label="@load(each.soyisim)"/><listcell label="@load(each.babaAdi)"/>
+                                    <listcell label="@load(each.uyruk)"/><listcell label="@load(each.vergiMukellefiyeti)"/>
+                                    <listcell label="@load(each.cinsiyet)"/><listcell label="@load(each.vekilTipi)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniOrtakKimlik)" width="120px" placeholder="Kimlik No"/>
+                            <textbox value="@bind(vm.yeniOrtakIsim)" width="120px" placeholder="Isim"/>
+                            <textbox value="@bind(vm.yeniOrtakSoyisim)" width="120px" placeholder="Soyisim"/>
+                            <decimalbox value="@bind(vm.yeniOrtakPay)" cols="8"/>
+                            <button label="+" onClick="@command('ortakEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.ortaklar)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Kimlik Numarasi"/><listheader label="Isim"/><listheader label="Soyisim"/>
+                                <listheader label="Ortaklik Payi"/><listheader label="MKK Sicil No"/>
+                                <listheader label="Takasbank Sicil No"/><listheader label="Yatirimci Durumu"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.kimlikNo)"/><listcell label="@load(each.isim)"/>
+                                    <listcell label="@load(each.soyisim)"/><listcell label="@load(each.ortaklikPayi)"/>
+                                    <listcell label="@load(each.mkkSicilNo)"/><listcell label="@load(each.takasbankSicilNo)"/>
+                                    <listcell label="@load(each.yatirimciDurumu)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="8px" align="center" style="margin:6px 0">
+                            <label value="Sablon"/>
+                            <combobox value="@bind(vm.komisyonSablon)" width="140px">
+                                <comboitem label="Standart"/><comboitem label="VIP"/>
+                            </combobox>
+                            <label value="Deger"/>
+                            <decimalbox value="@bind(vm.komisyonDeger)" cols="10" format="#,##0.000000"/>
+                            <button label="Getir" onClick="@command('komisyonSablonuGetir')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                            <label value="0 veya 1'den buyuk deger varsayilani kullanir"/>
+                        </hbox>
+                        <listbox model="@load(vm.komisyonlar)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Islem"/><listheader label="Masraf Aciklamasi"/><listheader label="Parametre Adi"/>
+                                <listheader label="Para Birimi"/><listheader label="Piyasa Adi"/><listheader label="Komisyon Degeri"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.islem)"/><listcell label="@load(each.masrafAciklamasi)"/>
+                                    <listcell label="@load(each.parametreAdi)"/><listcell label="@load(each.paraBirimi)"/>
+                                    <listcell label="@load(each.piyasaAdi)"/><listcell label="@load(each.komisyonDegeri)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniHizmetTipi)" width="160px" placeholder="Hizmet Tipi"/>
+                            <textbox value="@bind(vm.yeniSozlesmeAdi)" width="240px" placeholder="Sozlesme Adi"/>
+                            <button label="+" onClick="@command('sozlesmeEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.sozlesmeler)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Hizmet Tipi"/><listheader label="Sozlesme Adi"/>
+                                <listheader label="Getirilis Tarihi"/><listheader label="Versiyon"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.hizmetTipi)"/><listcell label="@load(each.sozlesmeAdi)"/>
+                                    <listcell label="@load(each.getirilisTarihi)"/><listcell label="@load(each.versiyon)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <combobox value="@bind(vm.yeniHesapKanal)" width="160px">
+                                <comboitem label="Sube"/><comboitem label="Internet Subesi"/><comboitem label="TradeMaster"/>
+                            </combobox>
+                            <button label="+" onClick="@command('hesapKanalEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.hesapKanallari)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Kanal"/><listheader label="Yetkili"/><listheader label="Durum"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.kanal)"/>
+                                    <listcell label="@load(each.yetkili ? 'Evet' : 'Hayir')"/>
+                                    <listcell label="@load(each.durum)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniGrupAdi)" width="180px" placeholder="Grup Adi"/>
+                            <button label="+" onClick="@command('grupEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.gruplar)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead><listheader label="Grup Adi"/><listheader label="Aciklama"/></listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.grupAdi)"/><listcell label="@load(each.aciklama)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniSaklamaci)" width="160px" placeholder="Saklamaci"/>
+                            <textbox value="@bind(vm.yeniSaklamaHesapNo)" width="140px" placeholder="Saklama Hesap No"/>
+                            <button label="+" onClick="@command('saklamaEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.saklama)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Saklamaci"/><listheader label="Saklama Hesap No"/><listheader label="Para Birimi"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.saklamaci)"/>
+                                    <listcell label="@load(each.saklamaHesapNo)"/>
+                                    <listcell label="@load(each.paraBirimi)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniKontrolAdi)" width="180px" placeholder="Kontrol Adi"/>
+                            <textbox value="@bind(vm.yeniKontrolDegeri)" width="140px" placeholder="Deger"/>
+                            <button label="+" onClick="@command('kontrolEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.kontroller)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead><listheader label="Kontrol Adi"/><listheader label="Kontrol Degeri"/></listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.kontrolAdi)"/><listcell label="@load(each.kontrolDegeri)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniRaporTipi)" width="180px" placeholder="Rapor Tipi"/>
+                            <button label="+" onClick="@command('raporEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.raporlar)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Rapor Tipi"/><listheader label="Kanal"/><listheader label="Aktif"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.raporTipi)"/><listcell label="@load(each.kanal)"/>
+                                    <listcell label="@load(each.aktif ? 'Evet' : 'Hayir')"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniGizliHesapNo)" width="160px" placeholder="Gizli Hesap No"/>
+                            <button label="+" onClick="@command('gizliHesapEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.gizliHesaplar)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead><listheader label="Gizli Hesap No"/><listheader label="Aciklama"/></listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.gizliHesapNo)"/><listcell label="@load(each.aciklama)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                    <tabpanel>
+                        <hbox spacing="6px" style="margin:6px 0">
+                            <textbox value="@bind(vm.yeniTurevIslem)" width="180px" placeholder="Islem"/>
+                            <button label="+" onClick="@command('turevEkle')"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                        </hbox>
+                        <listbox model="@load(vm.turevKomisyonlari)" emptyMessage="No Rows To Show" height="140px">
+                            <listhead>
+                                <listheader label="Islem"/><listheader label="Komisyon Degeri"/><listheader label="Para Birimi"/>
+                            </listhead>
+                            <template name="model">
+                                <listitem>
+                                    <listcell label="@load(each.islem)"/>
+                                    <listcell label="@load(each.komisyonDegeri)"/>
+                                    <listcell label="@load(each.paraBirimi)"/>
+                                </listitem>
+                            </template>
+                        </listbox>
+                    </tabpanel>
+                </tabpanels>
+            </tabbox>
+            <div style="text-align:right;margin-top:8px">
+                <button label="Tamam" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                        onClick="@command('hesapKaydet')"/>
+            </div>
+        </window>
+    </window>
+</zk>

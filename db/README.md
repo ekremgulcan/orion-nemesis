@@ -54,6 +54,10 @@ dosyalar uzerinden bir "database yapisi" skill'i uretebilmek.
 | V39__notif_channel_template_allowed_parametreler.sql | notif_channel_templates tablosuna allowed_parametreler (bildirim tipine gore SABIT, degistirilemez parametre listesi) eklenir - "Sablonda Kullanilabilecek Parametreler" artik template_body'den anlik turetilmez; kaydetme sirasinda bu listenin disinda bir parametre kullanan template_body reddedilir |
 | V40__notification_kategori_schema.sql | Musteri Bildirim Tercihleri ekrani KATEGORI bazina donusturulur (gercek servis dokumaniyla birebir uyum icin): yeni notification_categories tablosu (2 kategori: ORDER_STATUS, VIOP_MARGIN_CALL - hem kategori seviyesinde hem kanal (push/sms/eposta) bazinda ayri isEditable kolonlari), notification_types.category_id FK eklenir + notification_types.zorunlu kolonu kaldirilir (kategoriye tasindi), eski musteri_bildirim_tercihleri (bildirim tipi bazinda, sadece mock veri) silinir, yeni musteri_bildirim_kategori_tercihleri (musteri x kategori bazinda Push/SMS/E-Posta) eklenir |
 | V41__customer_username.sql | customers tablosuna username kolonu eklenir (servis dokumanindaki GET/POST uc noktalari musteriyi "username" ile tanimliyor, "Musteri No" ile degil) - mevcut 101 musteri icin ad_soyad_unvan + musteri_no son 3 hane bazli, garanti benzersiz mock username backfill edilir |
+| V30__credit_optimization_result_uygulandi.sql | credit_optimization_results: uygulandi / uygulama_tarihi |
+| V31__investor_schema.sql | Bireysel Yatirimci Bilgileri: customers/accounts genisletme + yatirimci alt tablolari |
+| V32__seed_investor.sql | Mock veri: yatirimci alanlari, 1. musteri icin dolu alt sekmeler |
+| V33__seed_investor_fill.sql | Tum musteriler icin yatirimci master + alt sekme verisi doldurma |
 
 ## Varlik Iliski Ozeti (ER)
 
@@ -88,6 +92,14 @@ accounts ---< cash_transaction_requests
 users ---< report_definitions (olusturan / degistiren)
 
 accounts ---< position_snapshots >--- instruments (opsiyonel)
+
+customers ---< customer_addresses / customer_contacts / customer_identities (1-1)
+customers ---< customer_notes / customer_education / customer_references
+customers ---< customer_channels / customer_required_documents / customer_webmailer_prefs
+customers ---< customer_external_bank_accounts / customer_suitability_tests / customer_external_user_ids
+accounts ---< account_proxies / account_partners / account_commissions / account_contracts
+accounts ---< account_channels / account_groups / account_custody / account_control_values
+accounts ---< account_reporting_prefs / account_hidden_accounts / account_derivative_commissions
 ```
 
 ## Tablo Detaylari
@@ -334,6 +346,29 @@ CREATE TABLE channel_authorizations (
     tanimlama_tarihi DATETIME2   NOT NULL DEFAULT SYSUTCDATETIME()
 );
 ```
+
+### Bireysel Yatirimci Bilgileri (V31)
+
+Ekran: React `/core/bireysel-yatirimci` + ZK `core/bireysel-yatirimci.zul` (paralel).
+Asistan bilgi karti: `src/main/resources/assistant/orion-knowledge.md`.
+
+`customers` tablosuna yatirimci master alanlari eklendi (isim/soyisim,
+vergi, IYS izinleri, nitelikli yatirimci, MKK/Takasbank sicil, vb.).
+`accounts` tablosuna hesap duzenleme alanlari eklendi (`hesap_sinifi`,
+danisman, dis sistem checkbox'lari). Mevcut `hesap_tipi` (NAKIT/KREDI/VIOP)
+diger moduller icin aynen durur.
+
+Musteri alt sekmeleri: `customer_addresses`, `customer_contacts`,
+`customer_identities` (1-1), `customer_channels`, `customer_required_documents`,
+`customer_notes`, `customer_external_bank_accounts`, `customer_education`,
+`customer_references`, `customer_webmailer_prefs`, `customer_suitability_tests`,
+`customer_external_user_ids`.
+
+Hesap duzenleme alt sekmeleri: `account_proxies`, `account_partners`,
+`account_commissions`, `account_contracts`, `account_channels`,
+`account_groups`, `account_custody`, `account_control_values`,
+`account_reporting_prefs`, `account_hidden_accounts`,
+`account_derivative_commissions`.
 
 ### Nakit Yonetimi - Islem Giris (V15)
 
