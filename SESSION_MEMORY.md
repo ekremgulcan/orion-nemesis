@@ -1,146 +1,30 @@
 # Orion v3 Nemesis - Session Memory
 
-## Archived Summary (2026-08-03 - 2026-08-04)
+## Archived Summary (2026-08-03 - 2026-08-14)
 
-**[2026-08-03]** Built "Bildirim Izleme" screen end-to-end (ZK + React) -
-project's first paginated (`Page<T>`) REST endpoint + first real Apache
-POI `.xlsx` export, new `com.orion.notification` package, migrations
-V31-V33. Wrote first 2 permanent Puppeteer regression scripts
-(`bildirim-izleme-filtreleme.cjs` x2). Committed on `bildirim-izleme`
-branch (not merged). Key gotchas: ZK `<hbox>` isn't real flexbox (use
-native `<n:div>`), ZK combobox popup opens via the sibling
-`.z-combobox-button` not the input, a `<tabbox>` pre-renders ALL
-tabpanels' listbox rows in the DOM at once (need `getVisibleGridRows`),
-never edit an already-applied Flyway migration (add a new one instead).
-
-**[2026-08-04]** Fixed Bildirim Izleme's default date filter (was
-today/today, went stale after a day) and a real pagination bug
-(`SQLServerDialect` -> `SQLServer2012Dialect`, first `Page<T>` endpoint
-to hit real OFFSET). Built generic submenu (expand/collapse) support for
-the left nav on both ZK and React (`MenuItem.children`), nested Bildirim
-Izleme under Musteri Iletisim Panosu for real. Key gotcha: ZK's
-`@command` binding on a nested element's `onClick` does NOT stop bubbling
-to an ancestor `listitem`'s own `onClick` - use ONE row-level handler for
-navigate+toggle, never a separate arrow-only handler (they double-fire
-and cancel out). Also: editing a `<template name="...">` block without
-re-including the opening tag leaves an orphaned closing tag -> fatal
-SAXParseException (500 on every page).
-
-**[2026-08-05]** Bildirim Izleme UI polish (React tab style + table-fixed
-dynamic-width), 30-step comprehensive Puppeteer suite
-(`bildirim-izleme-kapsamli-testi.cjs`), fixed 2 real test-helper bugs
-(`getTableRows` counting empty-state row, date-input click landing on
-wrong segment - see gotcha below). Test-drove an Orion-specific
-`orion-excel-export` skill end-to-end then deleted it in favor of a
-generalized, stack-agnostic `excel-export-button` skill (personal +
-`agent-skills/` showcase copy) since personal skills apply across every
-project. Fixed export filename inconsistency (`events-yyyyMMdd.xlsx`
-everywhere). Merged `bildirim-izleme` into `main` (clean fast-forward).
-Key gotchas: PowerShell `Copy-Item -LiteralPath` doesn't support
-wildcards (use `-Path`); Puppeteer clicks on native `<input type=date>`
-should land near the left edge (`box.x + 10`), not center, since the
-calendar icon shifts the real segment position.
-
-**[2026-08-06]** Built "Musteri Bildirim Tercihleri" screen (ZK + React,
-branch `musteri-bildirim-tercihleri` off `main`) - musteri no ara -> bildirim
-tipi x Push/SMS/E-Posta kanal tercihleri, VIOP Margin Call zorunlu/kilitli.
-New `com.orion.notification` domain (`NotificationType`/`MusteriBildirimTercihi`,
-V34/V35 migrations, 6 seeded types), `MusteriBildirimTercihleriService` shared
-by ZK VM + REST. First reusable "musteri no arama" infra built from scratch
-(`CustomerService.bulByMusteriNo`, ZK inline macros `musteri-sorgulama-kutusu`/
-`musteri-bilgi-paneli`, React `CustomerLookupCard`/`CustomerSummaryCard`).
-Key gotchas: ZK native `<n:>` components don't evaluate `@load`/`@bind` on
-`style`/`visible` (use real `<div visible="@load(...)">` instead); `iconSclass`
-Font-Awesome icons only render on Button/Toolbarbutton/Tab, use plain Unicode
-glyphs elsewhere; `@base-ui/react` (not radix) is this project's headless
-primitive lib; JDK 17 lives at `%USERPROFILE%\.jdks\ms-17.0.20` on this machine.
-
-**[2026-08-07]** Wrote first comprehensive Puppeteer suite for Musteri
-Bildirim Tercihleri (11 steps, both ZK+React, `musteri-bildirim-tercihleri-guncelleme.cjs`),
-added `setCheckboxByIndex`/`setSwitchByIndex` helpers (ZK toggle = real
-checkbox, React base-ui Switch = `<span role="switch">`, not a checkbox).
-Iterative UI polish with user: fixed the page being the only screen using a
-solid `bg-info` banner header (restyled to app's plain `border-b` convention),
-fixed a `max-w-4xl`-centered layout bug (final: search+summary cards
-side-by-side, `flex h-full` stretch), enlarged `CustomerSummaryCard` fields
-and `musteri-bilgi-paneli.zul` padding per real Orion reference screenshots.
-Committed as `d06669c`. Gotcha: testing ZK "fits without scroll" via a bare
-`.zul` URL undercounts real chrome height by 100px+ - must navigate through
-`index.zul`'s real menu/tabbox to measure correctly.
-
-**[2026-08-10]** ZK-wide groupbox consistency pass: converted Musteri
-Bildirim Tercihleri's custom bordered cards to real `<groupbox>/<caption>`,
-then built a shared `common/groupbox-polish.css` (solid `#2f6fad` banner
-skin) applied to ALL ~12 groupbox-using screens via a single `<link>` in
-`index.zul` (committed on `musteri-bildirim-tercihleri`, commit `1507d46`,
-11/11 regression). Key gotchas: `<?link>` does NOT propagate through
-`<include src="...">` (must link shared CSS once in `index.zul` itself,
-not per-screen); Spring's `spring.web.resources.chain.cache` caches the
-FIRST successful static-resource read forever until restart (fixed via
-`cache: false` + `cache.period: 0`); ZK's iceblue theme beats single-class
-CSS overrides with its own compound-class selectors (needed `!important`,
-documented as an intentional isolated exception); native `<n:div>` inside
-`<groupbox>` gets zero horizontal padding by default, unlike real ZK
-widgets. Backend actually runs JDK 21 in practice despite earlier JDK 17
-note; user restarts the backend themselves, don't run `mvn compile`/
-`spring-boot:run` without asking.
-
-**[2026-08-11]** Merged `musteri-bildirim-tercihleri` into `main`. Planned
-new "Bildirim Ayarlari" screen from a real mockup + 2 production JSON
-payloads; reused the existing `NotificationType`/`notification_types` table
-(avoided a duplicate-table design mistake) instead of a new `NotifType`
-table. Reconciled 6 seeded codes against 7 real codes, invented
-`STATUS_CHANGED` and added a new `PARTIALLY_FILLED` row (later found wrong,
-fixed 08-13). Migration `V36` adds `active`/audit columns to
-`notification_types` (7 rows). Gotcha: SQL Server rejects a whole Flyway
-batch if `ALTER TABLE ADD col` and a later statement referencing that col
-share a batch with no `GO` between them - split with `GO`. Branch
-`bildirim-ayarlari` created off `main`, not yet committed at end of session.
-
-**[2026-08-12]** Built Bildirim Ayarlari screen end-to-end (ZK+React) for
-steps 1-2 only: `BildirimAyarlariService`/`ViewModel`, `bildirim-ayarlari.zul`,
-new `BildirimKanali` enum (`PUSH`/`SMS`/`EPOSTA`), REST layer +
-`BildirimAyarlariPage.tsx`, both wired into menu. Wrote 9-step regression
-suites for both stacks (9/9 green), committed as `7f96892`. Gotchas: ZK
-Comboitem labels bound from Java render regular spaces as `\u00A0`
-(normalize in test helpers); `document.body.innerText` excludes `<input>`
-values (use `getComboboxValues` instead); base-ui `Select.Value` doesn't
-auto-resolve a label, needs a render-function child.
-
-**[2026-08-13]** Built Bildirim Ayarlari's per-channel section (ZK+React)
-end to end from real production JSON: `V37` fixed an earlier invented
-`STATUS_CHANGED`/`PARTIALLY_FILLED` split (renamed to match real prod
-data, `notification_types` back to 6 real rows), `V38` added
-`notif_channel_templates` (18 seeded rows, 6 types x 3 channels).
-Built "Sablonda Kullanilabilecek Parametreler"/"Mevcut Sablon"/"Diger
-Ayarlar" panels + Duzenle/Iptal/Kaydet trio; deleted a buggy per-field
-edit-buffer pattern in favor of direct entity mutation (buffer/entity
-desync caused 3 real bugs). Extended regression suites 9->15 steps,
-committed `21fec94`. Key gotchas: ZK inline `style="display:..."` fights
-a `visible` binding on the same element (never combine them); `<caption>`
-non-label children get DESTROYED (not hidden) when the caption's own
-label re-renders (move buttons outside as absolutely-positioned
-siblings); a getter missing from `@NotifyChange` freezes at its first
-value forever; Flyway's `${...}` placeholder parsing collides with
-literal `${Param}` template text (`spring.flyway.placeholder-replacement: false`);
-base-ui `<Select>` pre-renders every option into the DOM (shared test
-helper needed a bounding-box filter to avoid clicking a same-labeled
-but invisible option from a different select).
-
-**[2026-08-14]** Two sessions: (1) renamed `BildirimKanali.PUSH`'s
-display label "Mobil"->"Push" across ZK+React+6 test scripts, no
-migration needed (only the enum NAME is persisted). (2) Verified and
-committed the previously-uncommitted `V39` (allowed-parametreler) work,
-disproved a suspected ZK clamp bug (was test timing flakiness, not a
-real defect - confirmed via bytecode inspection + repeat runs), and
-fixed a real React bug: numeric inputs (`Max Deneme Sayisi`/`Tekrar
-Deneme Suresi`) force-filled `0` and blocked retyping because
-`Number("") === 0` not `NaN`; fixed by validating `onBlur` (matching
-ZK's own blur-commit `<intbox>`) with local raw-text state during
-editing - general pattern for any future numeric input on this project.
-Committed everything as `18e8abb`. Flagged 3 dirty leftover test-data
-rows in `notif_channel_templates` (clamp-boundary residue), left
-unresolved by choice (DB state, not code).
+Built, in order, on top of `main`: "Bildirim Izleme" (ZK+React, project's
+first paginated REST + first real Apache POI `.xlsx` export, V31-V33),
+"Musteri Bildirim Tercihleri" v1 per-notification-type (V34/V35, first
+"musteri no arama" infra: `CustomerService.bulByMusteriNo`, macros
+`musteri-sorgulama-kutusu`/`musteri-bilgi-paneli`), a shared
+`common/groupbox-polish.css` applied project-wide via `index.zul`, and
+"Bildirim Ayarlari" (V36-V39, per-channel template settings) - all
+merged into `main` with full Puppeteer regression suites. Durable
+gotchas from this period: never edit an already-applied Flyway migration
+(add a new one); ZK `<tabbox>` pre-renders ALL tabpanels' listbox rows at
+once; ZK's `@command` on a nested `onClick` does NOT stop bubbling to an
+ancestor's `onClick` (one row-level handler only); ZK native `<n:>`
+elements don't evaluate `@load`/`@bind` on `style`/`visible` (use a real
+`<div>` instead - and `visible="@load(...)"` on `<n:>` actually THROWS,
+doesn't just no-op); `<?link>` doesn't propagate through `<include>`
+(link shared CSS once in `index.zul` only); Spring's static-resource
+cache needs `cache:false`/`cache.period:0` during dev; `<caption>`'s
+non-label children get DESTROYED (not hidden) on re-render (move buttons
+outside as siblings); numeric inputs need `onBlur`-time validation, not
+live (`Number("") === 0` bug pattern); base-ui `<Select>` pre-renders all
+options (bounding-box filter needed in shared test helpers); user
+restarts the backend themselves, don't run `mvn`/`spring-boot:run`
+without asking; backend runs JDK 21 in practice.
 
 ## Archived Summary (2026-08-17 - 2026-08-18)
 
@@ -249,3 +133,157 @@ regression-suite rewrites.
 3. `notif_channel_templates` id=4/id=5 are the user's OWN intentional
    test data (see Kararlar/Gotcha above) - do NOT reset these without
    being asked again.
+
+## [2026-08-21] Repo split into fork+personal-origin, fixed a stale-`target/` Flyway version collision
+
+**Yapilanlar:**
+- User (not the repo owner) finished splitting remotes themselves:
+  `origin` -> own new GitHub repo (`ekremgulcan/orion-nemesis`),
+  `upstream` -> the real owner's repo (`mufasa-349/Orion-V3-Nemesis`).
+  Going forward: push work to `origin`, periodically
+  `git fetch upstream && git merge upstream/main` to pull the owner's
+  new features.
+- Owner had added investor-feature migrations at `V31-V33`, colliding
+  with this project's own pre-existing notification migrations at the
+  same versions. User resolved by renumbering the owner's investor
+  files to `V42__investor_schema.sql`/`V43__seed_investor.sql`/
+  `V44__seed_investor_fill.sql` in `src/main/resources/db/migration`
+  (source itself was already clean, no duplicates).
+- `mvn spring-boot:run` still failed with Flyway
+  `Found more than one migration with version 31` pointing at
+  `target/classes/db/migration` (NOT `src`). Root cause: Maven doesn't
+  delete renamed/removed source files from `target/classes` on
+  incremental builds - the OLD `V31__investor_schema.sql`/
+  `V32__seed_investor.sql`/`V33__seed_investor_fill.sql` were stale
+  leftovers from a build prior to the renumbering, sitting next to the
+  real `V31__notification_event_schema.sql` etc. Fixed with
+  `mvn clean` (wiped `target/` entirely) then reran - confirmed working
+  by the user.
+
+**Dikkat / Gotcha:**
+- Any time a Flyway/resource file under `src/main/resources` is
+  renamed or deleted, run `mvn clean` before the next
+  build/`spring-boot:run` - `target/classes` silently keeps orphaned
+  copies of the old filename, which for Flyway migrations manifests as
+  a false "duplicate version" error that doesn't exist in source at
+  all. Always check `target/classes/db/migration` (not just `src`)
+  when this specific Flyway error shows up.
+
+**Sonraki adimlar:**
+- Same 3 items as the 2026-08-19 entry above still apply (push timing,
+  branch cleanup, id=4/5 test data) - nothing new blocking.
+
+## [2026-08-21] New "Hisse Risk Parametreleri" ZK screen built (branch `hisse-risk-parametreleri`), bulk-update page next
+
+**Yapilanlar:**
+- New feature branch `hisse-risk-parametreleri` off `main`. Goal chain
+  (user's real target is #3, built in order as prerequisites):
+  1. "Risk profilleri" search screen (Musteri No/Hesap No/Kullanici Tipi
+     + results table, row click -> detail).
+  2. "Risk Profili Guncelleme" detail/edit form (5 identity fields
+     read-only when editing an existing row; ALL fields editable/unlocked
+     in "Yeni Ekle" create mode, per user's explicit choice).
+  3. (in progress, not started yet) "Net Varlik Limit Carpani Toplu
+     Guncelleme" - Excel upload -> preview table -> Onaya Gonder bulk
+     updates that field for every hisse_risk_parametreleri row sharing a
+     Hesap No (both Musteri + Yatirim Danismani rows).
+- Built #1+#2 end-to-end: migrations `V45__hisse_risk_parametreleri_schema.sql`
+  (new table, deliberately separate from existing `risk_profiles` - field
+  set too different: tri-state control-type strings not booleans, numeric
+  limits, the new multiplier) + `V46__seed_hisse_risk_parametreleri.sql`;
+  `com.orion.risk.domain.HisseRiskParametresi` entity +
+  `HisseRiskParametresiRepository` + new dedicated
+  `HisseRiskParametreleriService` (NOT bolted onto the already-4-purpose
+  `RiskProfileService`) + `HisseRiskParametreleriViewModel` +
+  `webapp/risk/hisse-risk-parametreleri.zul`. Menu: `MenuRegistry`'s
+  existing standalone `"Yeni Hisse Emir Yonetimi"` item (pointed at an old,
+  much simpler placeholder screen `risk/risk-parametreleri.zul` - left
+  untouched/unlinked, not deleted) restructured into a parent with
+  children, absorbing 3 previously-standalone sibling menu items
+  (`Hisse Grubu Tanimlama`, `Hesap/Hisse Bazinda Kontrol`, `Hesap Durdurma
+  Kurallari`) plus the new real screen and several `null` placeholders.
+- Skipped building a REST/DTO layer entirely for this feature (unlike
+  every prior feature) - user confirmed the supervisor only needs the ZK
+  `.zul` + ViewModel + Service (backend here is a disposable mock; the
+  supervisor plugs the frontend into their own real services). Also
+  skipped a "Tarihce" (history) button per user's call (avoid decorative
+  unbound buttons, a pattern this codebase already treats as a bug).
+- Real back-and-forth corrections applied (all resolved before/during
+  build, not left as TODOs): "Hesap Tipi" ended up NOT needing its own
+  column - confirmed via seed data (`V43`/`V44`) that `accounts.hesap_musteri_tipi`
+  already holds exactly `'Musteri'`, matching the screenshot, so it's
+  read live off `Account` instead of duplicated; only the `A` group
+  carries the "kredisiz" (margin-free) prefix, B/C/D are plain groups
+  (fixed a wrong first-draft column/field naming); the screen's "Musteri
+  Tipi" search filter is actually filtering the `Kullanici Tipi` column
+  (Musteri/Yatirim Danismani), NOT the customer's BIREYSEL/KURUMSAL
+  classification - caught and fixed across repository/service/VM/zul
+  after initial wrong assumption.
+- User will hand the ZK code to their supervisor to reimplement against
+  a real backend - column names / DB naming genuinely don't matter for
+  that handoff (confirmed: this whole project's other tables are already
+  Turkish-named anyway), but the ViewModel + zul need to be the clean,
+  self-explanatory reference artifacts.
+
+**Kararlar:**
+- Old `risk_profiles` table/`risk-parametreleri.zul`/its own React port
+  (`nemesis-frontend/src/pages/risk/RiskParametreleriPage.tsx`) intentionally
+  NOT touched/replaced - `RiskProfileService` is shared across 4 unrelated
+  concerns (RiskProfile/UserLimit/InstrumentGroup/AccountInstrumentControl)
+  so surgical removal is riskier than it looks, and it already has a
+  working React consumer (would break the "ZK first" ordering). Revisit as
+  its own follow-up later if ever needed.
+
+**Dikkat / Gotcha:**
+- Entity boolean fields named with a single leading lowercase letter
+  before an uppercase one (e.g. original draft `bGrubuAlisYapabilir` at
+  the very front) break Lombok/JavaBean getter capitalization
+  expectations in a confusing way - renamed to the `grup_b_...` order
+  (matching `risk_profiles`' own existing `grup_a_nakit_kontrol` naming
+  precedent) instead, e.g. `grupBAlisYapabilir`. Avoid single-letter-first
+  field names in general.
+- `BindUtils.postNotifyChange` in this ZK version is NOT varargs for
+  properties - only `(queueName, queueScope, bean, singleProperty)`;
+  calling it once with 3 property-name args fails to compile. Call it
+  once per property instead.
+- PowerShell's `-replace` operator is case-INSENSITIVE by default (a
+  `-replace 'aramaMusteriTipi', 'aramaKullaniciTipi'` mangled the
+  differently-cased `getAramaMusteriTipi()`/`setAramaMusteriTipi()` method
+  names into broken lowercase `getaramaKullaniciTipi()`). Use `-creplace`
+  or the `Edit` tool (not a blind PowerShell regex) for case-sensitive
+  identifier renames across a file.
+- Hit a pre-existing, unrelated uncommitted change mid-session that broke
+  the ENTIRE build with cascading "cannot find symbol" errors project-wide
+  (`AccountInstrumentControlDto.java`'s class renamed to
+  `ProAccountInstrumentControlDto` without renaming the file) - not caused
+  by this session's work; user fixed it independently. Worth remembering:
+  a single fatal "class name doesn't match file name" error can cascade
+  into dozens of misleading unrelated-looking errors across the whole
+  module in one `mvn compile` run.
+
+**Degisen dosyalar:**
+- `src/main/resources/db/migration/V45__hisse_risk_parametreleri_schema.sql`,
+  `V46__seed_hisse_risk_parametreleri.sql` - new.
+- `src/main/java/com/orion/risk/domain/HisseRiskParametresi.java`,
+  `repository/HisseRiskParametresiRepository.java`,
+  `service/HisseRiskParametreleriService.java`,
+  `vm/HisseRiskParametreleriViewModel.java` - new.
+- `src/main/webapp/risk/hisse-risk-parametreleri.zul` - new.
+- `src/main/java/com/orion/nav/MenuRegistry.java` - restructured
+  "Yeni Hisse Emir Yonetimi" into a parent with children.
+
+**Sonraki adimlar:**
+1. Build the bulk update page next (`net-varlik-limit-carpani-toplu-guncelleme.zul`
+   + a new dedicated service, no new DB table needed - just updates the
+   existing `net_varlik_limit_carpani` column). Plan already agreed with
+   user: a button "Net Varlik Limit Carpani Toplu Guncelleme" on the
+   Risk profilleri toolbar opens this as a brand NEW **outer** main tab
+   (not an inner tab) via a new `@GlobalCommand openTab(baslik, zulPath)`
+   on `IndexViewModel` + `BindUtils.postGlobalCommand(...)` from the child
+   VM - this cross-VM-tab-opening mechanism does not exist yet anywhere
+   in the codebase and was mid-edit (first edit to `IndexViewModel.java`
+   was rejected by the user right as this session paused) - not started.
+2. Excel parsing (Apache POI read side) is a first for this project -
+   only the write/export side existed before (`NotificationEventService`).
+3. `mvn compile` is currently clean on this branch (verified end of
+   session).

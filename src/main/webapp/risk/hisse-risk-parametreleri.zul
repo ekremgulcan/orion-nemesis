@@ -1,0 +1,305 @@
+<?page title="Hisse Risk Parametreleri"?>
+<!--
+  Ic ice uc sabit tab: "Risk profilleri" (arama + liste), "Risk Profili
+  Guncelleme" (detay formu) ve "Net Varlik Limit Carpani Toplu Guncelleme"
+  (Excel yukle -> onizle -> onaya gonder). Bu ekranda sadece sabit sayida ic
+  tab oldugu icin index.zul'daki genel amacli dinamik OpenTab listesi
+  mekanizmasi burada KOPYALANMADI - ZK'nin native <tab closable="true">
+  onClose davranisi widget'i DOM'dan kalici olarak detach ettigi icin (bizim
+  statik, liste-destekli olmayan tab'imizla уyumsuz olurdu), her ic tab'in
+  kapatma aksiyonu kendi tab uzerindeki bir "x" yerine formun kendi "Kapat"
+  butonuyla yapiliyor (detayKapat / topluGuncellemeKapat komutlari).
+-->
+<zk>
+    <window apply="org.zkoss.bind.BindComposer"
+            viewModel="@id('vm') @init('com.orion.risk.vm.HisseRiskParametreleriViewModel')"
+            style="padding:16px">
+
+        <tabbox>
+            <tabs>
+                <tab label="Risk profilleri" selected="@load(vm.selectedTabIndex eq 0)"/>
+                <tab label="Risk Profili Guncelleme" visible="@load(vm.detayAcik)"
+                     selected="@load(vm.selectedTabIndex eq 1)"/>
+                <tab label="Net Varlik Limit Carpani Toplu Guncelleme" visible="@load(vm.topluGuncellemeAcik)"
+                     selected="@load(vm.selectedTabIndex eq 2)"/>
+            </tabs>
+            <tabpanels>
+                <!-- ================= Tab 1: Risk profilleri ================= -->
+                <tabpanel>
+                    <hbox spacing="10px" style="margin-top:10px">
+                        <button label="+ Yeni Ekle" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('yeniEkle')"/>
+                        <button label="Yenile" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('yenile')"/>
+                        <button label="Indir" style="background:#e08020 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('indir')"/>
+                        <button label="Net Varlik Limit Carpani Toplu Guncelleme"
+                                style="background:#7a5fc8 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('topluGuncellemeAc')"/>
+                    </hbox>
+
+                    <groupbox closable="false" style="margin-top:10px">
+                        <caption label="Risk Parametreleri Sorgulama"/>
+                        <grid>
+                            <columns>
+                                <column width="110px"/><column/>
+                                <column width="90px"/><column/>
+                                <column width="100px"/><column/>
+                            </columns>
+                            <rows>
+                                <row>
+                                    <label value="Musteri No"/>
+                                    <textbox value="@bind(vm.aramaMusteriNo)" width="180px"/>
+                                    <label value="Hesap No"/>
+                                    <textbox value="@bind(vm.aramaHesapNo)" width="150px"/>
+                                    <label value="Musteri Tipi"/>
+                                    <combobox value="@bind(vm.aramaKullaniciTipi)" width="150px">
+                                        <comboitem label=""/>
+                                        <comboitem label="Musteri"/>
+                                        <comboitem label="Yatirim Danismani"/>
+                                    </combobox>
+                                </row>
+                            </rows>
+                        </grid>
+                        <hbox spacing="10px" style="margin-top:8px">
+                            <button label="Sorgula" style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('sorgula')"/>
+                            <button label="Temizle" style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('temizle')"/>
+                        </hbox>
+                    </groupbox>
+
+                    <listbox model="@load(vm.parametreler)" mold="paging" pageSize="15"
+                             emptyMessage="No Rows To Show" style="margin-top:10px">
+                        <listhead>
+                            <listheader label="Kullanici Tipi" width="110px"/>
+                            <listheader label="Hesap Tipi" width="90px"/>
+                            <listheader label="Hesap No" width="90px"/>
+                            <listheader label="Musteri No" width="90px"/>
+                            <listheader label="Musteri Adi" width="140px"/>
+                            <listheader label="Alis Kontrol" width="100px"/>
+                            <listheader label="Satis Kontrol" width="100px"/>
+                            <listheader label="Acik Satis Kontrol" width="110px"/>
+                            <listheader label="Kredisiz A" width="80px"/>
+                            <listheader label="B" width="50px"/>
+                            <listheader label="C" width="50px"/>
+                            <listheader label="D" width="50px"/>
+                            <listheader label="Kredisiz A Nakit" width="100px"/>
+                            <listheader label="B Nakit" width="70px"/>
+                            <listheader label="C Nakit" width="70px"/>
+                            <listheader label="D Nakit" width="70px"/>
+                            <listheader label="Kontrolsuz Satis" width="100px"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem onClick="@command('satirSec', item=each)">
+                                <listcell label="@load(each.kullaniciTipi)"/>
+                                <listcell label="@load(each.account.hesapMusteriTipi)"/>
+                                <listcell label="@load(each.account.hesapNo)"/>
+                                <listcell label="@load(each.account.customer.musteriNo)"/>
+                                <listcell label="@load(each.account.customer.adSoyadUnvan)"/>
+                                <listcell label="@load(each.alisKontrolTipi)"/>
+                                <listcell label="@load(each.satisKontrolTipi)"/>
+                                <listcell label="@load(each.acikSatisKontrolTipi)"/>
+                                <listcell><checkbox checked="@load(each.kredisizGrupAAlisYapabilir)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupBAlisYapabilir)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupCAlisYapabilir)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupDAlisYapabilir)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.kredisizGrupANakitKontrol)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupBNakitKontrol)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupCNakitKontrol)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.grupDNakitKontrol)" disabled="true"/></listcell>
+                                <listcell><checkbox checked="@load(each.kredisizPaylardaKontrolsuzSatis)" disabled="true"/></listcell>
+                            </listitem>
+                        </template>
+                    </listbox>
+                </tabpanel>
+
+                <!-- ================= Tab 2: Risk Profili Guncelleme ================= -->
+                <tabpanel visible="@load(vm.detayAcik)">
+                    <groupbox closable="false" style="margin-top:10px">
+                        <caption label="Hisse Risk Parametresi"/>
+                        <grid>
+                            <columns>
+                                <column width="150px"/><column/>
+                                <column width="150px"/><column/>
+                                <column width="150px"/><column/>
+                            </columns>
+                            <rows>
+                                <row>
+                                    <label value="Kullanici Tipi"/>
+                                    <combobox value="@bind(vm.kullaniciTipi)" width="180px"
+                                              disabled="@load(not vm.yeniKayit)">
+                                        <comboitem label="Musteri"/>
+                                        <comboitem label="Yatirim Danismani"/>
+                                    </combobox>
+                                    <label value="Hesap Tipi"/>
+                                    <combobox value="@bind(vm.hesapTipi)" width="150px"
+                                              disabled="@load(not vm.yeniKayit)">
+                                        <comboitem label="Musteri"/>
+                                        <comboitem label="Portfoy"/>
+                                    </combobox>
+                                    <label value="Musteri Adi"/>
+                                    <textbox value="@bind(vm.musteriAdi)" width="200px"
+                                             disabled="@load(not vm.yeniKayit)"/>
+                                </row>
+                                <row>
+                                    <label value="Musteri No"/>
+                                    <textbox value="@bind(vm.musteriNo)" width="180px"
+                                             disabled="@load(not vm.yeniKayit)"/>
+                                    <label value="Hesap No"/>
+                                    <hbox spacing="6px" align="center">
+                                        <textbox value="@bind(vm.hesapNo)" width="150px"
+                                                 disabled="@load(not vm.yeniKayit)"/>
+                                        <button label="Bul" visible="@load(vm.yeniKayit)"
+                                                style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                                                onClick="@command('hesapBul')"/>
+                                    </hbox>
+                                    <label value=""/>
+                                    <label value=""/>
+                                </row>
+                                <row>
+                                    <label value="Alis Kontrol"/>
+                                    <combobox value="@bind(vm.alisKontrolTipi)" width="180px">
+                                        <comboitem label="SPK Kontrollu"/>
+                                        <comboitem label="Nakit Kontrolu"/>
+                                        <comboitem label="Kontrolsuz"/>
+                                    </combobox>
+                                    <label value="Satis Kontrol"/>
+                                    <combobox value="@bind(vm.satisKontrolTipi)" width="150px">
+                                        <comboitem label="SPK Kontrollu"/>
+                                        <comboitem label="Nakit Kontrolu"/>
+                                        <comboitem label="Kontrolsuz"/>
+                                    </combobox>
+                                    <label value="Acik Satis Kontrol"/>
+                                    <combobox value="@bind(vm.acikSatisKontrolTipi)" width="180px">
+                                        <comboitem label="SPK Kontrollu"/>
+                                        <comboitem label="Nakit Kontrolu"/>
+                                        <comboitem label="Kontrolsuz"/>
+                                    </combobox>
+                                </row>
+                                <row>
+                                    <label value="Acik Takas Limiti"/>
+                                    <decimalbox value="@bind(vm.acikTakasLimiti)" format="#,##0.00" width="150px"/>
+                                    <label value="Aciga Satis Limiti"/>
+                                    <decimalbox value="@bind(vm.acigaSatisLimiti)" format="#,##0.00" width="150px"/>
+                                    <label value="Net Varlik Limit Carpani"/>
+                                    <combobox value="@bind(vm.netVarlikLimitCarpani)" width="80px">
+                                        <comboitem label="1"/>
+                                        <comboitem label="2"/>
+                                        <comboitem label="3"/>
+                                        <comboitem label="4"/>
+                                        <comboitem label="5"/>
+                                    </combobox>
+                                </row>
+                            </rows>
+                        </grid>
+
+                        <separator style="margin-top:12px"/>
+                        <hbox spacing="30px" style="margin-top:6px">
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.kredisizGrupAAlisYapabilir)"/>
+                                <label value="Kredisiz A Grubu Alis Yapabilir"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupBAlisYapabilir)"/>
+                                <label value="B Grubu Alis Yapabilir"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupCAlisYapabilir)"/>
+                                <label value="C Grubu Alis Yapabilir"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupDAlisYapabilir)"/>
+                                <label value="D Grubu Alis Yapabilir"/>
+                            </hbox>
+                        </hbox>
+                        <hbox spacing="30px" style="margin-top:10px">
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.kredisizGrupANakitKontrol)"/>
+                                <label value="Kredisiz A Grubu Nakit Kontrol"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupBNakitKontrol)"/>
+                                <label value="B Grubu Nakit Kontrol"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupCNakitKontrol)"/>
+                                <label value="C Grubu Nakit Kontrol"/>
+                            </hbox>
+                            <hbox spacing="6px" align="center">
+                                <checkbox checked="@bind(vm.grupDNakitKontrol)"/>
+                                <label value="D Grubu Nakit Kontrol"/>
+                            </hbox>
+                        </hbox>
+                        <hbox spacing="6px" align="center" style="margin-top:10px">
+                            <checkbox checked="@bind(vm.kredisizPaylardaKontrolsuzSatis)"/>
+                            <label value="Kredisiz Paylarda Kontrolsuz Satis"/>
+                        </hbox>
+
+                        <hbox spacing="10px" style="margin-top:16px">
+                            <button label="Sil" visible="@load(not vm.yeniKayit)"
+                                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('sil')"/>
+                            <button label="Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('kaydet')"/>
+                            <button label="Kapat" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('detayKapat')"/>
+                        </hbox>
+                    </groupbox>
+                </tabpanel>
+
+                <!-- ===== Tab 3: Net Varlik Limit Carpani Toplu Guncelleme ===== -->
+                <tabpanel visible="@load(vm.topluGuncellemeAcik)">
+                    <groupbox closable="false" style="margin-top:10px">
+                        <caption label="Excel ile Toplu Guncelleme"/>
+                        <label value="Excel'de 2 sutun beklenir: Hesap No (A) ve Net Varlik Limit Carpani (B, 1-5 arasi). Bir Hesap No'ya bagli Musteri VE Yatirim Danismani kaydi varsa ikisi de guncellenir."
+                               style="color:#7a8a99;font-size:0.9em"/>
+                        <hbox spacing="10px" style="margin-top:10px">
+                            <button label="Sablon Indir" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('topluSablonIndir')"/>
+                            <button label="Excel Yukle" upload="true,maxsize=-1"
+                                    onUpload="@command('dosyaYuklendi', media=event.media)"
+                                    style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
+                            <button label="Onizlemeyi Temizle" visible="@load(vm.onizlemeYapildi)"
+                                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('onizlemeTemizle')"/>
+                        </hbox>
+                    </groupbox>
+
+                    <listbox model="@load(vm.onizlemeSatirlari)" mold="paging" pageSize="15"
+                             emptyMessage="Henuz bir Excel yuklenmedi" style="margin-top:10px"
+                             visible="@load(vm.onizlemeYapildi)">
+                        <listhead>
+                            <listheader label="Hesap No" width="120px"/>
+                            <listheader label="Eski Net Varlik Limit Carpani" width="200px"/>
+                            <listheader label="Yeni Net Varlik Limit Carpani" width="200px"/>
+                            <listheader label="Durum"/>
+                        </listhead>
+                        <template name="model">
+                            <listitem>
+                                <listcell label="@load(each.hesapNo)"/>
+                                <listcell label="@load(each.eskiDeger)"/>
+                                <listcell label="@load(each.yeniDeger)"/>
+                                <listcell label="@load(each.durum)"
+                                          style="@load(each.gecerli ? 'color:#2f9e44' : 'color:#c85c5c')"/>
+                            </listitem>
+                        </template>
+                    </listbox>
+
+                    <label value="Onizlemede gecersiz satirlar var (kirmizi) - Onaya Gonder icin oncelikle Excel dosyasini duzeltip tekrar yukleyin."
+                           visible="@load(vm.onizlemeYapildi and not vm.onizlemeTumuGecerli)"
+                           style="color:#c85c5c;font-weight:bold;margin-top:10px"/>
+
+                    <hbox spacing="10px" style="margin-top:16px">
+                        <button label="Onaya Gonder" visible="@load(vm.onizlemeYapildi)"
+                                disabled="@load(not vm.onizlemeTumuGecerli)"
+                                style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('onayaGonder')"/>
+                        <button label="Kapat" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('topluGuncellemeKapat')"/>
+                    </hbox>
+                </tabpanel>
+            </tabpanels>
+        </tabbox>
+    </window>
+</zk>

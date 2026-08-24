@@ -38,10 +38,21 @@ public class MenuRegistry {
         items.add(new MenuItem("Teminat Islemleri", "/collateral/teminat-transfer.zul"));
         items.add(new MenuItem("Teminat Onay Ekrani", "/collateral/teminat-onay.zul"));
         items.add(new MenuItem("Hisse Kotasyon Izleme", "/core/hisse-kotasyon.zul"));
-        items.add(new MenuItem("Yeni Hisse Emir Yonetimi", "/risk/risk-parametreleri.zul"));
-        items.add(new MenuItem("Hisse Grubu Tanimlama", "/risk/hisse-grubu-tanimlama.zul"));
-        items.add(new MenuItem("Hesap/Hisse Bazinda Kontrol", "/risk/hesap-hisse-kontrol.zul"));
-        items.add(new MenuItem("Hesap Durdurma Kurallari", null));
+        // Eski "risk-parametreleri.zul" (basit boolean kontrolluu, PDF
+        // gorsellerinden cikarilmis placeholder) bilerek dokunulmadan
+        // birakildi, sadece menuden kaldirildi - yerine gercek ekran
+        // gorselleri (musteri profili) ile insa edilen "Hisse Risk
+        // Parametreleri" (hisse-risk-parametreleri.zul) alt menude gercek
+        // ekrandir. Diger kardesler placeholder ("Yapim Asamasinda").
+        items.add(new MenuItem("Yeni Hisse Emir Yonetimi", null,
+                List.of(new MenuItem("Hisse Risk Parametreleri", "/risk/hisse-risk-parametreleri.zul"),
+                        new MenuItem("Kullanici Limit Tanimlama", null),
+                        new MenuItem("Hisse Grubu Tanimlama", "/risk/hisse-grubu-tanimlama.zul"),
+                        new MenuItem("Kullanici/Hesap/Hisse Bazinda Kontrol", "/risk/hesap-hisse-kontrol.zul"),
+                        new MenuItem("Kisisel Kullanici Limiti", null),
+                        new MenuItem("Sabit Getiri Risk Tanimlama", null),
+                        new MenuItem("Sabit Getiri Kullanici Limiti", null),
+                        new MenuItem("Hesap Durdurma Kurallari", null))));
         items.add(new MenuItem("Piyasa Veri Yonetimi", "/core/piyasa-veri-yonetimi.zul"));
         items.add(new MenuItem("Is Bankasi", null));
         items.add(new MenuItem("Piyasa Veri Yonetimi (2)", "/core/piyasa-veri-yonetimi.zul"));
