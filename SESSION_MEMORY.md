@@ -65,74 +65,18 @@ backend+ZK+React all verified working (real DB smoke tests +
 screenshot-verified), but left uncommitted at the end of 08-18 pending
 regression-suite rewrites.
 
-## [2026-08-19] Rewrote both regression suites for the category rework, renamed 4 DTOs for consistent English naming, committed, and merged into `main`
-
-**Yapilanlar:**
-- Environment restart mishap (self-inflicted, corrected): asked user
-  whether to start backend/frontend myself, user said yes; both were
-  actually already running from before - my `mvn spring-boot:run`
-  failed harmlessly ("port already in use"), but my `npm run dev`
-  started a real duplicate dev server on `:5174` which I found and
-  killed. No lasting side effects, but should have checked running
-  processes BEFORE offering to start anything.
-- Rewrote both `musteri-bildirim-tercihleri-guncelleme.cjs` suites
-  (zk+react) for the new 2-category-row shape (6 checkboxes/switches
-  total, not 18; `VIOP_MARGIN_CALL` = index 3-5 locked instead of the
-  old 6th-type row; DB check now joins
-  `musteri_bildirim_kategori_tercihleri`+`notification_categories` on
-  `kod='ORDER_STATUS'`). Both 11/11 green against real DB data
-  (`M000005`/`mustafa.ozturk.005`), teardown confirmed clean.
-- Explained the full stack to the user in detail (tables w/ real dummy
-  data, services, live JSON responses via direct `Invoke-RestMethod`
-  calls showing a real `PARTIAL_SUCCESS` mixed-update example, ZK
-  `.zul`/ViewModel/macro-component internals) - no code changes from
-  this, purely walkthrough.
-- User flagged inconsistent DTO naming (English `Notif` prefix + Turkish
-  body + English `Dto` suffix). Renamed all 4 for full-English
-  consistency: `NotifKategoriDto`->`NotifCategoryDto`,
-  `NotifKanalKoduDto`->`NotifChannelCodeDto`,
-  `NotifKanalDurumuDto`->`NotifChannelStatusDto`,
-  `NotifBildirimTipiDto`->`NotifTypeSummaryDto` (kept the `Notif`
-  prefix + method/variable names as-is - only the class names were in
-  scope, per the user's explicit choice among 3 offered options).
-  Verified via grep zero old-name references remain (Java+TS), frontend
-  `npm run build` clean, both regression suites re-run green after the
-  rename (one transient double-FAIL mid-rename was Vite HMR reloading
-  the live-served files at the exact moment I edited them - confirmed
-  as flakiness by re-running, not a real regression).
-- Corrected a wrong assumption: I had flagged 2 rows in
-  `notif_channel_templates` (`GDT_FILLED`/PUSH at `max_retry=0`,
-  `error_backoff_time=86400`; `GDT_FILLED`/SMS at `max_retry=20`) as
-  "dirty leftover test residue" needing cleanup - user clarified these
-  are their OWN intentional manual test values (clamp-boundary
-  testing), not residue. Left untouched, not our data to "fix".
-- Committed the whole rework as a single commit (`71f4882`) on the
-  feature branch, then fast-forward merged into local `main` (no
-  conflicts, `main` hadn't moved since the branch was cut).
-
-**Kararlar:**
-- DTO rename scope = class names only (not method/variable names like
-  `toKategoriDto`/`kanalKodu`, which stay Turkish, matching the rest of
-  the codebase's Turkish method/variable convention) - user picked
-  "fully English" for the 4 flagged classes specifically, not a
-  project-wide Turkish/English cleanup.
-
-**Degisen dosyalar:**
-- `test-automation/screens/{zk,react}/musteri-bildirim-tercihleri-guncelleme.cjs` -
-  rewritten for category-row shape.
-- `src/main/java/com/orion/notification/dto/{NotifCategoryDto,NotifChannelCodeDto,NotifChannelStatusDto,NotifTypeSummaryDto}.java` -
-  renamed (`git mv`) from their old Turkish-mixed names.
-- Every file referencing those 4 DTOs updated (service, ViewModel,
-  `notificationPreferences.ts`, `MusteriBildirimTercihleriPage.tsx`).
-
-**Sonraki adimlar:**
-1. Local `main` is 17 commits ahead of `origin/main`, still not pushed -
-   user to decide when to push.
-2. Feature branch `musteri-bildirim-tercihleri-kategori-rework` is fully
-   merged, safe to delete once user confirms.
-3. `notif_channel_templates` id=4/id=5 are the user's OWN intentional
-   test data (see Kararlar/Gotcha above) - do NOT reset these without
-   being asked again.
+**[2026-08-19]** Rewrote both `musteri-bildirim-tercihleri-guncelleme.cjs`
+regression suites (zk+react) for the category-row shape (11/11 green
+each), then renamed 4 notification DTOs for full-English consistency
+(`NotifKategoriDto`->`NotifCategoryDto`,
+`NotifKanalKoduDto`->`NotifChannelCodeDto`,
+`NotifKanalDurumuDto`->`NotifChannelStatusDto`,
+`NotifBildirimTipiDto`->`NotifTypeSummaryDto` - class names only, methods/
+variables stay Turkish per user's choice), verified zero old-name
+references + clean build + suites still green, committed as `71f4882`
+and fast-forward merged into `main`. Confirmed `notif_channel_templates`
+id=4/5 are the user's OWN intentional clamp-boundary test data, not
+residue - never reset these without being asked again.
 
 ## [2026-08-21] Repo split into fork+personal-origin, fixed a stale-`target/` Flyway version collision
 
@@ -373,3 +317,84 @@ regression-suite rewrites.
 2. Same standing items as before still apply: `notif_channel_templates`
    id=4/5 are the user's own test data (don't touch), local `main`
    still ahead of `origin/main`.
+
+## [2026-08-26] Migrated Hisse Risk Parametreleri to React (REST + page), wrote its Puppeteer regression test, committed
+
+**Yapilanlar:**
+- Full ZK->REST->React migration on the same `hisse-risk-parametreleri`
+  branch: new DTOs/mapper/`HisseRiskParametreleriController` under
+  `/api/v1/risk/hisse-risk-parametreleri` (search/CRUD, Excel export,
+  account lookup "Bul", and the bulk-update flow - multipart preview +
+  stateless confirm + template download, project's first multipart
+  file-upload REST endpoint, added `spring.servlet.multipart` limits to
+  `application.yml`). All reused `HisseRiskParametreleriService` as-is.
+- New `HisseRiskParametreleriPage.tsx`: 3-column layout (search+17-col
+  table in middle, create/edit detail form in `DetailAside` on the
+  right, identity fields locked in edit mode/unlocked in create mode
+  exactly matching ZK); bulk-update Excel workflow built as its own
+  `Dialog` (a genuinely separate multi-step flow, not a record detail).
+  Restructured `menu-registry.ts`'s "Yeni Hisse Emir Yonetimi" into a
+  parent+8-children tree to mirror the real `MenuRegistry.java` (old
+  `RiskParametreleriPage`/`/risk/risk-parametreleri` route kept but
+  unlinked from nav, matching the ZK side's own precedent); `App.tsx`
+  now recursively flattens the menu tree so nested unimplemented
+  children still get a `PlaceholderPage` route.
+- Verified the whole backend surface with real `curl`/`Invoke-RestMethod`
+  calls against the real DB after the user restarted the backend: list/
+  search, account lookup (incl. the exact ZK error message on a 400),
+  export + template `.xlsx` downloads, a full multipart preview ->
+  confirm bulk-update round trip (2 linked Musteri+Yatirim Danismani
+  rows updated together), and a full create/update/delete CRUD cycle -
+  all correct, all cleaned up after.
+- Wrote `test-automation/screens/react/hisse-risk-parametreleri-kayit-yasam-dongusu.cjs`
+  (create -> edit -> delete lifecycle on hesapNo=10002, which starts
+  with zero existing rows). Along the way, found and fixed a real bug
+  in the SHARED `react.js#waitForToast` helper (not app code): two
+  different actions in this app can render the literal same toast text
+  ("... kaydedildi." for both create and edit), and toasts linger ~4s,
+  so a create->edit->delete run in quick succession could read a STALE
+  toast instead of the new one. Fixed by having `waitForToast` mark
+  every toast already present at call time and wait for one WITHOUT
+  that marker - robust regardless of text/DOM order. User caught the
+  suspicious "toast not seen" FAIL live in the UI and confirmed the
+  real toast was actually showing, confirming it was a script bug.
+  19/19 steps green after the fix.
+- Committed both the migration and the test fix together as `a607fe7`
+  on `hisse-risk-parametreleri` (on top of the existing `f221450`).
+
+**Dikkat / Gotcha:**
+- shadcn `<AlertDialog>` renders via a React Portal appended at the end
+  of `<body>` - if the same label (e.g. "Sil") also exists as a trigger
+  button elsewhere on the page, whole-page `clickButtonByText` grabs
+  the wrong (first-in-DOM) one. Added `clickButtonByTextWithin(page,
+  '[role="alertdialog"]', text)` to `react.js` for this.
+- `react.js#waitForToast` gotcha above - see Yapilanlar; documented in
+  the test-automation skill's `dom-notes.md`.
+- My own form has a live (harmless) Base UI console warning about a
+  `Select` switching controlled/uncontrolled state
+  (`HisseRiskParametreleriPage.tsx`) - flagged to user, not fixed yet,
+  their call whether to bother.
+
+**Degisen dosyalar:**
+- `src/main/java/com/orion/risk/{dto/*,controller/HisseRiskParametreleriController.java}` -
+  new REST layer (7 new files).
+- `nemesis-frontend/src/api/hisseRiskParametreleri.ts`,
+  `nemesis-frontend/src/pages/risk/HisseRiskParametreleriPage.tsx` - new.
+- `nemesis-frontend/src/{App.tsx,nav/menu-registry.ts}` - route +
+  nav-tree restructure.
+- `src/main/resources/application.yml` - multipart size limits.
+- `test-automation/helpers/react.js` - `waitForToast` fix +
+  `clickButtonByTextWithin` added.
+- `test-automation/screens/react/hisse-risk-parametreleri-kayit-yasam-dongusu.cjs` -
+  new, 19/19 green.
+- Committed as `a607fe7` on `hisse-risk-parametreleri`.
+
+**Sonraki adimlar:**
+1. Branch has 2 commits (`f221450`, `a607fe7`) - still not merged into
+   `main`, not pushed to `origin`. User to decide timing.
+2. Bulk-update Excel dialog (React side) has no regression test yet -
+   only the main CRUD lifecycle is covered; ZK side already has both
+   (happy path + invalid-data) for that specific tab.
+3. Same standing items still apply: `notif_channel_templates` id=4/5
+   are the user's own test data (don't touch), local `main` still
+   ahead of `origin/main`.
