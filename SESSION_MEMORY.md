@@ -287,3 +287,89 @@ regression-suite rewrites.
    only the write/export side existed before (`NotificationEventService`).
 3. `mvn compile` is currently clean on this branch (verified end of
    session).
+
+## [2026-08-24] Built, fixed, and simplified the Net Varlik Limit Carpani Toplu Guncelleme bulk-update tab; committed the whole Hisse Risk Parametreleri feature
+
+**Yapilanlar:**
+- Corrected course on the "outer tab" plan from the 08-21 entry: user
+  pushed back immediately (didn't recall ever agreeing to it, and the
+  note itself self-contradicted - see Dikkat). Built as a 3rd INNER
+  tab on the existing screen instead, no `IndexViewModel`/`OpenTab`
+  changes at all.
+- Built the bulk-update tab end-to-end:
+  `HisseRiskParametreleriService.excelOnizle`/`topluGuncelle`/
+  `topluGuncellemeSablonuOlustur` (project's first Apache POI READ
+  path - only export/write existed before), new
+  `NetVarlikCarpaniTopluSatir` row model, ViewModel state
+  (`topluGuncellemeAcik`/`onizlemeSatirlari`/`onizlemeYapildi`) +
+  commands, 3rd `<tabpanel>` in the `.zul` with a native
+  `upload="true"` button.
+- First-ever file-upload E2E test in this project: discovered ZK's
+  `<button upload="true">` renders a real (invisibly clipped)
+  `input[type=file]`, directly `.uploadFile()`-able via Puppeteer with
+  no need to click the button first - documented in the skill's
+  `dom-notes.md`. Added `xlsx` (SheetJS) as a test-automation
+  devDependency to generate real `.xlsx` fixtures.
+- User caught a real bug: uploading invalid data (out-of-range
+  multiplier) let "Onaya Gonder" proceed and show a generic success
+  message while silently updating nothing. Fixed with a derived
+  `isOnizlemeTumuGecerli()` getter gating the button (`disabled`) + a
+  server-side re-check in `onayaGonder`. Hit (and fixed) a real ZK
+  gotcha along the way, see Dikkat.
+- Walked the user through the entire stack twice: once for this
+  feature (DB dummy data + domain/repo/service/vm/zul), once
+  contrasting it against the OLDER `risk_profiles` module's full
+  REST/DTO/Controller/React stack - confirmed via reading
+  `HisseGrubuViewModel` that ZK ViewModels call services DIRECTLY
+  (`SpringContextHolder.getBean`) and never go through their own
+  module's REST controller, even when one exists right next to them.
+- User feedback simplified the preview table: dropped Musteri
+  No/Musteri Adi/Kullanici Tipi columns entirely, collapsed to ONE
+  preview row per Hesap No (was one row per Musteri+Yatirim
+  Danismani record) - `NetVarlikCarpaniTopluSatir.parametreId` became
+  `parametreIdListesi` so one row can still drive multiple underlying
+  record updates.
+- Committed everything as a single commit (`f221450`) on the
+  `hisse-risk-parametreleri` branch (not merged/pushed).
+
+**Dikkat / Gotcha:**
+- ZK's `@NotifyChange` does NOT auto-track derived-getter
+  dependencies - a `@load(vm.someDerivedBoolean)` binding will NOT
+  refresh just because the fields it reads from were notified. Every
+  `@NotifyChange` list touching `onizlemeSatirlari` had to explicitly
+  also list the derived getter's own bean-property name
+  (`onizlemeTumuGecerli`), or the binding silently stays frozen at its
+  initial value forever (this exact bug shipped once and passed a
+  test for the wrong reason - the "disabled" button happened to start
+  `true` and never change, so an invalid-data test looked like it
+  passed before the real mechanism was actually working).
+- This file's own 08-21 entry contained a self-contradiction ("plan
+  already agreed with user" immediately followed by "rejected by
+  user"). When relaying a past-session plan forward, sanity-check it
+  against that same entry's own later lines before repeating it as
+  settled.
+
+**Degisen dosyalar:**
+- `src/main/java/com/orion/risk/vm/NetVarlikCarpaniTopluSatir.java` -
+  new row model (later simplified: id -> id-list, dropped 3 display
+  fields).
+- `src/main/java/com/orion/risk/service/HisseRiskParametreleriService.java` -
+  added `excelOnizle`/`topluGuncelle`/`topluGuncellemeSablonuOlustur`
+  + POI cell-reading helpers.
+- `src/main/java/com/orion/risk/vm/HisseRiskParametreleriViewModel.java` -
+  tab-3 state/commands + `isOnizlemeTumuGecerli` validation gate.
+- `src/main/webapp/risk/hisse-risk-parametreleri.zul` - 3rd tab,
+  upload button, preview listbox (4 columns).
+- `test-automation/screens/zk/net-varlik-limit-carpani-toplu-guncelleme{,-gecersiz-veri}.cjs` -
+  new regression scripts (happy path + invalid-data blocking), both
+  green.
+- `test-automation/package.json` - added `xlsx` devDependency.
+- Committed as `f221450` on `hisse-risk-parametreleri`.
+
+**Sonraki adimlar:**
+1. Feature is functionally complete and committed on the branch - not
+   yet merged into `main`, not pushed to `origin`. User to decide
+   timing.
+2. Same standing items as before still apply: `notif_channel_templates`
+   id=4/5 are the user's own test data (don't touch), local `main`
+   still ahead of `origin/main`.

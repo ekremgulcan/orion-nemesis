@@ -30,6 +30,15 @@ spring:
     # veriyordu. Bu ozellik projede hicbir migration'da kullanilmiyor,
     # bu yuzden tamamen kapatildi.
     placeholder-replacement: false
+  servlet:
+    multipart:
+      # Hisse Risk Parametreleri / Net Varlik Limit Carpani Toplu Guncelleme
+      # REST endpoint'inin (ilk multipart dosya yukleme endpoint'i) Excel
+      # dosyalari icin - ZK tarafindaki upload="true,maxsize=-1" (sinirsiz)
+      # niyetiyle ayni, Spring Boot'un varsayilan 1MB/10MB limitlerinden
+      # daha cömert bir ust sinir.
+      max-file-size: 10MB
+      max-request-size: 10MB
   web:
     resources:
       # Dev'de src/main/webapp altindaki statik dosyalar (css/js) her

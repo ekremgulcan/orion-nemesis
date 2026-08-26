@@ -20,6 +20,7 @@ import { BildirimIzlemePage } from "@/pages/crm/BildirimIzlemePage"
 import { MusteriBildirimTercihleriPage } from "@/pages/crm/MusteriBildirimTercihleriPage"
 import { BildirimAyarlariPage } from "@/pages/crm/BildirimAyarlariPage"
 import { RiskParametreleriPage } from "@/pages/risk/RiskParametreleriPage"
+import { HisseRiskParametreleriPage } from "@/pages/risk/HisseRiskParametreleriPage"
 import { HisseGrubuTanimlamaPage } from "@/pages/risk/HisseGrubuTanimlamaPage"
 import { HesapHisseKontrolPage } from "@/pages/risk/HesapHisseKontrolPage"
 import { KrediOptimizasyonPage } from "@/pages/credit/KrediOptimizasyonPage"
@@ -27,7 +28,16 @@ import { MetaPozisyonServisiPage } from "@/pages/meta/MetaPozisyonServisiPage"
 import { RaporTanimlariPage } from "@/pages/report/RaporTanimlariPage"
 import { GorevListesiPage } from "@/pages/workflow/GorevListesiPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
-import { menuItems } from "@/nav/menu-registry"
+import { menuItems, type MenuItem } from "@/nav/menu-registry"
+
+/**
+ * Flattens the (now nested) menu tree so every unimplemented item - top
+ * level OR nested child, e.g. "Yeni Hisse Emir Yonetimi" -> "Hesap
+ * Durdurma Kurallari" - still gets a real PlaceholderPage route.
+ */
+function flattenMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.flatMap((item) => [item, ...(item.children ? flattenMenuItems(item.children) : [])])
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,13 +73,17 @@ function App() {
               <Route path="/crm/bildirim-izleme" element={<BildirimIzlemePage />} />
               <Route path="/crm/musteri-bildirim-tercihleri" element={<MusteriBildirimTercihleriPage />} />
               <Route path="/crm/bildirim-ayarlari" element={<BildirimAyarlariPage />} />
+              {/* Eski risk-parametreleri.zul'un React karsiligi - ZK menusunde
+                  oldugu gibi artik hicbir nav ogesinden linklenmiyor, ama
+                  dosya/route bilerek dokunulmadan birakildi. */}
               <Route path="/risk/risk-parametreleri" element={<RiskParametreleriPage />} />
+              <Route path="/risk/hisse-risk-parametreleri" element={<HisseRiskParametreleriPage />} />
               <Route path="/risk/hisse-grubu-tanimlama" element={<HisseGrubuTanimlamaPage />} />
               <Route path="/risk/hesap-hisse-kontrol" element={<HesapHisseKontrolPage />} />
               <Route path="/credit/kredi-optimizasyon" element={<KrediOptimizasyonPage />} />
               <Route path="/meta/meta-pozisyon-servisi" element={<MetaPozisyonServisiPage />} />
               <Route path="/report/rapor-yonetimi" element={<RaporTanimlariPage />} />
-              {menuItems
+              {flattenMenuItems(menuItems)
                 .filter((item) => !item.implemented)
                 .map((item) => (
                   <Route

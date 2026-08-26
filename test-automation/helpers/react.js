@@ -21,6 +21,31 @@ async function clickButtonByText(page, text) {
 }
 
 /**
+ * Same as clickButtonByText but scoped to a CSS selector (default
+ * '[role="alertdialog"]') - needed whenever the SAME visible label
+ * (e.g. "Sil") appears both as the trigger elsewhere on the page AND as
+ * the AlertDialogAction confirm button. shadcn's AlertDialog renders
+ * through a React Portal appended at the end of <body>, so a
+ * whole-page clickButtonByText() would grab whichever "Sil" comes
+ * first in DOM order (often a per-row/trigger button, not the actual
+ * confirm button) instead of the confirmation dialog's own button -
+ * see dom-notes.md.
+ */
+async function clickButtonByTextWithin(page, rootSelector, text) {
+  const root = await page.$(rootSelector);
+  if (!root) throw new Error(`clickButtonByTextWithin: root "${rootSelector}" not found`);
+  const buttons = await root.$$("button");
+  for (const b of buttons) {
+    const t = await page.evaluate((el) => el.textContent.trim(), b);
+    if (t === text) {
+      await b.click();
+      return true;
+    }
+  }
+  throw new Error(`clickButtonByTextWithin: no button found with text "${text}" within "${rootSelector}"`);
+}
+
+/**
  * Fills shadcn <Input> fields ([data-slot="input"]) in DOM order
  * (matches the visual top-to-bottom / left-to-right order of Field
  * blocks in the page's JSX). Pass null to skip a field (e.g. when a
@@ -271,18 +296,37 @@ async function getSwitchStates(page, { root = null } = {}) {
 }
 
 /**
- * Waits for a sonner toast (success/error) to appear and returns its
- * text, or null if none appears within timeoutMs. Sonner renders each
- * toast with a stable [data-sonner-toast] attribute regardless of
+ * Waits for a NEW sonner toast (success/error) to appear and returns
+ * its text, or null if none appears within timeoutMs. Sonner renders
+ * each toast with a stable [data-sonner-toast] attribute regardless of
  * content, so this does not depend on any id.
+ *
+ * A toast only auto-dismisses ~4s later (see design-system.md), so two
+ * actions fired within that window (e.g. an edit-save immediately
+ * followed by a delete) can have both toasts present in the DOM at
+ * once - and since two different actions in this app can legitimately
+ * show the EXACT SAME text (e.g. both create and edit show "...
+ * kaydedildi."), neither "read the first element" nor "read the last
+ * element" nor "wait for the text to change" reliably distinguishes
+ * the new toast from a still-visible stale one (all three were tried
+ * and each broke on a real create -> edit -> delete lifecycle test).
+ * The robust fix: mark every toast already present the moment this
+ * function is CALLED, then poll for the first toast WITHOUT that
+ * marker - that one is guaranteed to have mounted after this call
+ * started, regardless of its text or DOM position.
  */
 async function waitForToast(page, timeoutMs = 4000) {
+  const marker = "data-e2e-toast-seen";
+  await page.evaluate((attr) => {
+    document.querySelectorAll("[data-sonner-toast]").forEach((el) => el.setAttribute(attr, "1"));
+  }, marker);
+
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const text = await page.evaluate(() => {
-      const el = document.querySelector("[data-sonner-toast]");
+    const text = await page.evaluate((attr) => {
+      const el = Array.from(document.querySelectorAll("[data-sonner-toast]")).find((e) => !e.hasAttribute(attr));
       return el ? el.textContent.trim() : null;
-    });
+    }, marker);
     if (text) return text;
     await new Promise((r) => setTimeout(r, 150));
   }
@@ -291,6 +335,7 @@ async function waitForToast(page, timeoutMs = 4000) {
 
 module.exports = {
   clickButtonByText,
+  clickButtonByTextWithin,
   fillInputsInOrder,
   selectDropdownByIndex,
   getSelectDisabledStates,
