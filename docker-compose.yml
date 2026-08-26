@@ -12,7 +12,8 @@ services:
       MSSQL_SA_PASSWORD: "Orion_2026_Str0ng!"
       MSSQL_PID: "Developer"
     ports:
-      - "1433:1433"
+      # 0.0.0.0: Parallels Windows (10.211.55.2:1433) Mac localhost ile ayni DB'ye ulassin.
+      - "0.0.0.0:1433:1433"
     volumes:
       - orion-mssql-data:/var/opt/mssql
     healthcheck:
