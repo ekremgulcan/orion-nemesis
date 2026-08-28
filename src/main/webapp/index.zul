@@ -15,8 +15,19 @@
                   height="100%" width="100%">
 
         <north height="60px" style="background-color:#4a86a8">
-            <hbox align="center" style="height:100%;padding-left:16px">
+            <hbox align="center" pack="justify" hflex="1" style="height:100%;padding:0 16px;box-sizing:border-box">
                 <label value="Orion" style="color:white;font-size:22px;font-weight:bold"/>
+                <hbox align="center" spacing="8px">
+                    <label value="Aktif Kullanici:" style="color:white"/>
+                    <listbox mold="select" rows="1" width="180px"
+                             model="@load(vm.kullaniciSecenekleri)"
+                             onSelect="@command('kullaniciDegistir', kullaniciAdi=self.selectedItem.value.kullaniciAdi)">
+                        <template name="model">
+                            <listitem value="@load(each)" label="@load(each.adSoyad)"
+                                      selected="@load(each.kullaniciAdi eq vm.aktifKullaniciAdi)"/>
+                        </template>
+                    </listbox>
+                </hbox>
             </hbox>
         </north>
 

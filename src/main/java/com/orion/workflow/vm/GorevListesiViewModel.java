@@ -1,6 +1,7 @@
 package com.orion.workflow.vm;
 
 import com.orion.core.config.SpringContextHolder;
+import com.orion.core.service.AktifKullaniciServisi;
 import com.orion.workflow.domain.WorkflowTask;
 import com.orion.workflow.service.WorkflowTaskService;
 import org.zkoss.bind.annotation.Init;
@@ -9,15 +10,16 @@ import java.util.List;
 
 /**
  * "Uzerimdeki Gorevler / Tamamlanmis Gorevlerim / Surec Listesi"
- * (gorev-listesi.zul) ekrani icin ViewModel. Simdilik oturum acan kullanici
- * yerine sabit "ademir" kullanicisi (musteri temsilcisi) varsayilmistir.
+ * (gorev-listesi.zul) ekrani icin ViewModel. Aktif kullanici artik
+ * AktifKullaniciServisi'nden okunur (bkz. o sinifin javadoc'u) - onceki
+ * sabit "ademir" varsayimi kaldirildi.
  */
 public class GorevListesiViewModel {
 
     private final WorkflowTaskService workflowTaskService =
             SpringContextHolder.getBean(WorkflowTaskService.class);
-
-    private static final String AKTIF_KULLANICI = "ademir";
+    private final AktifKullaniciServisi aktifKullaniciServisi =
+            SpringContextHolder.getBean(AktifKullaniciServisi.class);
 
     private List<WorkflowTask> uzerimdekiGorevler;
     private List<WorkflowTask> tamamlanmisGorevler;
@@ -25,8 +27,9 @@ public class GorevListesiViewModel {
 
     @Init
     public void init() {
-        uzerimdekiGorevler = workflowTaskService.getAcikGorevler(AKTIF_KULLANICI);
-        tamamlanmisGorevler = workflowTaskService.getTamamlanmisGorevler(AKTIF_KULLANICI);
+        String aktifKullaniciAdi = aktifKullaniciServisi.getAktifKullaniciAdi();
+        uzerimdekiGorevler = workflowTaskService.getAcikGorevler(aktifKullaniciAdi);
+        tamamlanmisGorevler = workflowTaskService.getTamamlanmisGorevler(aktifKullaniciAdi);
         tumGorevler = workflowTaskService.getTumGorevler();
     }
 

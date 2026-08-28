@@ -84,8 +84,10 @@ function TaskTable({
  * index route so users land on the same "inbox" view first. Fully
  * read-only - three tabs (Uzerimdeki Gorevler / Tamamlanmis
  * Gorevlerim / Surec Listesi), no commands. The active-user filter is
- * still hardcoded to "ademir" pending real authentication, matching
- * the ZK ViewModel's own temporary decision.
+ * no longer hardcoded - fetchAcikGorevler/fetchTamamlanmisGorevler are
+ * called without a kullaniciAdi, so the backend resolves it from
+ * AktifKullaniciServisi (the same simulated-session bean the TopBar's
+ * user switcher writes to) - see WorkflowTaskController.
  */
 export function GorevListesiPage() {
   const { setTitle } = useOutletContext<PageTitleContext>()

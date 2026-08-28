@@ -1,6 +1,9 @@
 package com.orion.nav;
 
 import com.orion.core.config.SpringContextHolder;
+import com.orion.core.domain.User;
+import com.orion.core.repository.UserRepository;
+import com.orion.core.service.AktifKullaniciServisi;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.Init;
@@ -27,11 +30,16 @@ public class IndexViewModel {
     private static final String HOME_ZUL = "/workflow/gorev-listesi.zul";
 
     private final MenuRegistry menuRegistry = SpringContextHolder.getBean(MenuRegistry.class);
+    private final UserRepository userRepository = SpringContextHolder.getBean(UserRepository.class);
+    private final AktifKullaniciServisi aktifKullaniciServisi =
+            SpringContextHolder.getBean(AktifKullaniciServisi.class);
 
     private List<MenuItem> menuItems;
     private final Set<String> expandedMenus = new HashSet<>();
     private List<OpenTab> openTabs;
     private OpenTab selectedTab;
+    private List<User> kullaniciSecenekleri;
+    private String aktifKullaniciAdi;
 
     @Init
     public void init() {
@@ -39,6 +47,41 @@ public class IndexViewModel {
         openTabs = new ArrayList<>();
         selectedTab = new OpenTab(HOME_BASLIK, HOME_ZUL, false);
         openTabs.add(selectedTab);
+        kullaniciSecenekleri = userRepository.findAllFetched();
+        aktifKullaniciAdi = aktifKullaniciServisi.getAktifKullaniciAdi();
+    }
+
+    public List<User> getKullaniciSecenekleri() {
+        return kullaniciSecenekleri;
+    }
+
+    public String getAktifKullaniciAdi() {
+        return aktifKullaniciAdi;
+    }
+
+    /**
+     * Ust bar'daki aktif kullanici secicisinden cagrilir. Gercek bir
+     * oturum olmadigi icin degisiklik surec genelinde AktifKullaniciServisi
+     * uzerinden tutulur (bkz. o sinifin javadoc'u). Kullanici degisince
+     * "Ana Sayfa" (gorev-listesi.zul) sekmesi, yeni kullanicinin gorevlerini
+     * gostermesi icin yeniden acilir.
+     */
+    @Command
+    @NotifyChange({"aktifKullaniciAdi", "openTabs", "selectedTab"})
+    public void kullaniciDegistir(@BindingParam("kullaniciAdi") String kullaniciAdi) {
+        aktifKullaniciServisi.setAktifKullanici(kullaniciAdi);
+        aktifKullaniciAdi = kullaniciAdi;
+
+        OpenTab eskiHome = findTab(HOME_ZUL, HOME_BASLIK);
+        if (eskiHome != null) {
+            int index = openTabs.indexOf(eskiHome);
+            openTabs.remove(index);
+            OpenTab yeniHome = new OpenTab(HOME_BASLIK, HOME_ZUL, false);
+            openTabs.add(index, yeniHome);
+            if (selectedTab == eskiHome) {
+                selectedTab = yeniHome;
+            }
+        }
     }
 
     public List<MenuItem> getMenuItems() {
