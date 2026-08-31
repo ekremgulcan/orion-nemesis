@@ -58,6 +58,7 @@ public class HisseRiskParametreleriViewModel {
     private final HisseRiskParametreleriService service = SpringContextHolder.getBean(HisseRiskParametreleriService.class);
     private final HisseRiskOnayService onayService = SpringContextHolder.getBean(HisseRiskOnayService.class);
     private final AktifKullaniciServisi aktifKullaniciServisi = SpringContextHolder.getBean(AktifKullaniciServisi.class);
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = SpringContextHolder.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
 
     // --- Tab 1: Risk profilleri (arama + liste) ---
     private List<HisseRiskParametresi> parametreler;
@@ -102,6 +103,7 @@ public class HisseRiskParametreleriViewModel {
     private boolean incelemeModu;
     private Long incelemeProcessId;
     private boolean diffPopupAcik;
+    private boolean onayBekliyor;
     private List<Map<String, String>> degisiklikListesi = new ArrayList<>();
     /** Inceleme modunda acilan sekmenin zulPath'i — closeReviewAndGoHome icin gerekli. */
     private String incelemeZulPath;
@@ -116,6 +118,10 @@ public class HisseRiskParametreleriViewModel {
         }
     }
 
+    public boolean isOnayBekliyor() {
+        return onayBekliyor;
+    }
+
     /**
      * Session'dan okunan process id ile inceleme modunu baslatir:
      * talepleri yukler, diff popup verisi hazirlar, toplu guncelleme
@@ -127,32 +133,90 @@ public class HisseRiskParametreleriViewModel {
             return;
         }
 
+        onayBekliyor = talepler.stream().anyMatch(t -> "BEKLEMEDE".equals(t.getDurum()));
+
         // Onizleme satirlarini taleplerden olustur
         onizlemeSatirlari = new ArrayList<>();
         degisiklikListesi = new ArrayList<>();
         for (HisseRiskParametreTalebi talep : talepler) {
-            NetVarlikCarpaniTopluSatir satir = new NetVarlikCarpaniTopluSatir();
-            satir.setHesapNo(talep.getAccount().getHesapNo());
-            // Basit JSON parse - eskiDeger ve yeniDeger
-            satir.setEskiDeger(parseIntFromJson(talep.getOncekiDegerJson()));
-            satir.setYeniDeger(parseIntFromJson(talep.getYeniDegerJson()));
-            satir.setGecerli(true);
-            satir.setDurum("Onay Bekliyor");
-            onizlemeSatirlari.add(satir);
+            if ("TOPLU_GUNCELLEME".equals(talep.getTalepTuru())) {
+                NetVarlikCarpaniTopluSatir satir = new NetVarlikCarpaniTopluSatir();
+                satir.setHesapNo(talep.getAccount().getHesapNo());
+                satir.setEskiDeger(parseIntFromJson(talep.getOncekiDegerJson()));
+                satir.setYeniDeger(parseIntFromJson(talep.getYeniDegerJson()));
+                satir.setGecerli(true);
+                satir.setDurum(talep.getDurum());
+                onizlemeSatirlari.add(satir);
+                
+                // Diff popup icin (Toplu guncelleme JSON icermediginden elle ekleniyor)
+                Map<String, String> diffRow = new HashMap<>();
+                diffRow.put("hesapNo", talep.getAccount().getHesapNo());
+                diffRow.put("alan", "Net Varlik Limit Carpani");
+                diffRow.put("eskiDeger", String.valueOf(satir.getEskiDeger()));
+                diffRow.put("yeniDeger", String.valueOf(satir.getYeniDeger()));
+                degisiklikListesi.add(diffRow);
+            }
 
-            // Diff popup icin
-            Map<String, String> diffRow = new HashMap<>();
-            diffRow.put("hesapNo", talep.getAccount().getHesapNo());
-            diffRow.put("eskiDeger", String.valueOf(satir.getEskiDeger()));
-            diffRow.put("yeniDeger", String.valueOf(satir.getYeniDeger()));
-            degisiklikListesi.add(diffRow);
+            try {
+                if (talep.getDegisiklikListesiJson() != null && !talep.getDegisiklikListesiJson().isBlank()) {
+                    List<Map<String, String>> diffs = objectMapper.readValue(talep.getDegisiklikListesiJson(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                    
+                    if ("TOPLU_GUNCELLEME".equals(talep.getTalepTuru())) {
+                        degisiklikListesi.addAll(diffs); // Toplu guncelleme diff
+                    } else {
+                        // Tekil Ekle/Duzenle/Sil icin diff'i hesapNo ile zenginlestir (Popup'da gostermek icin)
+                        for (Map<String, String> diff : diffs) {
+                            diff.put("hesapNo", talep.getAccount().getHesapNo());
+                            degisiklikListesi.add(diff);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore parsing errors for individual elements
+            }
         }
 
         incelemeModu = true;
         onizlemeYapildi = true;
-        diffPopupAcik = true;
-        topluGuncellemeAcik = true;
-        selectedTabIndex = 2;
+        
+        if (talepler.stream().anyMatch(t -> "TOPLU_GUNCELLEME".equals(t.getTalepTuru()))) {
+            topluGuncellemeAcik = true;
+            selectedTabIndex = 2;
+            diffPopupAcik = false; // Toplu guncellemede tablo zaten ekranda var
+        } else {
+            // Tekil guncellemeler icin Detay tab'ina yonlendir
+            detayAcik = true;
+            selectedTabIndex = 1;
+            diffPopupAcik = true; // Tekil guncellemelerde popup goster
+            
+            // Inceleme formunu doldur (yeni degerleri ekranda gostermek icin)
+            if (!talepler.isEmpty()) {
+                HisseRiskParametreTalebi t = talepler.get(0);
+                try {
+                    com.orion.risk.dto.HisseRiskParametresiFormDto yeniDto = objectMapper.readValue(t.getYeniDegerJson(), com.orion.risk.dto.HisseRiskParametresiFormDto.class);
+                    this.hesapNo = t.getAccount().getHesapNo();
+                    this.kullaniciTipi = yeniDto.getKullaniciTipi();
+                    this.alisKontrolTipi = yeniDto.getAlisKontrolTipi();
+                    this.satisKontrolTipi = yeniDto.getSatisKontrolTipi();
+                    this.acikSatisKontrolTipi = yeniDto.getAcikSatisKontrolTipi();
+                    this.acikTakasLimiti = yeniDto.getAcikTakasLimiti();
+                    this.acigaSatisLimiti = yeniDto.getAcigaSatisLimiti();
+                    this.netVarlikLimitCarpani = yeniDto.getNetVarlikLimitCarpani();
+                    this.kredisizGrupAAlisYapabilir = yeniDto.isKredisizGrupAAlisYapabilir();
+                    this.grupBAlisYapabilir = yeniDto.isGrupBAlisYapabilir();
+                    this.grupCAlisYapabilir = yeniDto.isGrupCAlisYapabilir();
+                    this.grupDAlisYapabilir = yeniDto.isGrupDAlisYapabilir();
+                    this.kredisizGrupANakitKontrol = yeniDto.isKredisizGrupANakitKontrol();
+                    this.grupBNakitKontrol = yeniDto.isGrupBNakitKontrol();
+                    this.grupCNakitKontrol = yeniDto.isGrupCNakitKontrol();
+                    this.grupDNakitKontrol = yeniDto.isGrupDNakitKontrol();
+                    this.kredisizPaylardaKontrolsuzSatis = yeniDto.isKredisizPaylardaKontrolsuzSatis();
+                } catch(Exception e) {
+                   //
+                }
+            }
+        }
         incelemeZulPath = "/risk/hisse-risk-parametreleri.zul";
     }
 
@@ -485,21 +549,33 @@ public class HisseRiskParametreleriViewModel {
     @Command
     @NotifyChange({"parametreler", "detayAcik", "selectedTabIndex"})
     public void kaydet() {
+        if (hesapNo == null || hesapNo.isBlank()) {
+            Messagebox.show("Hesap No bos birakilamaz.", "Hata", Messagebox.OK, Messagebox.ERROR);
+            return;
+        }
+
+        com.orion.risk.dto.HisseRiskParametresiFormDto yeniDeger = toDto();
+        com.orion.risk.dto.HisseRiskParametresiFormDto eskiDeger = null;
+
+        if (!yeniKayit && duzenlenenId != null) {
+            HisseRiskParametresi current = parametreler.stream().filter(p -> p.getId().equals(duzenlenenId)).findFirst().orElse(null);
+            if (current != null) {
+                eskiDeger = entityToDto(current);
+            }
+        }
+
         try {
-            service.kaydet(duzenlenenId, hesapNo, kullaniciTipi,
-                    alisKontrolTipi, satisKontrolTipi, acikSatisKontrolTipi,
-                    acikTakasLimiti, acigaSatisLimiti, netVarlikLimitCarpani,
-                    kredisizGrupAAlisYapabilir, grupBAlisYapabilir, grupCAlisYapabilir, grupDAlisYapabilir,
-                    kredisizGrupANakitKontrol, grupBNakitKontrol, grupCNakitKontrol, grupDNakitKontrol,
-                    kredisizPaylardaKontrolsuzSatis);
-        } catch (IllegalArgumentException ex) {
+            User talepEden = aktifKullaniciServisi.getAktifKullanici();
+            onayService.onayaGonderTekil(yeniDeger, eskiDeger, talepEden, yeniKayit ? "EKLE" : "DUZENLE");
+        } catch (IllegalStateException ex) {
             Messagebox.show(ex.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
             return;
         }
+
         parametreler = service.search(aramaMusteriNo, aramaHesapNo, aramaKullaniciTipi);
         detayAcik = false;
         selectedTabIndex = 0;
-        Messagebox.show("Risk profili kaydedildi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
+        Messagebox.show("Risk profili degisikligi onaya gonderildi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
     }
 
     @Command
@@ -510,15 +586,70 @@ public class HisseRiskParametreleriViewModel {
         Messagebox.show("Bu risk profili silinsin mi?", "Onay", Messagebox.YES | Messagebox.NO, Messagebox.QUESTION,
                 event -> {
                     if (Messagebox.ON_YES.equals(event.getName())) {
-                        service.sil(duzenlenenId);
-                        parametreler = service.search(aramaMusteriNo, aramaHesapNo, aramaKullaniciTipi);
-                        detayAcik = false;
-                        selectedTabIndex = 0;
-                        org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "parametreler");
-                        org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "detayAcik");
-                        org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "selectedTabIndex");
+                        HisseRiskParametresi current = parametreler.stream().filter(p -> p.getId().equals(duzenlenenId)).findFirst().orElse(null);
+                        if (current != null) {
+                            try {
+                                com.orion.risk.dto.HisseRiskParametresiFormDto eskiDeger = entityToDto(current);
+                                User talepEden = aktifKullaniciServisi.getAktifKullanici();
+                                onayService.onayaGonderTekil(null, eskiDeger, talepEden, "SIL");
+                                
+                                parametreler = service.search(aramaMusteriNo, aramaHesapNo, aramaKullaniciTipi);
+                                detayAcik = false;
+                                selectedTabIndex = 0;
+                                org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "parametreler");
+                                org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "detayAcik");
+                                org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "selectedTabIndex");
+                                Messagebox.show("Silme talebi onaya gonderildi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
+                            } catch (IllegalStateException ex) {
+                                Messagebox.show(ex.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+                            }
+                        }
                     }
                 });
+    }
+
+    private com.orion.risk.dto.HisseRiskParametresiFormDto toDto() {
+        com.orion.risk.dto.HisseRiskParametresiFormDto dto = new com.orion.risk.dto.HisseRiskParametresiFormDto();
+        dto.setHesapNo(hesapNo);
+        dto.setKullaniciTipi(kullaniciTipi);
+        dto.setAlisKontrolTipi(alisKontrolTipi);
+        dto.setSatisKontrolTipi(satisKontrolTipi);
+        dto.setAcikSatisKontrolTipi(acikSatisKontrolTipi);
+        dto.setAcikTakasLimiti(acikTakasLimiti);
+        dto.setAcigaSatisLimiti(acigaSatisLimiti);
+        dto.setNetVarlikLimitCarpani(netVarlikLimitCarpani);
+        dto.setKredisizGrupAAlisYapabilir(kredisizGrupAAlisYapabilir);
+        dto.setGrupBAlisYapabilir(grupBAlisYapabilir);
+        dto.setGrupCAlisYapabilir(grupCAlisYapabilir);
+        dto.setGrupDAlisYapabilir(grupDAlisYapabilir);
+        dto.setKredisizGrupANakitKontrol(kredisizGrupANakitKontrol);
+        dto.setGrupBNakitKontrol(grupBNakitKontrol);
+        dto.setGrupCNakitKontrol(grupCNakitKontrol);
+        dto.setGrupDNakitKontrol(grupDNakitKontrol);
+        dto.setKredisizPaylardaKontrolsuzSatis(kredisizPaylardaKontrolsuzSatis);
+        return dto;
+    }
+
+    private com.orion.risk.dto.HisseRiskParametresiFormDto entityToDto(HisseRiskParametresi entity) {
+        com.orion.risk.dto.HisseRiskParametresiFormDto dto = new com.orion.risk.dto.HisseRiskParametresiFormDto();
+        dto.setHesapNo(entity.getAccount().getHesapNo());
+        dto.setKullaniciTipi(entity.getKullaniciTipi());
+        dto.setAlisKontrolTipi(entity.getAlisKontrolTipi());
+        dto.setSatisKontrolTipi(entity.getSatisKontrolTipi());
+        dto.setAcikSatisKontrolTipi(entity.getAcikSatisKontrolTipi());
+        dto.setAcikTakasLimiti(entity.getAcikTakasLimiti());
+        dto.setAcigaSatisLimiti(entity.getAcigaSatisLimiti());
+        dto.setNetVarlikLimitCarpani(entity.getNetVarlikLimitCarpani());
+        dto.setKredisizGrupAAlisYapabilir(entity.isKredisizGrupAAlisYapabilir());
+        dto.setGrupBAlisYapabilir(entity.isGrupBAlisYapabilir());
+        dto.setGrupCAlisYapabilir(entity.isGrupCAlisYapabilir());
+        dto.setGrupDAlisYapabilir(entity.isGrupDAlisYapabilir());
+        dto.setKredisizGrupANakitKontrol(entity.isKredisizGrupANakitKontrol());
+        dto.setGrupBNakitKontrol(entity.isGrupBNakitKontrol());
+        dto.setGrupCNakitKontrol(entity.isGrupCNakitKontrol());
+        dto.setGrupDNakitKontrol(entity.isGrupDNakitKontrol());
+        dto.setKredisizPaylardaKontrolsuzSatis(entity.isKredisizPaylardaKontrolsuzSatis());
+        return dto;
     }
 
     @Command

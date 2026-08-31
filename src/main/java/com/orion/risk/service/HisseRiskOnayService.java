@@ -11,11 +11,16 @@ import com.orion.risk.vm.NetVarlikCarpaniTopluSatir;
 import com.orion.workflow.domain.WorkflowProcess;
 import com.orion.workflow.repository.WorkflowProcessRepository;
 import com.orion.workflow.service.WorkflowTaskService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Hisse Risk Parametreleri ekranina ozel onay (approve/reject) is mantigi.
@@ -34,17 +39,23 @@ public class HisseRiskOnayService {
     private final HisseRiskParametreTalebiRepository talepRepository;
     private final HisseRiskParametresiRepository parametreRepository;
     private final AccountRepository accountRepository;
+    private final HisseRiskParametreleriService hisseRiskParametreleriService;
+    private final ObjectMapper objectMapper;
 
     public HisseRiskOnayService(WorkflowProcessRepository processRepository,
                                  WorkflowTaskService workflowTaskService,
                                  HisseRiskParametreTalebiRepository talepRepository,
                                  HisseRiskParametresiRepository parametreRepository,
-                                 AccountRepository accountRepository) {
+                                 AccountRepository accountRepository,
+                                 HisseRiskParametreleriService hisseRiskParametreleriService,
+                                 ObjectMapper objectMapper) {
         this.processRepository = processRepository;
         this.workflowTaskService = workflowTaskService;
         this.talepRepository = talepRepository;
         this.parametreRepository = parametreRepository;
         this.accountRepository = accountRepository;
+        this.hisseRiskParametreleriService = hisseRiskParametreleriService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -90,6 +101,7 @@ public class HisseRiskOnayService {
             talep.setTalepEden(talepEden);
             talep.setAccount(account);
             talep.setDurum("BEKLEMEDE");
+            talep.setTalepTuru("TOPLU_GUNCELLEME");
             talep.setOlusturmaTarihi(LocalDateTime.now());
 
             // JSON snapshots
@@ -114,6 +126,98 @@ public class HisseRiskOnayService {
     }
 
     /**
+     * Tekil (Ekle, Duzenle, Sil) talebi onay surecine gonderir.
+     */
+    @Transactional
+    public WorkflowProcess onayaGonderTekil(com.orion.risk.dto.HisseRiskParametresiFormDto yeniDeger,
+                                            com.orion.risk.dto.HisseRiskParametresiFormDto eskiDeger,
+                                            User talepEden,
+                                            String talepTuru) {
+        if (workflowTaskService.hasPendingProcess(SUREC_TIPI)) {
+            throw new IllegalStateException("Bu islem icin bekleyen bir onay sureci bulunmaktadir. Mevcut surec tamamlanmadan yeni bir onay gonderilemez.");
+        }
+
+        WorkflowProcess process = new WorkflowProcess();
+        process.setSurecTipi(SUREC_TIPI);
+        process.setBaslangicTarihi(LocalDateTime.now());
+        process.setDurum("ACIK");
+        process.setSurecNo("TEMP");
+        process.setReferansModul("RISK");
+        process = processRepository.save(process);
+        process.setSurecNo(String.valueOf(process.getId()));
+        process = processRepository.save(process);
+
+        String hesapNo = "SIL".equals(talepTuru) ? eskiDeger.getHesapNo() : yeniDeger.getHesapNo();
+        Account account = accountRepository.findByHesapNo(hesapNo);
+
+        HisseRiskParametreTalebi talep = new HisseRiskParametreTalebi();
+        talep.setProcess(process);
+        talep.setTalepEden(talepEden);
+        talep.setAccount(account);
+        talep.setDurum("BEKLEMEDE");
+        talep.setTalepTuru(talepTuru);
+        talep.setOlusturmaTarihi(LocalDateTime.now());
+
+        try {
+            talep.setOncekiDegerJson(eskiDeger == null ? "{}" : objectMapper.writeValueAsString(eskiDeger));
+            talep.setYeniDegerJson(yeniDeger == null ? "{}" : objectMapper.writeValueAsString(yeniDeger));
+            talep.setDegisiklikListesiJson(hesaplaFark(eskiDeger, yeniDeger, talepTuru));
+        } catch (Exception e) {
+            throw new RuntimeException("JSON donusum hatasi", e);
+        }
+
+        talepRepository.save(talep);
+
+        workflowTaskService.createOnayTasksForRole(process, SUREC_TIPI, talepEden.getId(),
+                "Risk Profili " + talepTuru + " Onay Islemi (" + hesapNo + ")");
+
+        return process;
+    }
+
+    private String hesaplaFark(com.orion.risk.dto.HisseRiskParametresiFormDto eskiDto, com.orion.risk.dto.HisseRiskParametresiFormDto yeniDto, String talepTuru) throws Exception {
+        List<Map<String, String>> farkListesi = new ArrayList<>();
+        if ("SIL".equals(talepTuru)) {
+            farkListesi.add(Map.of("alan", "Tüm Kayıt", "eskiDeger", "Mevcut", "yeniDeger", "SİLİNECEK"));
+            return objectMapper.writeValueAsString(farkListesi);
+        }
+        if ("EKLE".equals(talepTuru)) {
+            farkListesi.add(Map.of("alan", "Tüm Kayıt", "eskiDeger", "-", "yeniDeger", "YENI EKLENECEK"));
+            return objectMapper.writeValueAsString(farkListesi);
+        }
+
+        // DUZENLE
+        compareField(farkListesi, "Kullanici Tipi", eskiDto.getKullaniciTipi(), yeniDto.getKullaniciTipi());
+        compareField(farkListesi, "Alis Kontrol Tipi", eskiDto.getAlisKontrolTipi(), yeniDto.getAlisKontrolTipi());
+        compareField(farkListesi, "Satis Kontrol Tipi", eskiDto.getSatisKontrolTipi(), yeniDto.getSatisKontrolTipi());
+        compareField(farkListesi, "Acik Satis Kontrol Tipi", eskiDto.getAcikSatisKontrolTipi(), yeniDto.getAcikSatisKontrolTipi());
+        compareField(farkListesi, "Acik Takas Limiti", eskiDto.getAcikTakasLimiti(), yeniDto.getAcikTakasLimiti());
+        compareField(farkListesi, "Aciga Satis Limiti", eskiDto.getAcigaSatisLimiti(), yeniDto.getAcigaSatisLimiti());
+        compareField(farkListesi, "Net Varlik Limit Carpani", eskiDto.getNetVarlikLimitCarpani(), yeniDto.getNetVarlikLimitCarpani());
+        compareField(farkListesi, "Kredisiz A Grubu Alis", eskiDto.isKredisizGrupAAlisYapabilir(), yeniDto.isKredisizGrupAAlisYapabilir());
+        compareField(farkListesi, "B Grubu Alis", eskiDto.isGrupBAlisYapabilir(), yeniDto.isGrupBAlisYapabilir());
+        compareField(farkListesi, "C Grubu Alis", eskiDto.isGrupCAlisYapabilir(), yeniDto.isGrupCAlisYapabilir());
+        compareField(farkListesi, "D Grubu Alis", eskiDto.isGrupDAlisYapabilir(), yeniDto.isGrupDAlisYapabilir());
+        compareField(farkListesi, "Kredisiz A Grubu Nakit Kontrol", eskiDto.isKredisizGrupANakitKontrol(), yeniDto.isKredisizGrupANakitKontrol());
+        compareField(farkListesi, "B Grubu Nakit Kontrol", eskiDto.isGrupBNakitKontrol(), yeniDto.isGrupBNakitKontrol());
+        compareField(farkListesi, "C Grubu Nakit Kontrol", eskiDto.isGrupCNakitKontrol(), yeniDto.isGrupCNakitKontrol());
+        compareField(farkListesi, "D Grubu Nakit Kontrol", eskiDto.isGrupDNakitKontrol(), yeniDto.isGrupDNakitKontrol());
+        compareField(farkListesi, "Kredisiz Paylarda Kontrolsuz Satis", eskiDto.isKredisizPaylardaKontrolsuzSatis(), yeniDto.isKredisizPaylardaKontrolsuzSatis());
+
+        return objectMapper.writeValueAsString(farkListesi);
+    }
+
+    private void compareField(List<Map<String, String>> list, String alan, Object eskiDeger, Object yeniDeger) {
+        if (!Objects.equals(eskiDeger, yeniDeger)) {
+            Map<String, String> map = new HashMap<>();
+            map.put("alan", alan);
+            map.put("eskiDeger", eskiDeger != null ? eskiDeger.toString() : "");
+            map.put("yeniDeger", yeniDeger != null ? yeniDeger.toString() : "");
+            list.add(map);
+        }
+    }
+
+
+    /**
      * Talepleri onaylar: yeniDegerJson'daki degerleri hisse_risk_parametreleri
      * tablosuna uygular, talepleri ONAYLANDI yapar, sureci kapatir.
      */
@@ -126,18 +230,41 @@ public class HisseRiskOnayService {
             if (!"BEKLEMEDE".equals(talep.getDurum())) {
                 continue;
             }
-            // yeniDegerJson'dan net varlik limit carpani degerini oku
-            Integer yeniDeger = parseNetVarlikLimitCarpani(talep.getYeniDegerJson());
-            if (yeniDeger == null) {
-                continue;
-            }
-            // Bu account'a ait tum hisse risk parametrelerini guncelle
-            List<HisseRiskParametresi> parametreler = parametreRepository.findByAccountId(
-                    talep.getAccount().getId());
-            for (HisseRiskParametresi parametre : parametreler) {
-                parametre.setNetVarlikLimitCarpani(yeniDeger);
-                parametre.setGuncellemeTarihi(now);
-                parametreRepository.save(parametre);
+
+            if ("TOPLU_GUNCELLEME".equals(talep.getTalepTuru())) {
+                Integer yeniDeger = parseNetVarlikLimitCarpani(talep.getYeniDegerJson());
+                if (yeniDeger != null) {
+                    List<HisseRiskParametresi> parametreler = parametreRepository.findByAccountId(talep.getAccount().getId());
+                    for (HisseRiskParametresi parametre : parametreler) {
+                        parametre.setNetVarlikLimitCarpani(yeniDeger);
+                        parametre.setGuncellemeTarihi(now);
+                        parametreRepository.save(parametre);
+                    }
+                }
+            } else if ("SIL".equals(talep.getTalepTuru())) {
+                List<HisseRiskParametresi> parametreler = parametreRepository.findByAccountId(talep.getAccount().getId());
+                for (HisseRiskParametresi parametre : parametreler) {
+                    hisseRiskParametreleriService.sil(parametre.getId());
+                }
+            } else { // EKLE veya DUZENLE
+                try {
+                    com.orion.risk.dto.HisseRiskParametresiFormDto dto = objectMapper.readValue(talep.getYeniDegerJson(), com.orion.risk.dto.HisseRiskParametresiFormDto.class);
+                    Long id = null;
+                    if ("DUZENLE".equals(talep.getTalepTuru())) {
+                        List<HisseRiskParametresi> parametreler = parametreRepository.findByAccountId(talep.getAccount().getId());
+                        if (!parametreler.isEmpty()) {
+                            id = parametreler.get(0).getId();
+                        }
+                    }
+                    hisseRiskParametreleriService.kaydet(id, dto.getHesapNo(), dto.getKullaniciTipi(),
+                            dto.getAlisKontrolTipi(), dto.getSatisKontrolTipi(), dto.getAcikSatisKontrolTipi(),
+                            dto.getAcikTakasLimiti(), dto.getAcigaSatisLimiti(), dto.getNetVarlikLimitCarpani(),
+                            dto.isKredisizGrupAAlisYapabilir(), dto.isGrupBAlisYapabilir(), dto.isGrupCAlisYapabilir(), dto.isGrupDAlisYapabilir(),
+                            dto.isKredisizGrupANakitKontrol(), dto.isGrupBNakitKontrol(), dto.isGrupCNakitKontrol(), dto.isGrupDNakitKontrol(),
+                            dto.isKredisizPaylardaKontrolsuzSatis());
+                } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                    throw new RuntimeException("Onaylama islemi sirasinda JSON hatasi", e);
+                }
             }
 
             talep.setDurum("ONAYLANDI");

@@ -20,13 +20,13 @@
                 onClose="@command('diffPopupKapat')">
             <listbox model="@load(vm.degisiklikListesi)">
                 <listhead>
-                    <listheader label="Hesap No"/>
+                    <listheader label="Alan"/>
                     <listheader label="Eski Deger"/>
                     <listheader label="Yeni Deger"/>
                 </listhead>
                 <template name="model">
                     <listitem>
-                        <listcell label="@load(each.hesapNo)"/>
+                        <listcell label="@load(empty each.alan ? each.hesapNo : each.alan)"/>
                         <listcell label="@load(each.eskiDeger)"/>
                         <listcell label="@load(each.yeniDeger)"/>
                     </listitem>
@@ -147,28 +147,28 @@
                                 <row>
                                     <label value="Kullanici Tipi"/>
                                     <combobox value="@bind(vm.kullaniciTipi)" width="180px"
-                                              disabled="@load(not vm.yeniKayit)">
+                                              disabled="@load((not vm.yeniKayit) or vm.incelemeModu)">
                                         <comboitem label="Musteri"/>
                                         <comboitem label="Yatirim Danismani"/>
                                     </combobox>
                                     <label value="Hesap Tipi"/>
                                     <combobox value="@bind(vm.hesapTipi)" width="150px"
-                                              disabled="@load(not vm.yeniKayit)">
+                                              disabled="@load((not vm.yeniKayit) or vm.incelemeModu)">
                                         <comboitem label="Musteri"/>
                                         <comboitem label="Portfoy"/>
                                     </combobox>
                                     <label value="Musteri Adi"/>
                                     <textbox value="@bind(vm.musteriAdi)" width="200px"
-                                             disabled="@load(not vm.yeniKayit)"/>
+                                             disabled="@load((not vm.yeniKayit) or vm.incelemeModu)"/>
                                 </row>
                                 <row>
                                     <label value="Musteri No"/>
                                     <textbox value="@bind(vm.musteriNo)" width="180px"
-                                             disabled="@load(not vm.yeniKayit)"/>
+                                             disabled="@load((not vm.yeniKayit) or vm.incelemeModu)"/>
                                     <label value="Hesap No"/>
                                     <hbox spacing="6px" align="center">
                                         <textbox value="@bind(vm.hesapNo)" width="150px"
-                                                 disabled="@load(not vm.yeniKayit)"/>
+                                                 disabled="@load((not vm.yeniKayit) or vm.incelemeModu)"/>
                                         <button label="Bul" visible="@load(vm.yeniKayit)"
                                                 style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
                                                 onClick="@command('hesapBul')"/>
@@ -178,19 +178,19 @@
                                 </row>
                                 <row>
                                     <label value="Alis Kontrol"/>
-                                    <combobox value="@bind(vm.alisKontrolTipi)" width="180px">
+                                    <combobox value="@bind(vm.alisKontrolTipi)" width="180px" disabled="@load(vm.incelemeModu)">
                                         <comboitem label="SPK Kontrollu"/>
                                         <comboitem label="Nakit Kontrolu"/>
                                         <comboitem label="Kontrolsuz"/>
                                     </combobox>
                                     <label value="Satis Kontrol"/>
-                                    <combobox value="@bind(vm.satisKontrolTipi)" width="150px">
+                                    <combobox value="@bind(vm.satisKontrolTipi)" width="150px" disabled="@load(vm.incelemeModu)">
                                         <comboitem label="SPK Kontrollu"/>
                                         <comboitem label="Nakit Kontrolu"/>
                                         <comboitem label="Kontrolsuz"/>
                                     </combobox>
                                     <label value="Acik Satis Kontrol"/>
-                                    <combobox value="@bind(vm.acikSatisKontrolTipi)" width="180px">
+                                    <combobox value="@bind(vm.acikSatisKontrolTipi)" width="180px" disabled="@load(vm.incelemeModu)">
                                         <comboitem label="SPK Kontrollu"/>
                                         <comboitem label="Nakit Kontrolu"/>
                                         <comboitem label="Kontrolsuz"/>
@@ -198,11 +198,11 @@
                                 </row>
                                 <row>
                                     <label value="Acik Takas Limiti"/>
-                                    <decimalbox value="@bind(vm.acikTakasLimiti)" format="#,##0.00" width="150px"/>
+                                    <decimalbox value="@bind(vm.acikTakasLimiti)" format="#,##0.00" width="150px" disabled="@load(vm.incelemeModu)"/>
                                     <label value="Aciga Satis Limiti"/>
-                                    <decimalbox value="@bind(vm.acigaSatisLimiti)" format="#,##0.00" width="150px"/>
+                                    <decimalbox value="@bind(vm.acigaSatisLimiti)" format="#,##0.00" width="150px" disabled="@load(vm.incelemeModu)"/>
                                     <label value="Net Varlik Limit Carpani"/>
-                                    <combobox value="@bind(vm.netVarlikLimitCarpani)" width="80px">
+                                    <combobox value="@bind(vm.netVarlikLimitCarpani)" width="80px" disabled="@load(vm.incelemeModu)">
                                         <comboitem label="1"/>
                                         <comboitem label="2"/>
                                         <comboitem label="3"/>
@@ -216,53 +216,63 @@
                         <separator style="margin-top:12px"/>
                         <hbox spacing="30px" style="margin-top:6px">
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.kredisizGrupAAlisYapabilir)"/>
+                                <checkbox checked="@bind(vm.kredisizGrupAAlisYapabilir)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="Kredisiz A Grubu Alis Yapabilir"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupBAlisYapabilir)"/>
+                                <checkbox checked="@bind(vm.grupBAlisYapabilir)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="B Grubu Alis Yapabilir"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupCAlisYapabilir)"/>
+                                <checkbox checked="@bind(vm.grupCAlisYapabilir)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="C Grubu Alis Yapabilir"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupDAlisYapabilir)"/>
+                                <checkbox checked="@bind(vm.grupDAlisYapabilir)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="D Grubu Alis Yapabilir"/>
                             </hbox>
                         </hbox>
                         <hbox spacing="30px" style="margin-top:10px">
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.kredisizGrupANakitKontrol)"/>
+                                <checkbox checked="@bind(vm.kredisizGrupANakitKontrol)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="Kredisiz A Grubu Nakit Kontrol"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupBNakitKontrol)"/>
+                                <checkbox checked="@bind(vm.grupBNakitKontrol)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="B Grubu Nakit Kontrol"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupCNakitKontrol)"/>
+                                <checkbox checked="@bind(vm.grupCNakitKontrol)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="C Grubu Nakit Kontrol"/>
                             </hbox>
                             <hbox spacing="6px" align="center">
-                                <checkbox checked="@bind(vm.grupDNakitKontrol)"/>
+                                <checkbox checked="@bind(vm.grupDNakitKontrol)" disabled="@load(vm.incelemeModu)"/>
                                 <label value="D Grubu Nakit Kontrol"/>
                             </hbox>
                         </hbox>
                         <hbox spacing="6px" align="center" style="margin-top:10px">
-                            <checkbox checked="@bind(vm.kredisizPaylardaKontrolsuzSatis)"/>
+                            <checkbox checked="@bind(vm.kredisizPaylardaKontrolsuzSatis)" disabled="@load(vm.incelemeModu)"/>
                             <label value="Kredisiz Paylarda Kontrolsuz Satis"/>
                         </hbox>
 
                         <hbox spacing="10px" style="margin-top:16px">
-                            <button label="Sil" visible="@load(not vm.yeniKayit)"
+                            <button label="Sil" visible="@load((not vm.yeniKayit) and (not vm.incelemeModu))"
                                     style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
                                     onClick="@command('sil')"/>
-                            <button label="Kaydet" style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                            <button label="Kaydet" visible="@load(not vm.incelemeModu)"
+                                    style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
                                     onClick="@command('kaydet')"/>
-                            <button label="Kapat" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                            <button label="Kapat" visible="@load(not vm.incelemeModu)"
+                                    style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
                                     onClick="@command('detayKapat')"/>
+                            
+                            <!-- Inceleme Modu butonlari (Detay formu icinde gosterilir) -->
+                            <button label="Onayla" visible="@load(vm.incelemeModu and vm.onayBekliyor)"
+                                    style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('onayla')"/>
+                            <button label="Reddet" visible="@load(vm.incelemeModu and vm.onayBekliyor)"
+                                    style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                    onClick="@command('reddet')"/>
                         </hbox>
                     </groupbox>
                 </tabpanel>
@@ -317,10 +327,10 @@
                                 disabled="@load(not vm.onizlemeTumuGecerli)"
                                 style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
                                 onClick="@command('onayaGonder')"/>
-                        <button label="Onayla" visible="@load(vm.incelemeModu)"
+                        <button label="Onayla" visible="@load(vm.incelemeModu and vm.onayBekliyor)"
                                 style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
                                 onClick="@command('onayla')"/>
-                        <button label="Reddet" visible="@load(vm.incelemeModu)"
+                        <button label="Reddet" visible="@load(vm.incelemeModu and vm.onayBekliyor)"
                                 style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
                                 onClick="@command('reddet')"/>
                         <button label="Kapat" visible="@load(not vm.incelemeModu)"

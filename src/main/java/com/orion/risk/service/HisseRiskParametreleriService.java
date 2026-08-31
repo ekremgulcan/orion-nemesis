@@ -51,6 +51,7 @@ public class HisseRiskParametreleriService {
      * bulmak icin. Musteri No / Musteri Adi burada okunur, ama ekranda
      * hicbir alan bulunduktan sonra kilitlenmez (kullanicinin istegi).
      */
+    @Transactional
     public Account bulAccountByHesapNo(String hesapNo) {
         if (hesapNo == null || hesapNo.isBlank()) {
             throw new IllegalArgumentException("Hesap No bos birakilamaz");
@@ -59,6 +60,7 @@ public class HisseRiskParametreleriService {
         if (account == null) {
             throw new IllegalArgumentException("Hesap bulunamadi: " + hesapNo.trim());
         }
+        org.hibernate.Hibernate.initialize(account.getCustomer());
         return account;
     }
 

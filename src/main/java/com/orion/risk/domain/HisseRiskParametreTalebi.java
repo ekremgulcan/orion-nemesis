@@ -50,6 +50,9 @@ public class HisseRiskParametreTalebi {
     @Column(name = "durum", nullable = false)
     private String durum = "BEKLEMEDE"; // BEKLEMEDE / ONAYLANDI / REDDEDILDI
 
+    @Column(name = "talep_turu", nullable = false)
+    private String talepTuru; // TOPLU_GUNCELLEME, EKLE, DUZENLE, SIL
+
     @Column(name = "onceki_deger_json", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String oncekiDegerJson;
 
