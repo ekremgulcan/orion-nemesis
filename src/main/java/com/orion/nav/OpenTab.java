@@ -13,10 +13,19 @@ public class OpenTab {
     private final String baslik;
     private final String zulPath;
     private final boolean closable;
+    private final Long incelemeProcessId;
 
-    public OpenTab(String baslik, String zulPath, boolean closable) {
+    public OpenTab(String baslik, String zulPath, boolean closable, Long incelemeProcessId) {
         this.baslik = baslik;
         this.zulPath = zulPath;
         this.closable = closable;
+        this.incelemeProcessId = incelemeProcessId;
+    }
+
+    public String getFullZulPath() {
+        if (incelemeProcessId != null) {
+            return zulPath + "?incelemeProcessId=" + incelemeProcessId;
+        }
+        return zulPath;
     }
 }

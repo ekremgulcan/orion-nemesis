@@ -15,4 +15,8 @@ public interface WorkflowTaskRepository extends JpaRepository<WorkflowTask, Long
 
     @Query("select t from WorkflowTask t join fetch t.process join fetch t.sahip")
     List<WorkflowTask> findAllFetched();
+
+    @Query("select t from WorkflowTask t join fetch t.process join fetch t.sahip "
+            + "where t.process.id = :processId and t.durum = :durum")
+    List<WorkflowTask> findByProcessIdAndDurum(@Param("processId") Long processId, @Param("durum") String durum);
 }

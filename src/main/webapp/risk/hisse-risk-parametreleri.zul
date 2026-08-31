@@ -14,6 +14,25 @@
     <window apply="org.zkoss.bind.BindComposer"
             viewModel="@id('vm') @init('com.orion.risk.vm.HisseRiskParametreleriViewModel')"
             style="padding:16px">
+        <!-- Inceleme Modu: Diff Popup -->
+        <window title="Degistirilen Alanlar" mode="modal" width="700px" 
+                visible="@load(vm.diffPopupAcik)" closable="true"
+                onClose="@command('diffPopupKapat')">
+            <listbox model="@load(vm.degisiklikListesi)">
+                <listhead>
+                    <listheader label="Hesap No"/>
+                    <listheader label="Eski Deger"/>
+                    <listheader label="Yeni Deger"/>
+                </listhead>
+                <template name="model">
+                    <listitem>
+                        <listcell label="@load(each.hesapNo)"/>
+                        <listcell label="@load(each.eskiDeger)"/>
+                        <listcell label="@load(each.yeniDeger)"/>
+                    </listitem>
+                </template>
+            </listbox>
+        </window>
 
         <tabbox>
             <tabs>
@@ -253,14 +272,17 @@
                     <groupbox closable="false" style="margin-top:10px">
                         <caption label="Excel ile Toplu Guncelleme"/>
                         <label value="Excel'de 2 sutun beklenir: Hesap No (A) ve Net Varlik Limit Carpani (B, 1-5 arasi). Bir Hesap No'ya bagli Musteri VE Yatirim Danismani kaydi varsa ikisi de guncellenir."
-                               style="color:#7a8a99;font-size:0.9em"/>
+                               style="color:#7a8a99;font-size:0.9em"
+                               visible="@load(not vm.incelemeModu)"/>
                         <hbox spacing="10px" style="margin-top:10px">
                             <button label="Sablon Indir" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                                    visible="@load(not vm.incelemeModu)"
                                     onClick="@command('topluSablonIndir')"/>
                             <button label="Excel Yukle" upload="true,maxsize=-1"
+                                    disabled="@load(vm.incelemeModu)"
                                     onUpload="@command('dosyaYuklendi', media=event.media)"
                                     style="background:#2f6fad !important;color:white !important;text-shadow:none !important"/>
-                            <button label="Onizlemeyi Temizle" visible="@load(vm.onizlemeYapildi)"
+                            <button label="Onizlemeyi Temizle" visible="@load(vm.onizlemeYapildi and not vm.incelemeModu)"
                                     style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
                                     onClick="@command('onizlemeTemizle')"/>
                         </hbox>
@@ -291,11 +313,18 @@
                            style="color:#c85c5c;font-weight:bold;margin-top:10px"/>
 
                     <hbox spacing="10px" style="margin-top:16px">
-                        <button label="Onaya Gonder" visible="@load(vm.onizlemeYapildi)"
+                        <button label="Onaya Gonder" visible="@load(vm.onizlemeYapildi and not vm.incelemeModu)"
                                 disabled="@load(not vm.onizlemeTumuGecerli)"
                                 style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
                                 onClick="@command('onayaGonder')"/>
-                        <button label="Kapat" style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
+                        <button label="Onayla" visible="@load(vm.incelemeModu)"
+                                style="background:#4caf50 !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('onayla')"/>
+                        <button label="Reddet" visible="@load(vm.incelemeModu)"
+                                style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                                onClick="@command('reddet')"/>
+                        <button label="Kapat" visible="@load(not vm.incelemeModu)"
+                                style="background:#8a97a3 !important;color:white !important;text-shadow:none !important"
                                 onClick="@command('topluGuncellemeKapat')"/>
                     </hbox>
                 </tabpanel>

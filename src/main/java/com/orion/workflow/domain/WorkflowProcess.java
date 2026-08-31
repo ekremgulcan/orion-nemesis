@@ -34,4 +34,23 @@ public class WorkflowProcess {
 
     @Column(name = "referans_id")
     private Long referansId;
+
+    /**
+     * Surec tipinin kullaniciya gorunecek adi. Gorev listesi ekraninda
+     * ham kod yerine bu deger gosterilir. Yeni onay ekranlari eklendiginde
+     * buraya bir case daha eklenmeli.
+     */
+    @Transient
+    public String getGorunenAd() {
+        if (surecTipi == null) {
+            return "";
+        }
+        switch (surecTipi) {
+            case "HISSE_RISK_PARAMETRELERI_ONAY":
+                return "Hisse Risk Tanimlama";
+            // future: case "BILDIRIM_AYARLARI_ONAY": return "Bildirim Ayarlari";
+            default:
+                return surecTipi;
+        }
+    }
 }

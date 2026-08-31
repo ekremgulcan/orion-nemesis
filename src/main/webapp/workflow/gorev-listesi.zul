@@ -20,9 +20,9 @@
                             <listheader label="Sahip" width="150px"/>
                         </listhead>
                         <template name="model">
-                            <listitem>
+                            <listitem onClick="@command('gorevSec', task=each)">
                                 <listcell label="@load(each.process.surecNo)"/>
-                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.process.gorunenAd)"/>
                                 <listcell label="@load(each.gorevOzeti)"/>
                                 <listcell label="@load(each.sahip.adSoyad)"/>
                             </listitem>
@@ -38,9 +38,9 @@
                             <listheader label="Sahip" width="150px"/>
                         </listhead>
                         <template name="model">
-                            <listitem>
+                            <listitem onClick="@command('gorevSec', task=each)">
                                 <listcell label="@load(each.process.surecNo)"/>
-                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.process.gorunenAd)"/>
                                 <listcell label="@load(each.gorevOzeti)"/>
                                 <listcell label="@load(each.sahip.adSoyad)"/>
                             </listitem>
@@ -57,9 +57,9 @@
                             <listheader label="Durum" width="120px"/>
                         </listhead>
                         <template name="model">
-                            <listitem>
+                            <listitem onClick="@command('gorevSec', task=each)">
                                 <listcell label="@load(each.process.surecNo)"/>
-                                <listcell label="@load(each.process.surecTipi)"/>
+                                <listcell label="@load(each.process.gorunenAd)"/>
                                 <listcell label="@load(each.gorevOzeti)"/>
                                 <listcell label="@load(each.sahip.adSoyad)"/>
                                 <listcell label="@load(each.durum)"/>

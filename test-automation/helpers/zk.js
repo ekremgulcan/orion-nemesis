@@ -14,7 +14,7 @@ async function clickButtonByText(page, text) {
   for (const b of buttons) {
     const t = await page.evaluate((el) => el.textContent.trim(), b);
     if (t === text) {
-      await b.click();
+      await page.evaluate(el => el.click(), b);
       return true;
     }
   }

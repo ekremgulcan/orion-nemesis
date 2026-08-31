@@ -86,7 +86,7 @@
                 <tabpanels vflex="1" children="@load(vm.openTabs)">
                     <template name="children">
                         <tabpanel style="overflow:auto;height:100%">
-                            <include src="@load(each.zulPath)"/>
+                            <include src="@load(each.fullZulPath)"/>
                         </tabpanel>
                     </template>
                 </tabpanels>

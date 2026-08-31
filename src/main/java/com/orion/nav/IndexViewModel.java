@@ -6,9 +6,11 @@ import com.orion.core.repository.UserRepository;
 import com.orion.core.service.AktifKullaniciServisi;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
+import org.zkoss.bind.annotation.GlobalCommand;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 
+import java.util.ArrayList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +47,7 @@ public class IndexViewModel {
     public void init() {
         menuItems = menuRegistry.getMenuItems();
         openTabs = new ArrayList<>();
-        selectedTab = new OpenTab(HOME_BASLIK, HOME_ZUL, false);
+        selectedTab = new OpenTab(HOME_BASLIK, HOME_ZUL, false, null);
         openTabs.add(selectedTab);
         kullaniciSecenekleri = userRepository.findAllFetched();
         aktifKullaniciAdi = aktifKullaniciServisi.getAktifKullaniciAdi();
@@ -76,7 +78,7 @@ public class IndexViewModel {
         if (eskiHome != null) {
             int index = openTabs.indexOf(eskiHome);
             openTabs.remove(index);
-            OpenTab yeniHome = new OpenTab(HOME_BASLIK, HOME_ZUL, false);
+            OpenTab yeniHome = new OpenTab(HOME_BASLIK, HOME_ZUL, false, null);
             openTabs.add(index, yeniHome);
             if (selectedTab == eskiHome) {
                 selectedTab = yeniHome;
@@ -135,7 +137,7 @@ public class IndexViewModel {
             return;
         }
 
-        OpenTab yeni = new OpenTab(baslik, zulPath, true);
+        OpenTab yeni = new OpenTab(baslik, zulPath, true, null);
         openTabs.add(yeni);
         selectedTab = yeni;
     }
@@ -147,7 +149,7 @@ public class IndexViewModel {
         if (existing != null) {
             selectedTab = existing;
         } else {
-            OpenTab home = new OpenTab(HOME_BASLIK, HOME_ZUL, false);
+            OpenTab home = new OpenTab(HOME_BASLIK, HOME_ZUL, false, null);
             openTabs.add(0, home);
             selectedTab = home;
         }
@@ -170,6 +172,67 @@ public class IndexViewModel {
         if (selectedTab == tab) {
             int newIndex = Math.max(0, index - 1);
             selectedTab = openTabs.isEmpty() ? null : openTabs.get(Math.min(newIndex, openTabs.size() - 1));
+        }
+    }
+
+    // --- @GlobalCommand alicilari (ic ViewModel'lerden cross-VM navigasyon) ---
+
+    /**
+     * GorevListesiViewModel'den cagirilir: gorev tiklandiginda hedef ekrani
+     * yeni bir sekmede acar. Session attribute'lari (inceleme_process_id)
+     * ayri olarak set edilmis olmali.
+     */
+    @GlobalCommand
+    @NotifyChange({"openTabs", "selectedTab"})
+    public void openReviewTab(@BindingParam("zulPath") String zulPath,
+                               @BindingParam("baslik") String baslik,
+                               @BindingParam("incelemeProcessId") Long incelemeProcessId) {
+        // Ayni zulPath + baslik aciksa tekrar acma
+        OpenTab existing = findTab(zulPath, baslik);
+        if (existing != null) {
+            selectedTab = existing;
+            return;
+        }
+        OpenTab yeni = new OpenTab(baslik, zulPath, true, incelemeProcessId);
+        openTabs.add(yeni);
+        selectedTab = yeni;
+    }
+
+    /**
+     * HisseRiskParametreleriViewModel'den (veya ileride diger inceleme
+     * ekranlarindan) cagirilir: onay/red sonrasi inceleme sekmesini kapatir,
+     * Ana Sayfa sekmesini yeniler (gorev listesi verisinin guncellenmesi icin)
+     * ve Ana Sayfa'ya gecer.
+     */
+    @GlobalCommand
+    @NotifyChange({"openTabs", "selectedTab"})
+    public void closeReviewAndGoHome(@BindingParam("zulPath") String zulPath,
+                                     @BindingParam("incelemeProcessId") Long incelemeProcessId) {
+        // 1) Inceleme sekmesini bul ve kapat
+        OpenTab reviewTab = null;
+        for (OpenTab tab : openTabs) {
+            if (tab.getZulPath().equals(zulPath) &&
+                (tab.getIncelemeProcessId() != null && tab.getIncelemeProcessId().equals(incelemeProcessId))) {
+                reviewTab = tab;
+                break;
+            }
+        }
+        if (reviewTab != null) {
+            openTabs.remove(reviewTab);
+        }
+
+        // 2) Ana Sayfa sekmesini yeniden olustur (gorev listesini tazele)
+        OpenTab eskiHome = findTab(HOME_ZUL, HOME_BASLIK);
+        if (eskiHome != null) {
+            int index = openTabs.indexOf(eskiHome);
+            openTabs.remove(index);
+            OpenTab yeniHome = new OpenTab(HOME_BASLIK, HOME_ZUL, false, null);
+            openTabs.add(index, yeniHome);
+            selectedTab = yeniHome;
+        } else {
+            OpenTab yeniHome = new OpenTab(HOME_BASLIK, HOME_ZUL, false, null);
+            openTabs.add(0, yeniHome);
+            selectedTab = yeniHome;
         }
     }
 

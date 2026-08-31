@@ -2,14 +2,20 @@ package com.orion.risk.vm;
 
 import com.orion.core.config.SpringContextHolder;
 import com.orion.core.domain.Account;
+import com.orion.core.domain.User;
+import com.orion.core.service.AktifKullaniciServisi;
+import com.orion.risk.domain.HisseRiskParametreTalebi;
 import com.orion.risk.domain.HisseRiskParametresi;
+import com.orion.risk.service.HisseRiskOnayService;
 import com.orion.risk.service.HisseRiskParametreleriService;
+import org.zkoss.bind.BindUtils;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.util.media.AMedia;
 import org.zkoss.util.media.Media;
+import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Filedownload;
 import org.zkoss.zul.Messagebox;
@@ -22,7 +28,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * "Hisse Risk Parametreleri" ekrani (Yeni Hisse Emir Yonetimi ust menusu).
@@ -38,12 +46,18 @@ import java.util.List;
  * YENI KAYIT modunda acildiginda hicbir alan kilitlenmez (kullanicinin
  * talebi) - Hesap No'ya gore "Bul" ile hesap/musteri bilgileri doldurulur
  * ama sonrasinda serbestce degistirilebilir.
+ *
+ * INCELEME MODU: GorevListesiViewModel'den acildiginda (session attribute
+ * "inceleme_process_id" varsa) degisiklik onizleme popup'i gosterilir,
+ * kapandiktan sonra ekran salt-okunur olur + Onayla/Reddet butonlari gorunur.
  */
 public class HisseRiskParametreleriViewModel {
 
     private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final HisseRiskParametreleriService service = SpringContextHolder.getBean(HisseRiskParametreleriService.class);
+    private final HisseRiskOnayService onayService = SpringContextHolder.getBean(HisseRiskOnayService.class);
+    private final AktifKullaniciServisi aktifKullaniciServisi = SpringContextHolder.getBean(AktifKullaniciServisi.class);
 
     // --- Tab 1: Risk profilleri (arama + liste) ---
     private List<HisseRiskParametresi> parametreler;
@@ -84,9 +98,62 @@ public class HisseRiskParametreleriViewModel {
     private boolean grupDNakitKontrol;
     private boolean kredisizPaylardaKontrolsuzSatis;
 
+    // --- Inceleme modu (onay/red akisi) ---
+    private boolean incelemeModu;
+    private Long incelemeProcessId;
+    private boolean diffPopupAcik;
+    private List<Map<String, String>> degisiklikListesi = new ArrayList<>();
+    /** Inceleme modunda acilan sekmenin zulPath'i — closeReviewAndGoHome icin gerekli. */
+    private String incelemeZulPath;
+
     @Init
-    public void init() {
+    public void init(@org.zkoss.bind.annotation.QueryParam("incelemeProcessId") Long incelemeProcessId) {
         parametreler = service.getAll();
+
+        if (incelemeProcessId != null) {
+            this.incelemeProcessId = incelemeProcessId;
+            incelemeModuBaslat();
+        }
+    }
+
+    /**
+     * Session'dan okunan process id ile inceleme modunu baslatir:
+     * talepleri yukler, diff popup verisi hazirlar, toplu guncelleme
+     * tab'ini acar ve diff popup'ini gosterir.
+     */
+    private void incelemeModuBaslat() {
+        List<HisseRiskParametreTalebi> talepler = onayService.getTaleplerForReview(incelemeProcessId);
+        if (talepler.isEmpty()) {
+            return;
+        }
+
+        // Onizleme satirlarini taleplerden olustur
+        onizlemeSatirlari = new ArrayList<>();
+        degisiklikListesi = new ArrayList<>();
+        for (HisseRiskParametreTalebi talep : talepler) {
+            NetVarlikCarpaniTopluSatir satir = new NetVarlikCarpaniTopluSatir();
+            satir.setHesapNo(talep.getAccount().getHesapNo());
+            // Basit JSON parse - eskiDeger ve yeniDeger
+            satir.setEskiDeger(parseIntFromJson(talep.getOncekiDegerJson()));
+            satir.setYeniDeger(parseIntFromJson(talep.getYeniDegerJson()));
+            satir.setGecerli(true);
+            satir.setDurum("Onay Bekliyor");
+            onizlemeSatirlari.add(satir);
+
+            // Diff popup icin
+            Map<String, String> diffRow = new HashMap<>();
+            diffRow.put("hesapNo", talep.getAccount().getHesapNo());
+            diffRow.put("eskiDeger", String.valueOf(satir.getEskiDeger()));
+            diffRow.put("yeniDeger", String.valueOf(satir.getYeniDeger()));
+            degisiklikListesi.add(diffRow);
+        }
+
+        incelemeModu = true;
+        onizlemeYapildi = true;
+        diffPopupAcik = true;
+        topluGuncellemeAcik = true;
+        selectedTabIndex = 2;
+        incelemeZulPath = "/risk/hisse-risk-parametreleri.zul";
     }
 
     // --- Getter/Setter ---
@@ -316,6 +383,20 @@ public class HisseRiskParametreleriViewModel {
         this.kredisizPaylardaKontrolsuzSatis = kredisizPaylardaKontrolsuzSatis;
     }
 
+    // --- Inceleme modu getter'lari ---
+
+    public boolean isIncelemeModu() {
+        return incelemeModu;
+    }
+
+    public boolean isDiffPopupAcik() {
+        return diffPopupAcik;
+    }
+
+    public List<Map<String, String>> getDegisiklikListesi() {
+        return degisiklikListesi;
+    }
+
     // --- Tab 1 komutlari ---
 
     @Command
@@ -486,26 +567,34 @@ public class HisseRiskParametreleriViewModel {
         Filedownload.save(media);
     }
 
+    /**
+     * "Onaya Gonder" butonu — artik dogrudan DB'ye yazmak yerine
+     * HisseRiskOnayService uzerinden onay surecine yonlendirir.
+     * Bekleyen surec varsa hata mesaji gosterir.
+     */
     @Command
     @NotifyChange({"parametreler", "onizlemeSatirlari", "onizlemeYapildi", "onizlemeTumuGecerli", "topluGuncellemeAcik", "selectedTabIndex"})
     public void onayaGonder() {
         if (onizlemeSatirlari.isEmpty()) {
             return;
         }
-        // Buton zaten gecersiz satir varken disabled olur (bkz. onizlemeTumuGecerli), ama
-        // komut yine de dogrudan tetiklenirse (orn. programatik) burada ikinci bir kapi var.
         if (!isOnizlemeTumuGecerli()) {
             Messagebox.show("Onizlemede gecersiz satirlar var (hesap/deger hatali). Once Excel dosyasini duzeltip tekrar yukleyin.",
                     "Hata", Messagebox.OK, Messagebox.ERROR);
             return;
         }
-        int guncellenen = service.topluGuncelle(onizlemeSatirlari);
-        parametreler = service.search(aramaMusteriNo, aramaHesapNo, aramaKullaniciTipi);
+        try {
+            User talepEden = aktifKullaniciServisi.getAktifKullanici();
+            onayService.onayaGonder(onizlemeSatirlari, talepEden);
+        } catch (IllegalStateException ex) {
+            Messagebox.show(ex.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+            return;
+        }
         onizlemeSatirlari = new ArrayList<>();
         onizlemeYapildi = false;
         topluGuncellemeAcik = false;
         selectedTabIndex = 0;
-        Messagebox.show(guncellenen + " risk profili guncellendi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
+        Messagebox.show("Onaya gonderilmistir.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
     }
 
     @Command
@@ -522,6 +611,55 @@ public class HisseRiskParametreleriViewModel {
         selectedTabIndex = 0;
         onizlemeSatirlari = new ArrayList<>();
         onizlemeYapildi = false;
+    }
+
+    // --- Inceleme modu komutlari ---
+
+    @Command
+    @NotifyChange("diffPopupAcik")
+    public void diffPopupKapat() {
+        diffPopupAcik = false;
+    }
+
+    /**
+     * Inceleme modunda "Onayla" butonu: degisiklikleri uygular, sureci
+     * kapatir, IndexViewModel'e "closeReviewAndGoHome" gonderir.
+     */
+    @Command
+    public void onayla() {
+        if (!incelemeModu || incelemeProcessId == null) {
+            return;
+        }
+        User kararVeren = aktifKullaniciServisi.getAktifKullanici();
+        onayService.onayla(incelemeProcessId, kararVeren);
+        Messagebox.show("Onay islemi tamamlandi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                event -> anaSayfayaDon());
+    }
+
+    /**
+     * Inceleme modunda "Reddet" butonu: degisiklikleri uygulamaz, sureci
+     * kapatir, IndexViewModel'e "closeReviewAndGoHome" gonderir.
+     */
+    @Command
+    public void reddet() {
+        if (!incelemeModu || incelemeProcessId == null) {
+            return;
+        }
+        User kararVeren = aktifKullaniciServisi.getAktifKullanici();
+        onayService.reddet(incelemeProcessId, kararVeren);
+        Messagebox.show("Red islemi tamamlandi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                event -> anaSayfayaDon());
+    }
+
+    /**
+     * Messagebox kapandiktan sonra IndexViewModel'e inceleme sekmesini
+     * kapatmasini ve Ana Sayfa'ya donmesini soyler.
+     */
+    private void anaSayfayaDon() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("zulPath", incelemeZulPath != null ? incelemeZulPath : "/risk/hisse-risk-parametreleri.zul");
+        args.put("incelemeProcessId", incelemeProcessId);
+        BindUtils.postGlobalCommand(null, null, "closeReviewAndGoHome", args);
     }
 
     private void temizleDetayFormu() {
@@ -547,4 +685,32 @@ public class HisseRiskParametreleriViewModel {
         grupDNakitKontrol = false;
         kredisizPaylardaKontrolsuzSatis = false;
     }
+
+    /**
+     * Basit JSON parser — {"netVarlikLimitCarpani":3} formatindan degeri okur.
+     */
+    private static Integer parseIntFromJson(String json) {
+        if (json == null) {
+            return null;
+        }
+        try {
+            int idx = json.indexOf("\"netVarlikLimitCarpani\":");
+            if (idx < 0) {
+                return null;
+            }
+            String afterKey = json.substring(idx + "\"netVarlikLimitCarpani\":".length());
+            StringBuilder sb = new StringBuilder();
+            for (char c : afterKey.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    sb.append(c);
+                } else if (sb.length() > 0) {
+                    break;
+                }
+            }
+            return sb.length() > 0 ? Integer.parseInt(sb.toString()) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
+
