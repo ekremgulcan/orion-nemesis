@@ -41,7 +41,10 @@ public class GorevListesiViewModel {
     public void init() {
         String aktifKullaniciAdi = aktifKullaniciServisi.getAktifKullaniciAdi();
         uzerimdekiGorevler = workflowTaskService.getAcikGorevler(aktifKullaniciAdi);
-        tamamlanmisGorevler = workflowTaskService.getTamamlanmisGorevler(aktifKullaniciAdi);
+        tamamlanmisGorevler = workflowTaskService.getTamamlanmisGorevler(aktifKullaniciAdi)
+                .stream()
+                .filter(t -> t.getProcess().getIslemSonucu() != null)
+                .collect(java.util.stream.Collectors.toList());
         tumGorevler = workflowTaskService.getTumGorevler();
     }
 

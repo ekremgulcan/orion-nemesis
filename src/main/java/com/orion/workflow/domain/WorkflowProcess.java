@@ -35,6 +35,9 @@ public class WorkflowProcess {
     @Column(name = "referans_id")
     private Long referansId;
 
+    @Column(name = "islem_sonucu")
+    private String islemSonucu; // ONAYLANDI / REDDEDILDI
+
     /**
      * Surec tipinin kullaniciya gorunecek adi. Gorev listesi ekraninda
      * ham kod yerine bu deger gosterilir. Yeni onay ekranlari eklendiginde

@@ -276,6 +276,7 @@ public class HisseRiskOnayService {
         // Sureci kapat
         WorkflowProcess process = processRepository.findById(processId).orElseThrow();
         process.setDurum("TAMAMLANDI");
+        process.setIslemSonucu("ONAYLANDI");
         processRepository.save(process);
 
         // Tum gorevleri kapat
@@ -304,6 +305,7 @@ public class HisseRiskOnayService {
         // Sureci kapat
         WorkflowProcess process = processRepository.findById(processId).orElseThrow();
         process.setDurum("TAMAMLANDI");
+        process.setIslemSonucu("REDDEDILDI");
         processRepository.save(process);
 
         // Tum gorevleri kapat

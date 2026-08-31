@@ -36,6 +36,7 @@
                             <listheader label="Surec Adi" width="200px"/>
                             <listheader label="Gorev Ozeti"/>
                             <listheader label="Sahip" width="150px"/>
+                            <listheader label="Islem Sonucu" width="120px"/>
                         </listhead>
                         <template name="model">
                             <listitem onClick="@command('gorevSec', task=each)">
@@ -43,6 +44,8 @@
                                 <listcell label="@load(each.process.gorunenAd)"/>
                                 <listcell label="@load(each.gorevOzeti)"/>
                                 <listcell label="@load(each.sahip.adSoyad)"/>
+                                <listcell label="@load(empty each.process.islemSonucu ? 'BILINMIYOR' : each.process.islemSonucu)"
+                                          style="@load(each.process.islemSonucu eq 'ONAYLANDI' ? 'color:#2f9e44;font-weight:bold' : (each.process.islemSonucu eq 'REDDEDILDI' ? 'color:#c85c5c;font-weight:bold' : ''))"/>
                             </listitem>
                         </template>
                     </listbox>
