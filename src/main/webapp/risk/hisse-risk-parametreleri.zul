@@ -18,6 +18,8 @@
         <window title="Degistirilen Alanlar" mode="modal" width="700px" 
                 visible="@load(vm.diffPopupAcik)" closable="true"
                 onClose="@command('diffPopupKapat')">
+            <label value="Asagidaki parametre degisiklikleri onay beklemektedir:"
+                   style="color:#2f6fad;font-weight:bold;font-size:14px;display:block;margin-bottom:10px;padding:0 8px"/>
             <listbox model="@load(vm.degisiklikListesi)">
                 <listhead>
                     <listheader label="Alan"/>

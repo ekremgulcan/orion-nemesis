@@ -51,7 +51,8 @@ public class WorkflowProcess {
         switch (surecTipi) {
             case "HISSE_RISK_PARAMETRELERI_ONAY":
                 return "Hisse Risk Tanimlama";
-            // future: case "BILDIRIM_AYARLARI_ONAY": return "Bildirim Ayarlari";
+            case "MUSTERI_BILDIRIM_TERCIHLERI_ONAY":
+                return "Musteri Bildirim Tercihleri";
             default:
                 return surecTipi;
         }

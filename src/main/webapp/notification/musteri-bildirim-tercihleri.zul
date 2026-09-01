@@ -57,7 +57,10 @@
         <label value="Musteri Bildirim Tercihleri Ekrani"
                style="color:#2f6fad;font-size:20px;font-weight:bold"/>
 
-        <musteriSorgulamaKutusu/>
+        <!-- Inceleme modunda musteri sorgulama gizlenir (musteri otomatik yuklenir) -->
+        <div visible="@load(not vm.incelemeModu)">
+            <musteriSorgulamaKutusu/>
+        </div>
 
         <div visible="@load(vm.musteriBulunduMu)">
             <musteriBilgiPaneli/>
@@ -101,7 +104,7 @@
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
                                     <label value="&#128274;" visible="@load(not each.pushEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.pushAcik)"
-                                              disabled="@load(not each.pushEditable)"/>
+                                              disabled="@load(not each.pushEditable or vm.incelemeModu)"/>
                                     <label value="@load(each.pushAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>
@@ -109,7 +112,7 @@
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
                                     <label value="&#128274;" visible="@load(not each.smsEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.smsAcik)"
-                                              disabled="@load(not each.smsEditable)"/>
+                                              disabled="@load(not each.smsEditable or vm.incelemeModu)"/>
                                     <label value="@load(each.smsAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>
@@ -117,7 +120,7 @@
                                 <n:div style="display:flex;align-items:center;justify-content:center;gap:6px">
                                     <label value="&#128274;" visible="@load(not each.epostaEditable)"/>
                                     <checkbox sclass="toggle-switch" checked="@bind(each.epostaAcik)"
-                                              disabled="@load(not each.epostaEditable)"/>
+                                              disabled="@load(not each.epostaEditable or vm.incelemeModu)"/>
                                     <label value="@load(each.epostaAcik ? 'Acik' : 'Kapali')"/>
                                 </n:div>
                             </listcell>
@@ -125,12 +128,55 @@
                     </template>
                 </listbox>
 
-                <n:div style="padding:0 16px 12px;display:flex;justify-content:flex-end;margin-top:8px">
+                <n:div style="padding:0 16px 12px;display:flex;justify-content:flex-end;margin-top:8px;gap:8px">
+                    <!-- Normal mod: Onaya Gonder butonu -->
                     <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
                             style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
-                            onClick="@command('onayaGonder')"/>
+                            onClick="@command('onayaGonder')"
+                            visible="@load(not vm.incelemeModu)"/>
+
+                    <!-- Inceleme modu: Onayla / Reddet butonlari -->
+                    <button label="Onayla" iconSclass="z-icon-check"
+                            style="background:#2f9e44 !important;color:white !important;text-shadow:none !important"
+                            onClick="@command('onaylaCommand')"
+                            visible="@load(vm.onayBekliyor)"/>
+                    <button label="Reddet" iconSclass="z-icon-times"
+                            style="background:#c85c5c !important;color:white !important;text-shadow:none !important"
+                            onClick="@command('reddetCommand')"
+                            visible="@load(vm.onayBekliyor)"/>
                 </n:div>
             </groupbox>
         </div>
+
+        <!-- Degisiklik Onizleme Popup (Diff) -->
+        <window title="Degisiklik Onizleme" mode="modal" border="normal"
+                width="650px" closable="true"
+                visible="@load(vm.diffPopupAcik)"
+                onClose="@command('closeDiffPopup')"
+                style="padding:16px">
+            <label value="Asagidaki tercih degisiklikleri onay beklemektedir:"
+                   style="color:#2f6fad;font-weight:bold;font-size:14px;display:block;margin-bottom:10px"/>
+            <listbox model="@load(vm.degisiklikListesi)" emptyMessage="Degisiklik bulunamadi">
+                <listhead>
+                    <listheader label="Kategori" width="200px"/>
+                    <listheader label="Kanal" width="130px"/>
+                    <listheader label="Eski Deger" width="110px"/>
+                    <listheader label="Yeni Deger" width="110px"/>
+                </listhead>
+                <template name="model">
+                    <listitem>
+                        <listcell label="@load(each.kategori)"/>
+                        <listcell label="@load(each.alan)"/>
+                        <listcell label="@load(each.eskiDeger)"
+                                  style="color:#c85c5c;font-weight:bold"/>
+                        <listcell label="@load(each.yeniDeger)"
+                                  style="color:#2f9e44;font-weight:bold"/>
+                    </listitem>
+                </template>
+            </listbox>
+            <n:div style="text-align:right;margin-top:12px">
+                <button label="Kapat" onClick="@command('closeDiffPopup')"/>
+            </n:div>
+        </window>
     </window>
 </zk>

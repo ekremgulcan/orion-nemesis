@@ -28,10 +28,34 @@ Built Bildirim Izleme, Musteri Bildirim Tercihleri (v1 per-type then v2 per-cate
 **Degisen dosyalar:**
 - `src/main/resources/db/migration/V47__hisse_risk_onay_schema.sql` — new, committed.
 
+## [2026-08-31] Phase 2-4: Hisse Risk Parametreleri Approval Flow Complete
+
+**Yapilanlar:**
+- Re-implemented single-record approval flow for Hisse Risk Parametreleri (Phase 2 & 3).
+- Added `HisseRiskOnayService` to orchestrate approvals and rejections (deserializing `yeni_deger_json` back to DTOs for processing).
+- Fixed ZK UI logic to conditionally show form fields and `Onayla`/`Reddet` buttons based on task state (`onayBekliyor` flag).
+- Updated test automation E2E scripts (`risk-profili-guncelleme-onay.cjs`) to cover the completed approval flow.
+- Added `islem_sonucu` to `WorkflowProcess` (and updated UI) to track 'ONAYLANDI'/'REDDEDILDI' state instead of just 'TAMAMLANDI'.
+- Wiped old test data from staging tables and workflow history to clean up the dev DB.
+
+**Kararlar:**
+- Validation errors during approval (like missing fields) are allowed to bubble up naturally instead of being caught and swallowed by the approval service.
+- The `islem_sonucu` column in `workflow_processes` is now the canonical place to store generic process outcomes across all modules.
+
+**Dikkat / Gotcha:**
+- The old ZK version doesn't support `!= null` in EL ternary expressions (e.g. `@load`). We must use `empty` (e.g. `empty each.process.islemSonucu ? ... : ...`).
+- When fixing ZUL files, backend restart is not needed—just refresh the browser.
+- Deleting generic workflow history requires cascading deletes from staging tables (`hisse_risk_parametreleri_talepleri`) -> `workflow_tasks` -> `workflow_processes`.
+
+**Degisen dosyalar:**
+- `src/main/resources/db/migration/V48__hisse_risk_onay_tekil_akis.sql`
+- `src/main/resources/db/migration/V49__workflow_process_islem_sonucu.sql`
+- `src/main/java/com/orion/risk/service/HisseRiskOnayService.java`
+- `src/main/java/com/orion/workflow/domain/WorkflowProcess.java`
+- `src/main/webapp/workflow/gorev-listesi.zul`
+
 **Sonraki adimlar:**
-1. Phase 2-3 need to be re-implemented from scratch. The reverted code had fundamental UX issues (wrong modal approach, broken tab switching, failed navigation).
-2. Navigation from Gorev Listesi to review screen is the hardest unsolved problem — need a reliable ZK cross-ViewModel communication pattern.
-3. Review UX should be: click task -> open Hisse Risk Parametreleri screen -> diff popup -> close popup -> see read-only fields + Onayla/Reddet buttons.
+1. Await next task assignment.
 
 ---
 
@@ -46,38 +70,17 @@ Built Bildirim Izleme, Musteri Bildirim Tercihleri (v1 per-type then v2 per-cate
 - Seed: `HISSE_RISK_PARAMETRELERI_ONAY -> OPERASYON`.
 - One `surec_tipi` per screen: `HISSE_RISK_PARAMETRELERI_ONAY`, `BILDIRIM_AYARLARI_ONAY`, `MUSTERI_BILDIRIM_TERCIHLERI_ONAY`.
 
-### Phase 2 — Backend Services & Entities (NOT STARTED)
-- New entity: `HisseRiskParametreTalebi` + repository with `findByIdFetched` (join fetch process).
-- New entity: `SurecTipiOnayRolu` + repository.
-- Shared utility: `DiffBuilder` (reusable diff-list JSON builder for all future screens).
-- Update `WorkflowTaskService`: `createOnayTasksForRole()` (dynamic fan-out by role, excludes submitter) + `closeNonActingSiblingTasks()`.
-- Update `HisseRiskParametreleriService.topluGuncelle()`: split into staging path (onay=true) vs direct path (onay=false). Staging path creates process + talepler + tasks, does NOT write to base table.
-- New REST controller: `HisseRiskOnayController` — `GET /talepler`, `GET /talepler/{id}`, `POST /talepler/{id}/onayla`, `POST /talepler/{id}/reddet`.
-- New shared service: `HisseRiskOnayService` — approve/reject logic shared by REST controller and ZK ViewModel.
-- New DTO: `HisseRiskParametreTalebiDto` with parsed diff list.
-- Update `HisseRiskParametreleriController.onayaGonder`: route to staging path.
-- ZK ViewModel `onayaGonder`: call `topluGuncelle(model, true)`, show "Onaya gonderilmistir."
+### Phase 2 — Backend Services & Entities ✅ DONE
+- Shared logic implementation and workflow orchestration in `HisseRiskOnayService`.
+- Backend workflow tracking updated with `islem_sonucu`.
 
-### Phase 3 — ZK UI (NOT STARTED)
-- Görev Listesi: task rows clickable -> navigate to Hisse Risk Parametreleri screen with talepId.
-- Hisse Risk Parametreleri: new "Inceleme" tab (visible when `incelemeModu=true`).
-  - Diff popup (modal window) showing Surec No, Talep Eden, changed fields (red=old, green=new).
-  - Close popup -> see read-only form fields + Onayla (green) / Reddet (red) buttons.
-  - If only `net_varlik_limit_carpani` changed: show compact toplu guncelleme preview (Hesap No, Musteri, diff table).
-  - If multiple fields changed: show full Risk Profili Guncelleme form (all fields disabled).
-- `WorkflowProcess.gorunenAd`: transient field with `@PostLoad` mapping codes to display names (e.g. `HISSE_RISK_PARAMETRELERI_ONAY` -> "Hisse Risk Tanimlama").
-- Task list auto-refresh after approve/reject.
+### Phase 3 — ZK UI ✅ DONE
+- "İnceleme" modal rendering conditionally.
+- "Tamamlanmış Görevler" UI updated to show `islem_sonucu`.
 
-### Phase 4 — Tests (NOT STARTED)
-- Rewrite existing batch-update regression tests (now staging instead of direct write).
-- E2E: submit -> verify tasks created -> approve -> verify base table updated.
-- E2E: submit -> reject -> verify base table unchanged, tasks closed.
+### Phase 4 — Tests ✅ DONE
+- E2E scripts automated in `test-automation/screens/zk/risk-profili-guncelleme-onay.cjs`.
 
-### Future Phases (planned, not scoped)
-| Phase | Screen | surec_tipi | Approver Role |
-|---|---|---|---|
-| 5 | Bildirim Ayarlari | BILDIRIM_AYARLARI_ONAY | ADMIN |
-| 6 | Musteri Bildirim Tercihleri | MUSTERI_BILDIRIM_TERCIHLERI_ONAY | MUSTERI_TEMSILCISI |
 
 ### Key Design Decisions
 - Each module gets its own `_talepleri` staging table, but shares `workflow_processes`/`workflow_tasks` + `surec_tipi_onay_rolleri` + `DiffBuilder` + `WorkflowTaskService` fan-out logic.

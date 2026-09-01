@@ -2,22 +2,32 @@ package com.orion.notification.vm;
 
 import com.orion.core.config.SpringContextHolder;
 import com.orion.core.domain.Customer;
+import com.orion.core.domain.User;
+import com.orion.core.service.AktifKullaniciServisi;
 import com.orion.core.service.CustomerService;
+import com.orion.notification.domain.MusteriBildirimTercihTalebi;
 import com.orion.notification.domain.MusteriBildirimTercihi;
 import com.orion.notification.dto.NotifTypeSummaryDto;
 import com.orion.notification.dto.NotifChannelCodeDto;
 import com.orion.notification.dto.NotifCategoryDto;
 import com.orion.notification.dto.NotifPreferencesUpdateItem;
+import com.orion.notification.service.MusteriBildirimOnayService;
 import com.orion.notification.service.MusteriBildirimTercihleriService;
+import org.zkoss.bind.BindUtils;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
+import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
+import org.zkoss.bind.annotation.QueryParam;
 import org.zkoss.zk.ui.util.Clients;
+import org.zkoss.zul.Messagebox;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * "Musteri Bildirim Tercihleri" (notification/musteri-bildirim-tercihleri.zul)
@@ -44,6 +54,10 @@ import java.util.List;
  * metotlarini kullanir. Wire DTO'lari (NotifCategoryDto/NotifChannelCodeDto),
  * ZK data-binding icin {@link KategoriSatiri}'ye duzlestirilir (bkz. o
  * sinifin javadoc'u).
+ *
+ * INCELEME MODU: GorevListesiViewModel'den acildiginda (query param
+ * "incelemeProcessId" varsa) degisiklik onizleme popup'i gosterilir,
+ * form salt-okunur olur + Onayla/Reddet butonlari gorunur.
  */
 public class MusteriBildirimTercihleriViewModel {
 
@@ -53,6 +67,12 @@ public class MusteriBildirimTercihleriViewModel {
     private final CustomerService customerService = SpringContextHolder.getBean(CustomerService.class);
     private final MusteriBildirimTercihleriService tercihService =
             SpringContextHolder.getBean(MusteriBildirimTercihleriService.class);
+    private final MusteriBildirimOnayService onayService =
+            SpringContextHolder.getBean(MusteriBildirimOnayService.class);
+    private final AktifKullaniciServisi aktifKullaniciServisi =
+            SpringContextHolder.getBean(AktifKullaniciServisi.class);
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            SpringContextHolder.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
 
     private String musteriNo;
     private String musteriSorgulamaHata;
@@ -60,6 +80,135 @@ public class MusteriBildirimTercihleriViewModel {
     private Customer musteri;
     private LocalDateTime sonGuncelleme;
     private List<KategoriSatiri> tercihler;
+
+    // --- Inceleme modu (onay/red akisi) ---
+    private boolean incelemeModu;
+    private Long incelemeProcessId;
+    private boolean diffPopupAcik;
+    private boolean onayBekliyor;
+    private List<Map<String, String>> degisiklikListesi = new ArrayList<>();
+
+    @Init
+    public void init(@QueryParam("incelemeProcessId") Long incelemeProcessId) {
+        if (incelemeProcessId != null) {
+            this.incelemeProcessId = incelemeProcessId;
+            incelemeModuBaslat();
+        }
+    }
+
+    // --- Inceleme modu getters ---
+
+    public boolean isIncelemeModu() {
+        return incelemeModu;
+    }
+
+    public boolean isOnayBekliyor() {
+        return onayBekliyor;
+    }
+
+    public boolean isDiffPopupAcik() {
+        return diffPopupAcik;
+    }
+
+    public List<Map<String, String>> getDegisiklikListesi() {
+        return degisiklikListesi;
+    }
+
+    /**
+     * Inceleme modunu baslatir: talepleri yukler, musteriyi otomatik
+     * yükler, diff popup verisi hazirlar ve popup'i gosterir.
+     */
+    private void incelemeModuBaslat() {
+        List<MusteriBildirimTercihTalebi> talepler = onayService.getTaleplerForReview(incelemeProcessId);
+        if (talepler.isEmpty()) {
+            return;
+        }
+
+        onayBekliyor = talepler.stream().anyMatch(t -> "BEKLEMEDE".equals(t.getDurum()));
+
+        // Musteriyi talepten otomatik yukle
+        MusteriBildirimTercihTalebi ilkTalep = talepler.get(0);
+        musteri = ilkTalep.getCustomer();
+        musteriNo = musteri.getMusteriNo();
+
+        // Mevcut tercihleri yukle
+        yenidenYukle();
+
+        // Diff popup verisi hazirla ve Yeni degerleri ekrana yansit
+        degisiklikListesi = new ArrayList<>();
+        for (MusteriBildirimTercihTalebi talep : talepler) {
+            try {
+                if (talep.getDegisiklikListesiJson() != null && !talep.getDegisiklikListesiJson().isBlank()) {
+                    List<Map<String, String>> diffs = objectMapper.readValue(
+                            talep.getDegisiklikListesiJson(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                    degisiklikListesi.addAll(diffs);
+                }
+                
+                // Yeni degerleri ekrana uygula
+                if (talep.getYeniDegerJson() != null && !talep.getYeniDegerJson().isBlank()) {
+                    List<NotifPreferencesUpdateItem> updates = objectMapper.readValue(
+                            talep.getYeniDegerJson(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, NotifPreferencesUpdateItem.class));
+                    for (NotifPreferencesUpdateItem update : updates) {
+                        for (KategoriSatiri satir : tercihler) {
+                            if (satir.getCategoryCode().equals(update.getCategoryCode())) {
+                                if ("push".equals(update.getNotifChannelCode())) {
+                                    satir.setPushAcik(update.isEnabled());
+                                } else if ("sms".equals(update.getNotifChannelCode())) {
+                                    satir.setSmsAcik(update.isEnabled());
+                                } else if ("email".equals(update.getNotifChannelCode())) {
+                                    satir.setEpostaAcik(update.isEnabled());
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore parsing errors
+            }
+        }
+
+        incelemeModu = true;
+        diffPopupAcik = true;
+    }
+
+    @Command
+    @NotifyChange("diffPopupAcik")
+    public void closeDiffPopup() {
+        diffPopupAcik = false;
+    }
+
+    @Command
+    public void onaylaCommand() {
+        if (incelemeProcessId == null) {
+            return;
+        }
+        User kararVeren = aktifKullaniciServisi.getAktifKullanici();
+        onayService.onayla(incelemeProcessId, kararVeren);
+        Messagebox.show("Onay islemi tamamlandi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                event -> anaSayfayaDon());
+    }
+
+    @Command
+    public void reddetCommand() {
+        if (incelemeProcessId == null) {
+            return;
+        }
+        User kararVeren = aktifKullaniciServisi.getAktifKullanici();
+        onayService.reddet(incelemeProcessId, kararVeren);
+        Messagebox.show("Red islemi tamamlandi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                event -> anaSayfayaDon());
+    }
+
+    private void anaSayfayaDon() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("zulPath", "/notification/musteri-bildirim-tercihleri.zul");
+        args.put("incelemeProcessId", incelemeProcessId);
+        BindUtils.postGlobalCommand(null, null, "closeReviewAndGoHome", args);
+    }
+
+    // --- Mevcut getter/setter'lar ---
 
     public String getMusteriNo() {
         return musteriNo;
@@ -125,9 +274,17 @@ public class MusteriBildirimTercihleriViewModel {
             ekleGuncellemeyeUygunsa(updates, satir.getCategoryCode(), "sms", satir.isSmsEditable(), satir.isSmsAcik());
             ekleGuncellemeyeUygunsa(updates, satir.getCategoryCode(), "email", satir.isEpostaEditable(), satir.isEpostaAcik());
         }
-        tercihService.updateForUsername(musteri.getUsername(), updates);
-        yenidenYukle();
-        Clients.showNotification("Bildirim tercihleri kaydedildi.");
+
+        // Mevcut tercihlerin snapshot'i icin
+        List<MusteriBildirimTercihi> mevcutTercihler = tercihService.tercihleriGetir(musteri.getId());
+
+        User talepEden = aktifKullaniciServisi.getAktifKullanici();
+        try {
+            onayService.onayaGonder(musteri, updates, mevcutTercihler, talepEden);
+            Messagebox.show("Tercih degisiklikleri onaya gonderildi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
+        } catch (IllegalStateException ex) {
+            Messagebox.show(ex.getMessage(), "Uyari", Messagebox.OK, Messagebox.EXCLAMATION);
+        }
     }
 
     /**
