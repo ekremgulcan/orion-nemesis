@@ -26,6 +26,7 @@ public class GorevListesiViewModel {
     static {
         SUREC_TIPI_ZUL_MAP.put("HISSE_RISK_PARAMETRELERI_ONAY", "/risk/hisse-risk-parametreleri.zul");
         SUREC_TIPI_ZUL_MAP.put("MUSTERI_BILDIRIM_TERCIHLERI_ONAY", "/notification/musteri-bildirim-tercihleri.zul");
+        SUREC_TIPI_ZUL_MAP.put("BILDIRIM_AYARLARI_ONAY", "/notification/bildirim-ayarlari.zul");
     }
 
     private final WorkflowTaskService workflowTaskService =

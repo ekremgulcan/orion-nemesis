@@ -9,37 +9,15 @@ import com.orion.notification.service.BildirimAyarlariService;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
+import org.zkoss.bind.annotation.QueryParam;
 import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Messagebox;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
-/**
- * "Bildirim Ayarlari" ekrani - bildirim tipi secilir, kanallardan bagimsiz
- * genel durum ("Durum") goruntulenir/guncellenir; bir kanal secildiginde
- * o kanala ait sablon + "Diger Ayarlar" (Musteri Gorur ve Degistirir /
- * Max Deneme Sayisi / Tekrar Deneme Suresi / Kanal Durumu) goruntulenir.
- * "Duzenle" ile Mevcut Sablon + Diger Ayarlar duzenlenebilir hale gelir -
- * Bildirim Tipi/Durum/Bildirim Kanali de bu sirada KILITLENIR (disabled),
- * boylece kullanici bir kanalin ayarlarini duzenlerken ayni anda tipi/kanali
- * degistirip yarim kalmis bir duzenlemeyi baska bir baglamda birakamaz.
- * "Mevcut Sablon" etiketindeki "(Salt Okunur)" ibaresi duzenleme modunda
- * kaybolur (bkz. getMevcutSablonEtiketi()). templateHeader bu ekranda hic
- * gosterilmez/duzenlenmez, sadece templateBody.
- *
- * Alanlar (Musteri Gorur ve Degistirir/Max Deneme Sayisi/Tekrar Deneme
- * Suresi/Kanal Durumu/Mevcut Sablon) genelDurum'un NotificationType.active
- * icin yaptigi gibi DOGRUDAN selectedTemplate entity'sinin alanlarina
- * @bind edilir - ayri bir "duzenlenen deger" tamponu TUTULMAZ. Bunun
- * yerine "Iptal", selectedTemplate'i veritabanindan TAZE tekrar cekerek
- * bellekteki degisiklikleri atar; "Kaydet" ise o an selectedTemplate'te
- * duran (kullanicinin zaten dogrudan degistirmis oldugu) degerleri
- * oldugu gibi gonderir. Once ayri bir tampon (duzenlenenX alanlar)
- * kullanilmisti, ama bu goruntu/tampon ikiliginin senkronize kalmasi
- * gerektigi icin "sadece Duzenle'den sonra gorunuyor", "baska bir
- * kanala gecince eski duzenlenmis metin gorunuyor" gibi tutarsiz
- * hatalara yol acti - dogrudan mutasyon cok daha basit ve guvenilir.
- */
 public class BildirimAyarlariViewModel {
 
     private static final int MAX_RETRY_UST_SINIR = 20;
@@ -47,6 +25,12 @@ public class BildirimAyarlariViewModel {
 
     private final BildirimAyarlariService bildirimAyarlariService =
             SpringContextHolder.getBean(BildirimAyarlariService.class);
+    private final com.orion.notification.service.BildirimAyarlariOnayService onayService =
+            SpringContextHolder.getBean(com.orion.notification.service.BildirimAyarlariOnayService.class);
+    private final com.orion.core.service.AktifKullaniciServisi aktifKullaniciServisi =
+            SpringContextHolder.getBean(com.orion.core.service.AktifKullaniciServisi.class);
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            SpringContextHolder.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
 
     private List<NotificationType> notificationTypes;
     private NotificationType selectedType;
@@ -54,9 +38,109 @@ public class BildirimAyarlariViewModel {
     private NotifChannelTemplate selectedTemplate;
     private boolean duzenlemeModu;
 
+    private final Map<BildirimKanali, KanalAyarlariGuncelleRequest> kanalGuncellemeleri = new HashMap<>();
+
+    private boolean incelemeModu;
+    private Long incelemeProcessId;
+    private boolean onayBekliyor;
+    private boolean diffPopupAcik;
+    private List<Map<String, String>> degisiklikListesi = new ArrayList<>();
+    private com.orion.workflow.domain.WorkflowProcess process;
+
+    private String zulPath;
+
     @Init
-    public void init() {
+    public void init(@QueryParam("incelemeProcessId") Long incelemeProcessId, @QueryParam("zulPath") String zulPath) {
+        this.zulPath = zulPath;
         notificationTypes = bildirimAyarlariService.tipleriGetir();
+        if (incelemeProcessId != null) {
+            this.incelemeProcessId = incelemeProcessId;
+            incelemeModuBaslat();
+        }
+    }
+
+    private void incelemeModuBaslat() {
+        onayService.getTalepForReview(incelemeProcessId).ifPresent(talep -> {
+            this.incelemeModu = true;
+            this.onayBekliyor = "BEKLEMEDE".equals(talep.getDurum());
+            this.process = talep.getProcess();
+            
+            this.selectedType = notificationTypes.stream()
+                .filter(t -> t.getId().equals(talep.getNotificationType().getId()))
+                .findFirst().orElse(null);
+                
+            if (talep.getDegisiklikListesiJson() != null && !talep.getDegisiklikListesiJson().isBlank()) {
+                try {
+                    this.degisiklikListesi = objectMapper.readValue(
+                            talep.getDegisiklikListesiJson(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                } catch (Exception e) {}
+            }
+            
+            if (talep.getYeniDegerJson() != null && !talep.getYeniDegerJson().isBlank()) {
+                try {
+                    com.orion.notification.dto.BildirimAyarlariUpdateDto updates = objectMapper.readValue(
+                            talep.getYeniDegerJson(), com.orion.notification.dto.BildirimAyarlariUpdateDto.class);
+                    if (this.selectedType != null && updates.getIsActive() != null) {
+                        this.selectedType.setActive(updates.getIsActive());
+                    }
+                    if (updates.getKanalGuncellemeleri() != null && !updates.getKanalGuncellemeleri().isEmpty()) {
+                        this.kanalGuncellemeleri.putAll(updates.getKanalGuncellemeleri());
+                        // Otomatik olarak degisen ilk kanali sec ki ekranda bos kalmasin
+                        BildirimKanali ilkKanal = updates.getKanalGuncellemeleri().keySet().iterator().next();
+                        setSelectedChannel(ilkKanal);
+                    }
+                } catch (Exception e) {}
+            }
+            
+            if (onayBekliyor) {
+                this.diffPopupAcik = true;
+            }
+        });
+    }
+
+    public boolean isIncelemeModu() { return incelemeModu; }
+    public boolean isOnayBekliyor() { return onayBekliyor; }
+    public boolean isDiffPopupAcik() { return diffPopupAcik; }
+    public List<Map<String, String>> getDegisiklikListesi() { return degisiklikListesi; }
+
+    @Command
+    @NotifyChange("diffPopupAcik")
+    public void kapatDiffPopup() { this.diffPopupAcik = false; }
+
+    @Command
+    @NotifyChange("diffPopupAcik")
+    public void acDiffPopup() { this.diffPopupAcik = true; }
+
+    @Command
+    public void onayla() {
+        if (incelemeProcessId == null) return;
+        try {
+            onayService.onayla(incelemeProcessId, aktifKullaniciServisi.getAktifKullanici());
+            Messagebox.show("Guncelleme onaylandi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                    e -> closeReviewAndGoHome());
+        } catch (Exception e) {
+            Messagebox.show(e.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+        }
+    }
+
+    @Command
+    public void reddet() {
+        if (incelemeProcessId == null) return;
+        try {
+            onayService.reddet(incelemeProcessId, aktifKullaniciServisi.getAktifKullanici());
+            Messagebox.show("Guncelleme reddedildi.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION,
+                    e -> closeReviewAndGoHome());
+        } catch (Exception e) {
+            Messagebox.show(e.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+        }
+    }
+
+    private void closeReviewAndGoHome() {
+        java.util.Map<String, Object> args = new java.util.HashMap<>();
+        args.put("zulPath", zulPath); 
+        args.put("incelemeProcessId", incelemeProcessId);
+        org.zkoss.bind.BindUtils.postGlobalCommand(null, null, "closeReviewAndGoHome", args);
     }
 
     public List<NotificationType> getNotificationTypes() {
@@ -77,6 +161,9 @@ public class BildirimAyarlariViewModel {
         this.selectedChannel = null;
         this.selectedTemplate = null;
         this.duzenlemeModu = false;
+        if (!incelemeModu) {
+            this.kanalGuncellemeleri.clear();
+        }
     }
 
     public boolean isTipSecilmisMi() {
@@ -125,7 +212,16 @@ public class BildirimAyarlariViewModel {
         if (selectedType == null || selectedChannel == null) {
             return null;
         }
-        return bildirimAyarlariService.kanalAyarlariGetir(selectedType.getId(), selectedChannel).orElse(null);
+        NotifChannelTemplate template = bildirimAyarlariService.kanalAyarlariGetir(selectedType.getId(), selectedChannel).orElse(null);
+        if (template != null && kanalGuncellemeleri.containsKey(selectedChannel)) {
+            KanalAyarlariGuncelleRequest req = kanalGuncellemeleri.get(selectedChannel);
+            template.setMusteriGorurVeDegistir(req.isMusteriGorurVeDegistir());
+            template.setMaxRetry(req.getMaxRetry());
+            template.setErrorBackoffTime(req.getErrorBackoffTime());
+            template.setActive(req.isActive());
+            template.setTemplateBody(req.getTemplateBody());
+        }
+        return template;
     }
 
     public boolean isKanalSecilmisMi() {
@@ -284,14 +380,29 @@ public class BildirimAyarlariViewModel {
     }
 
     @Command
-    @NotifyChange({"selectedType", "notificationTypes", "genelDurum"})
     public void onayaGonder() {
         if (selectedType == null) {
             return;
         }
-        NotificationType guncel = bildirimAyarlariService.genelDurumGuncelle(selectedType.getId(), selectedType.isActive());
-        this.selectedType = guncel;
-        Clients.showNotification("Genel durum guncellendi.");
+        try {
+            com.orion.notification.dto.BildirimAyarlariUpdateDto updates = new com.orion.notification.dto.BildirimAyarlariUpdateDto();
+            updates.setIsActive(selectedType.isActive());
+            updates.setKanalGuncellemeleri(kanalGuncellemeleri.isEmpty() ? null : kanalGuncellemeleri);
+            
+            onayService.onayaGonder(selectedType, updates, aktifKullaniciServisi.getAktifKullanici());
+            
+            this.kanalGuncellemeleri.clear();
+            Messagebox.show("Tum degisiklikler onaya gonderilmistir.", "Bilgi", Messagebox.OK, Messagebox.INFORMATION);
+            
+            // Taze veriyi tekrar yukle (pending degisiklikleri iptal eder ama onay akisina dustugu icin sorun yok)
+            NotificationType orj = bildirimAyarlariService.tipleriGetir().stream()
+                .filter(t -> t.getId().equals(selectedType.getId())).findFirst().orElse(null);
+            this.selectedType = orj;
+            this.selectedTemplate = kanalAyarlariniYukle();
+            org.zkoss.bind.BindUtils.postNotifyChange(null, null, this, "*");
+        } catch (Exception e) {
+            Messagebox.show(e.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+        }
     }
 
     @Command
@@ -301,21 +412,22 @@ public class BildirimAyarlariViewModel {
         if (selectedTemplate == null) {
             return;
         }
+        
+        try {
+            BildirimAyarlariService.dogrulaSablonParametreleri(selectedTemplate, selectedTemplate.getTemplateBody());
+        } catch (IllegalArgumentException e) {
+            Messagebox.show(e.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
+            return;
+        }
         KanalAyarlariGuncelleRequest request = new KanalAyarlariGuncelleRequest();
         request.setMusteriGorurVeDegistir(selectedTemplate.isMusteriGorurVeDegistir());
         request.setMaxRetry(selectedTemplate.getMaxRetry());
         request.setErrorBackoffTime(selectedTemplate.getErrorBackoffTime());
         request.setActive(selectedTemplate.isActive());
         request.setTemplateBody(selectedTemplate.getTemplateBody());
-        try {
-            this.selectedTemplate = bildirimAyarlariService.kanalAyarlariniKaydet(selectedTemplate.getId(), request);
-            this.duzenlemeModu = false;
-            Clients.showNotification("Kanal ayarlari kaydedildi.");
-        } catch (IllegalArgumentException ex) {
-            // Gecersiz bir sablon parametresi (bkz. servis) - duzenleme
-            // modunda kalinir, kullanicinin girdigi (henuz kaydedilmemis)
-            // metin ekranda aynen durur ki duzeltebilsin.
-            Messagebox.show(ex.getMessage(), "Hata", Messagebox.OK, Messagebox.ERROR);
-        }
+        
+        this.kanalGuncellemeleri.put(selectedChannel, request);
+        this.duzenlemeModu = false;
+        Clients.showNotification("Kanal ayarlari taslak olarak hafizaya kaydedildi. Tum islemleriniz bitince sayfanin altindan Onaya Gonderiniz.");
     }
 }

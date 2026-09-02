@@ -94,7 +94,7 @@ public class BildirimAyarlariService {
      * (degistirilemeyen) allowedParametreler listesinde yoksa kaydetme
      * islemi tumden reddedilir.
      */
-    private static void dogrulaSablonParametreleri(NotifChannelTemplate template, String templateBody) {
+    public static void dogrulaSablonParametreleri(NotifChannelTemplate template, String templateBody) {
         Set<String> izinliParametreler = Set.copyOf(template.getAllowedParametrelerList());
         Set<String> tanimsizParametreler = new LinkedHashSet<>();
         Matcher matcher = PARAM_PATTERN.matcher(templateBody == null ? "" : templateBody);

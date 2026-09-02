@@ -5,9 +5,6 @@
             style="padding:16px">
 
         <style>
-            /* Bilgilendirme kutusu - "Devam etmek icin bildirim tipi seciniz"
-               gibi yardimci mesajlar icin, projedeki mavi ton (#2f6fad) ile
-               tutarli hafif bir vurgu kutusu. */
             .info-box {
                 background: #eef4fa;
                 border: 1px solid #b8d4ec;
@@ -27,15 +24,7 @@
         <groupbox closable="false" style="margin-top:10px;position:relative">
             <caption label="@load(vm.tipSecilmisMi ? 'Bildirim Tipi ve Genel Durum' : 'Bildirim Tipi Secimi')"/>
 
-            <!-- Caption'in kendi icine konan buton'lar, caption'in label
-                 degistikce (bkz. yukaridaki @load) tum alt bileşenlerini
-                 yeniden olusturuyor ve o sirada visible=false olan
-                 dugmeleri DOM'dan tamamen dusuruyordu (sonraki
-                 NotifyChange bunlari geri getiremiyordu) - bu yuzden
-                 dugmeler caption'in DISINA alinip groupbox'in sag ust
-                 kosesine mutlak konumlandirildi (groupbox'a bunun icin
-                 position:relative eklendi). -->
-            <div visible="@load(vm.kanalSecilmisMi and not vm.duzenlemeModu)"
+            <div visible="@load(vm.kanalSecilmisMi and not vm.duzenlemeModu and not vm.incelemeModu)"
                  style="position:absolute;top:9px;right:14px;z-index:2">
                 <button label="Duzenle" iconSclass="z-icon-pencil" onClick="@command('duzenle')"/>
             </div>
@@ -54,11 +43,9 @@
                     <n:div style="min-width:280px">
                         <n:div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                             <label value="Bildirim Tipi" style="font-weight:500"/>
-                            <label value="&#8505;" style="color:#8a97a3;cursor:help"
-                                   tooltiptext="Kanal ve sablon ayarlarinin uygulanacagi bildirim tipini seciniz."/>
                         </n:div>
                         <combobox model="@load(vm.notificationTypes)" selectedItem="@bind(vm.selectedType)"
-                                  placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu)">
+                                  placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu or vm.incelemeModu)">
                             <template name="model">
                                 <comboitem label="@load(each.ad)"/>
                             </template>
@@ -72,7 +59,7 @@
                                    tooltiptext="Bu durum, secilen bildirim tipinin tum kanallar icin ust durumudur."/>
                         </n:div>
                         <combobox model="@load(vm.durumSecenekleri)" selectedItem="@bind(vm.genelDurum)"
-                                  readonly="true" width="160px" disabled="@load(vm.duzenlemeModu)">
+                                  readonly="true" width="160px" disabled="@load(vm.duzenlemeModu or vm.incelemeModu)">
                             <template name="model">
                                 <comboitem label="@load(each ? '&#128994; Acik' : '&#128308; Kapali')"/>
                             </template>
@@ -85,7 +72,7 @@
                     </div>
                     <div visible="@load(vm.tipSecilmisMi)" sclass="info-box" style="flex:1;min-width:260px">
                         <n:span>&#8505;</n:span>
-                        <n:span>Bu durum, secilen bildirim tipinin tum kanallar icin ust durumdur. Kanal bazli acik/kapali durumlar bu alandan bagimsiz olarak yonetilir.</n:span>
+                        <n:span>Bu durum, secilen bildirim tipinin tum kanallar icin ust durumudur. Kanal bazli acik/kapali durumlar bu alandan bagimsiz olarak yonetilir.</n:span>
                     </div>
                 </n:div>
 
@@ -95,7 +82,7 @@
                         <n:div style="min-width:280px">
                             <label value="Bildirim Kanali" style="font-weight:500;display:block;margin-bottom:4px"/>
                             <combobox model="@load(vm.kanalSecenekleri)" selectedItem="@bind(vm.selectedChannel)"
-                                      placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu)">
+                                      placeholder="Seciniz" readonly="true" width="320px" disabled="@load(vm.duzenlemeModu or vm.incelemeModu)">
                                 <template name="model">
                                     <comboitem label="@load(each.etiket)"/>
                                 </template>
@@ -169,18 +156,51 @@
                     </n:div>
                 </div>
 
-                <!-- Alt bilgi + Onaya Gonder (duzenleme modunda gizlenir - o sirada
-                     sadece Iptal/Kaydet gecerlidir, bkz. caption). -->
-                <div visible="@load(vm.tipSecilmisMi and not vm.duzenlemeModu)">
-                    <n:div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8ee;padding-top:12px">
-                        <n:span style="color:#8a97a3;font-size:0.85em">Kanal bagimsiz durum guncellendikten sonra Onaya Gonder islemi yapilabilir.</n:span>
-                        <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
-                                style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
-                                onClick="@command('onayaGonder')"/>
-                    </n:div>
+                <!-- Alt bilgi + Onaya Gonder -->
+                <div align="right" visible="@load(vm.tipSecilmisMi and not vm.incelemeModu)" style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8ee">
+                    <button label="Onaya Gonder" iconSclass="z-icon-envelope-o"
+                            style="background:#2f6fad !important;color:white !important;text-shadow:none !important"
+                            onClick="@command('onayaGonder')"
+                            disabled="@load(vm.duzenlemeModu)"/>
+                </div>
+
+                <!-- Inceleme Modu Islemleri -->
+                <div align="right" visible="@load(vm.onayBekliyor)" style="margin-top:16px">
+                    <button label="Reddet" iconSclass="z-icon-times" style="background:#e74c3c !important;color:white !important;margin-right:8px" onClick="@command('reddet')"/>
+                    <button label="Onayla" iconSclass="z-icon-check" style="background:#2ecc71 !important;color:white !important" onClick="@command('onayla')"/>
                 </div>
 
             </n:div>
         </groupbox>
+
+        <!-- Degisiklik Onizleme Popup (Diff) -->
+        <window title="Degisiklik Onizleme" mode="modal" border="normal"
+                width="650px" closable="true"
+                visible="@load(vm.diffPopupAcik)"
+                onClose="@command('kapatDiffPopup')"
+                style="padding:16px">
+            <label value="Asagidaki ayar degisiklikleri onay beklemektedir:"
+                   style="color:#2f6fad;font-weight:bold;font-size:14px;display:block;margin-bottom:10px"/>
+            <listbox model="@load(vm.degisiklikListesi)" emptyMessage="Degisiklik bulunamadi">
+                <listhead>
+                    <listheader label="Alan" width="200px"/>
+                    <listheader label="Eski Deger" width="200px"/>
+                    <listheader label="Yeni Deger" width="200px"/>
+                </listhead>
+                <template name="model">
+                    <listitem>
+                        <listcell label="@load(each.alan)"/>
+                        <listcell label="@load(each.eskiDeger)"
+                                  style="color:#c85c5c;font-weight:bold"/>
+                        <listcell label="@load(each.yeniDeger)"
+                                  style="color:#2f9e44;font-weight:bold"/>
+                    </listitem>
+                </template>
+            </listbox>
+            <n:div style="text-align:right;margin-top:12px">
+                <button label="Kapat" onClick="@command('kapatDiffPopup')"/>
+            </n:div>
+        </window>
+
     </window>
 </zk>
